@@ -1,0 +1,47 @@
+{
+  "name": "@pagerduty/backstage-plugin-common",
+  "description": "Common components for PagerDuty plugins for Backstage",
+  "version": "1.0.0",
+  "main": "dist/index.cjs.js",
+  "types": "dist/index.d.ts",
+  "license": "Apache-2.0",
+  "publishConfig": {
+    "access": "public",
+    "main": "dist/index.cjs.js",
+    "types": "dist/index.d.ts"
+  },
+  "backstage": {
+    "role": "common-library",
+    "pluginId": "pagerduty",
+    "pluginPackages": [
+      "@pagerduty/backstage-plugin",
+      "@pagerduty/backstage-plugin-common",
+      "@pagerduty/backstage-plugin-backend"
+    ]
+  },
+  "homepage": "https://github.com/pagerduty/backstage-plugin-common",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pagerduty/backstage-plugin-common.git",
+    "directory": "."
+  },
+  "keywords": [
+    "backstage",
+    "plugin",
+    "pagerduty"
+  ],
+  "scripts": {
+    "build": "backstage-cli package build",
+    "lint": "backstage-cli package lint",
+    "test": "backstage-cli package test",
+    "prepack": "backstage-cli package prepack",
+    "postpack": "backstage-cli package postpack",
+    "clean": "backstage-cli package clean"
+  },
+  "devDependencies": {
+    "@backstage/cli": "^0.33.0"
+  },
+  "files": [
+    "dist"
+  ]
+}

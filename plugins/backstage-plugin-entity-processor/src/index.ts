@@ -1,0 +1,1 @@
+export { pagerDutyEntityProcessor as default } from './module';

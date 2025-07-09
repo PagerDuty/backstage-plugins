@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+install-state.gz
+
+# Build output
+dist*
+
+# Node version directives
+.nvmrc
+
+# Developer tools
+.idea
+*.iml
+.DS_Store
+.vscode
+
