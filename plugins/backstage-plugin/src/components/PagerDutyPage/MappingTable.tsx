@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { PagerDutyEntityMapping } from "@pagerduty/backstage-plugin-common";
+import { PagerDutyEntityMapping } from "common";
 import {
   MRT_ColumnDef,
   MRT_EditActionButtons,

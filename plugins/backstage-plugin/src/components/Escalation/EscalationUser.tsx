@@ -24,7 +24,7 @@ import {
   Typography,
 } from '@material-ui/core';
 import Avatar from '@material-ui/core/Avatar';
-import { PagerDutyUser } from '@pagerduty/backstage-plugin-common';
+import { PagerDutyUser } from 'common';
 import NotificationsIcon from "@material-ui/icons/Notifications";
 import { BackstageTheme } from '@backstage/theme';
 

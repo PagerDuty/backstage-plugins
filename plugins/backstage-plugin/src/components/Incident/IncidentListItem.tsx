@@ -25,7 +25,7 @@ import {
   Chip,
 } from '@material-ui/core';
 import { DateTime, Duration } from 'luxon';
-import { PagerDutyIncident } from '@pagerduty/backstage-plugin-common';
+import { PagerDutyIncident } from 'common';
 import OpenInBrowserIcon from '@material-ui/icons/OpenInBrowser';
 import { BackstageTheme } from '@backstage/theme';
 import { Link } from '@backstage/core-components';

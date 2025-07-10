@@ -16,7 +16,7 @@ import {
     PagerDutyServiceDependencyResponse,
     PagerDutySetting,
     PagerDutyEntityMappingsResponse,
-} from '@pagerduty/backstage-plugin-common';
+} from 'common';
 
 export interface PagerDutyClientOptions {
     discovery: DiscoveryService;

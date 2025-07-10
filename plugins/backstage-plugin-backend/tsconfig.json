@@ -14,7 +14,7 @@
     "declaration": true,  
     "paths": {
       "@pagerduty/backstage-plugin-backend": ["./dist"],
-      "@pagerduty/backstage-plugin-common": ["../../plugins/backstage-plugin-common/dist"]
+      "common": ["../../libs/common/dist"]
     }
   }
 }

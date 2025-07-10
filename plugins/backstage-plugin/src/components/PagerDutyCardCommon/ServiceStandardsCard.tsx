@@ -10,7 +10,7 @@ import {
   withStyles,
 } from "@material-ui/core";
 import InfoIcon from "@material-ui/icons/Info";
-import { PagerDutyServiceStandard } from "@pagerduty/backstage-plugin-common";
+import { PagerDutyServiceStandard } from "common";
 import CheckCircle from "@material-ui/icons/CheckCircle";
 import RadioButtonUncheckedIcon from "@material-ui/icons/RadioButtonUnchecked";
 

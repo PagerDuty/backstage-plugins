@@ -12,7 +12,7 @@ import {
   PagerDutyEscalationPolicy,
   HttpError,
   PagerDutyEscalationPoliciesResponse,
-} from '@pagerduty/backstage-plugin-common';
+} from 'common';
 import {
   LoggerService,
   RootConfigService,

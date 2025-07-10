@@ -1,5 +1,5 @@
 /* eslint-disable jest/no-conditional-expect */
-import { PagerDutyAccountConfig } from '@pagerduty/backstage-plugin-common';
+import { PagerDutyAccountConfig } from 'common';
 import {
   createService,
   createServiceIntegration,

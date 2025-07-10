@@ -30,7 +30,7 @@ import { PagerDutyChangeEventsResponse,
   PagerDutyServiceMetricsResponse,
   PagerDutyEntityMappingsResponse,
   PagerDutySetting
-} from '@pagerduty/backstage-plugin-common';
+} from 'common';
 import { createApiRef, ConfigApi } from '@backstage/core-plugin-api';
 import { NotFoundError } from '@backstage/errors';
 import { Entity } from '@backstage/catalog-model';

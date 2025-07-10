@@ -15,7 +15,7 @@
     "pluginId": "pagerduty",
     "pluginPackages": [
       "@pagerduty/backstage-plugin",
-      "@pagerduty/backstage-plugin-common",
+      "common",
       "@pagerduty/backstage-plugin-backend"
     ]
   },
@@ -56,9 +56,9 @@
     "@mui/icons-material": "^5.15.19",
     "@mui/material": "^5.15.19",
     "@mui/x-date-pickers": "^7.6.1",
-    "@pagerduty/backstage-plugin-common": "workspace:*",
     "@tanstack/react-query": "^5.40.1",
     "classnames": "^2.2.6",
+    "common": "workspace:*",
     "luxon": "^3.4.1",
     "material-react-table": "^2.13.0",
     "react-use": "^17.2.4",

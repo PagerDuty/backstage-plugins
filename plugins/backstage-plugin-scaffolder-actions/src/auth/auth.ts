@@ -5,7 +5,7 @@ import {
 import {
   HttpError,
   PagerDutyAccountConfig,
-} from '@pagerduty/backstage-plugin-common';
+} from 'common';
 import { Config } from '@backstage/config';
 
 export type LoadAuthConfigProps = {

@@ -24,7 +24,7 @@ import {
     PagerDutyIntegrationResponse,
     PagerDutyServiceDependency,
     PagerDutyServiceDependencyResponse,
-} from '@pagerduty/backstage-plugin-common';
+} from 'common';
 
 import { DateTime } from 'luxon';
 import { LoggerService, RootConfigService } from '@backstage/backend-plugin-api';
