@@ -8,8 +8,7 @@
   "scripts": {
     "start": "backstage-cli repo start",
     "build:backend": "yarn workspace backend build",
-    "build:plugins": "yarn tsc && yarn workspace @pagerduty/backstage-plugin-common build && yarn workspace @pagerduty/backstage-plugin-backend build && yarn workspace @pagerduty/backstage-plugin build && yarn workspace @pagerduty/backstage-plugin-entity-processor build && yarn workspace @pagerduty/backstage-plugin-scaffolder-actions build",
-    "build": "yarn build:plugins && backstage-cli repo build --all",
+    "build": "backstage-cli repo build --all",
     "build-image": "yarn workspace backend build-image",
     "tsc": "tsc",
     "tsc:full": "tsc --skipLibCheck false --incremental false",
