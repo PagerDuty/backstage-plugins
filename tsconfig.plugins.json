@@ -1,0 +1,28 @@
+{
+  "extends": "@backstage/cli/config/tsconfig.json",
+  "include": [
+    "libs/*/src",
+    "plugins/*/src",
+    "plugins/*/config.d.ts",
+    "plugins/*/custom.d.ts",
+    "plugins/*/dev",
+    "plugins/*/migrations"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist-types"
+  ],
+  "compilerOptions": {
+    "outDir": "dist-types",
+    "rootDir": ".",
+    "jsx": "react-jsx",
+    "declaration": true,
+    "declarationMap": true,
+    "emitDeclarationOnly": true
+  },
+  "ts-node": {
+    "require": [
+      "tsconfig-paths/register"
+    ]
+  }
+}

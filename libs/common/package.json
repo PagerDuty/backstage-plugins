@@ -1,0 +1,21 @@
+{
+  "name": "common",
+  "description": "Common shared library for PagerDuty Backstage plugins",
+  "version": "0.2.3",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "license": "Apache-2.0",
+  "private": true,
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "typescript": "~5.8.0"
+  },
+  "files": [
+    "dist",
+    "src"
+  ]
+}

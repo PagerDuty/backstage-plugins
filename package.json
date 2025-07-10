@@ -8,17 +8,20 @@
   "scripts": {
     "start": "backstage-cli repo start",
     "build:backend": "yarn workspace backend build",
-    "build:plugins": "yarn tsc && yarn workspace @pagerduty/backstage-plugin-common build && yarn workspace @pagerduty/backstage-plugin-backend build && yarn workspace @pagerduty/backstage-plugin build && yarn workspace @pagerduty/backstage-plugin-entity-processor build && yarn workspace @pagerduty/backstage-plugin-scaffolder-actions build",
-    "build": "yarn build:plugins && backstage-cli repo build --all",
+    "build": "yarn build:libs && yarn tsc:plugins && yarn build:plugins && yarn tsc && yarn workspaces foreach --all --topological-dev run build",
+    "build:libs": "yarn workspace common build",
+    "build:plugins": "yarn workspace @pagerduty/backstage-plugin build && yarn workspace @pagerduty/backstage-plugin-backend build && yarn workspace @pagerduty/backstage-plugin-entity-processor build && yarn workspace @pagerduty/backstage-plugin-scaffolder-actions build",
+    "build:backstage": "backstage-cli repo build --all",
     "build-image": "yarn workspace backend build-image",
     "tsc": "tsc",
+    "tsc:plugins": "tsc --project tsconfig.plugins.json --skipLibCheck",
     "tsc:full": "tsc --skipLibCheck false --incremental false",
     "clean": "backstage-cli repo clean",
     "test": "backstage-cli repo test",
     "test:all": "backstage-cli repo test --coverage",
     "test:e2e": "playwright test",
     "fix": "backstage-cli repo fix",
-    "lint": "backstage-cli repo lint --since origin/master",
+    "lint": "backstage-cli repo lint",
     "lint:all": "backstage-cli repo lint",
     "prettier:check": "prettier --check .",
     "new": "backstage-cli new",
@@ -29,7 +32,8 @@
   "workspaces": {
     "packages": [
       "plugins/*",
-      "packages/*"
+      "packages/*",
+      "libs/*"
     ]
   },
   "devDependencies": {

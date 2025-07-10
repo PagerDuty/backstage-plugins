@@ -26,7 +26,7 @@ import {
   Typography,
 } from '@material-ui/core';
 import { DateTime, Duration } from 'luxon';
-import { PagerDutyChangeEvent } from '@pagerduty/backstage-plugin-common';
+import { PagerDutyChangeEvent } from 'common';
 import OpenInBrowserIcon from '@material-ui/icons/OpenInBrowser';
 import LinkIcon from '@material-ui/icons/Link';
 import { BackstageTheme } from '@backstage/theme';

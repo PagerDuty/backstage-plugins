@@ -17,7 +17,7 @@
 import {
   PagerDutyAccountConfig,
   PagerDutyOAuthConfig,
-} from '@pagerduty/backstage-plugin-common';
+} from 'common';
 
 export interface Config {
   /**

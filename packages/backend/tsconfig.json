@@ -3,7 +3,7 @@
   "compilerOptions": {
     "paths": {
       "@backstage/plugin-search-backend-module-pg": ["../../node_modules/@backstage/plugin-search-backend-module-pg"],
-      "@pagerduty/backstage-plugin-common": ["../../plugins/backstage-plugin-common/dist"]
+      "common": ["../../libs/common/dist"]
     }
   }
 }
