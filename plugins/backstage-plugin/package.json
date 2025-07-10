@@ -75,6 +75,7 @@
     "@backstage/core-app-api": "^1.14.0",
     "@backstage/dev-utils": "^1.0.35",
     "@backstage/test-utils": "^1.5.8",
+    "@testing-library/jest-dom": "^6.6.3",
     "@types/copyfiles": "^2",
     "copyfiles": "^2.4.1"
   },

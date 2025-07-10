@@ -48,7 +48,8 @@
   },
   "devDependencies": {
     "@backstage/cli": "^0.33.0",
-    "@spotify/prettier-config": "^15.0.0"
+    "@spotify/prettier-config": "^15.0.0",
+    "jest-mock": "^30.0.2"
   },
   "prettier": "@spotify/prettier-config",
   "files": [

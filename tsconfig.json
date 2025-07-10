@@ -9,12 +9,17 @@
     "plugins/*/migrations"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "dist-types",
+    "**/*.d.ts"
   ],
   "compilerOptions": {
     "outDir": "dist-types",
     "rootDir": ".",
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    "declaration": true,
+    "declarationMap": true,
+    "emitDeclarationOnly": true
   },
   "ts-node": {
     "require": [
