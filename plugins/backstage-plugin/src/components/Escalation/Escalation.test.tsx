@@ -45,9 +45,10 @@ describe("Escalation", () => {
     );
     await waitFor(() => !queryByTestId("progress"));
 
-    expect(
-      getByText("No one is on-call. Update the escalation policy.")
-    ).toBeInTheDocument();
+    await waitFor(() => !queryByTestId("escalation-progress"));
+
+    expect(getByText("No one is on-call. Update the escalation policy."))
+      .toBeInTheDocument();
     expect(mockPagerDutyApi.getOnCallByPolicyId).toHaveBeenCalledWith(
       "456",
       undefined
