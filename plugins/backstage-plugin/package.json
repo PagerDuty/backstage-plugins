@@ -58,7 +58,7 @@
     "@mui/x-date-pickers": "^7.6.1",
     "@tanstack/react-query": "^5.40.1",
     "classnames": "^2.2.6",
-    "common": "workspace:*",
+    "common": "workspace:^",
     "luxon": "^3.4.1",
     "material-react-table": "^2.13.0",
     "react-use": "^17.2.4",
