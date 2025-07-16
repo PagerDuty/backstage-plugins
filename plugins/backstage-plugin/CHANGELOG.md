@@ -1,5 +1,11 @@
 # @backstage/plugin-pagerduty
 
+## 0.15.6
+
+### Patch Changes
+
+- f0c6c2d: Test the new release pipeline
+
 ## 0.6.2
 
 ### Patch Changes
