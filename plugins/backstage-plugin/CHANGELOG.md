@@ -1,5 +1,11 @@
 # @backstage/plugin-pagerduty
 
+## 0.15.6
+
+### Patch Changes
+
+- cd1056f: Test the new release pipeline
+
 ## 0.6.2
 
 ### Patch Changes
