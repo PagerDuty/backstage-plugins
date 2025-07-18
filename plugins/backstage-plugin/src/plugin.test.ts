@@ -17,6 +17,7 @@ import { pagerDutyPlugin } from './plugin';
 
 describe('pagerduty', () => {
   it('should export plugin', () => {
+    expect(true).toBe(true);
     expect(pagerDutyPlugin).toBeDefined();
   });
 });

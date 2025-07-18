@@ -95,9 +95,10 @@ describe("PagerDutySmallCard", () => {
     await waitFor(() => !queryByTestId("progress"));
     expect(getByText("Open service in PagerDuty")).toBeInTheDocument();
     expect(getByText("Create new incident")).toBeInTheDocument();
-    expect(
-      getByText("No one is on-call. Update the escalation policy.")
-    ).toBeInTheDocument();
+    await waitFor(() => !queryByTestId("escalation-progress"));
+
+    expect(getByText("No one is on-call. Update the escalation policy."))
+      .toBeInTheDocument();
   });
 
   it("Handles custom error for missing token", async () => {
@@ -190,9 +191,10 @@ describe("PagerDutySmallCard", () => {
       await waitFor(() => !queryByTestId("progress"));
       expect(getByText("Open service in PagerDuty")).toBeInTheDocument();
       expect(getByText("Create new incident")).toBeInTheDocument();
-      expect(
-        getByText("No one is on-call. Update the escalation policy.")
-      ).toBeInTheDocument();
+      await waitFor(() => !queryByTestId("escalation-progress"));
+
+      expect(getByText("No one is on-call. Update the escalation policy."))
+        .toBeInTheDocument();
     });
 
     it("Handles custom error for missing token", async () => {
@@ -298,9 +300,10 @@ describe("PagerDutySmallCard", () => {
       await waitFor(() => !queryByTestId("progress"));
       expect(getByText("Open service in PagerDuty")).toBeInTheDocument();
       expect(getByText("Create new incident")).toBeInTheDocument();
-      expect(
-        getByText("No one is on-call. Update the escalation policy.")
-      ).toBeInTheDocument();
+      await waitFor(() => !queryByTestId("escalation-progress"));
+
+      expect(getByText("No one is on-call. Update the escalation policy."))
+        .toBeInTheDocument();
     });
   });
 
@@ -324,9 +327,10 @@ describe("PagerDutySmallCard", () => {
       );
       await waitFor(() => !queryByTestId("progress"));
       expect(getByText("Open service in PagerDuty")).toBeInTheDocument();
-      expect(
-        getByText("No one is on-call. Update the escalation policy.")
-      ).toBeInTheDocument();
+      await waitFor(() => !queryByTestId("escalation-progress"));
+
+      expect(getByText("No one is on-call. Update the escalation policy."))
+        .toBeInTheDocument();
       expect(() => getByText("Create new incident")).toThrow();
     });
   });

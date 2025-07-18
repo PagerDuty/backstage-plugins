@@ -74,7 +74,7 @@ export const EscalationPolicy = ({
   }
 
   if (loading) {
-    return <Progress />;
+    return <Progress data-testid="escalation-progress" />;
   }
 
   if (!users?.length) {
