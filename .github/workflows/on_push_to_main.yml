@@ -38,6 +38,26 @@ jobs:
     runs-on: ubuntu-latest
     needs: update_release_draft
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          # Need full history for changesets
+          fetch-depth: 0
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Install yarn
+        run: corepack enable
+      
+      - name: Set yarn version to latest stable
+        run: corepack prepare yarn@stable --activate
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
       - name: Create Release Pull Request or Publish to npm
         id: changesets
         uses: changesets/action@v1
