@@ -2,8 +2,7 @@
   "extends": "@backstage/cli/config/tsconfig.json",
   "compilerOptions": {
     "paths": {
-      "@backstage/plugin-search-backend-module-pg": ["../../node_modules/@backstage/plugin-search-backend-module-pg"],
-      "common": ["../../libs/common/dist"]
+      "@backstage/plugin-search-backend-module-pg": ["../../node_modules/@backstage/plugin-search-backend-module-pg"]
     }
   }
 }

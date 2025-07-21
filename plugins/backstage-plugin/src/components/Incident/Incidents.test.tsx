@@ -18,7 +18,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { Incidents } from './Incidents';
 import { TestApiRegistry, wrapInTestApp } from '@backstage/test-utils';
 import { pagerDutyApiRef } from '../../api';
-import { PagerDutyIncident } from 'common';
+import { PagerDutyIncident } from '@pagerduty/backstage-plugin-common';
 import { ApiProvider } from '@backstage/core-app-api';
 
 const mockPagerDutyApi = {

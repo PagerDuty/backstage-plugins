@@ -23,7 +23,7 @@ import {
   PagerDutyService,
   PagerDutyServiceMetrics,
   PagerDutyServiceStandards,
-} from "common";
+} from "@pagerduty/backstage-plugin-common";
 
 import { alertApiRef } from "@backstage/core-plugin-api";
 import { ApiProvider } from "@backstage/core-app-api";

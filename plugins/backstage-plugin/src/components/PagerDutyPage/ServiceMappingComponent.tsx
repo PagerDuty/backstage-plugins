@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { PagerDutyEntityMapping } from "common";
+import { PagerDutyEntityMapping } from "@pagerduty/backstage-plugin-common";
 import { useApi } from "@backstage/core-plugin-api";
 import { pagerDutyApiRef } from "../../api";
 import { catalogApiRef } from "@backstage/plugin-catalog-react";

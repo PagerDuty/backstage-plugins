@@ -18,7 +18,7 @@ import {
   PagerDutyEntity,
   PagerDutyTriggerAlarmRequest,
 } from '../src';
-import { PagerDutyChangeEvent, PagerDutyIncident, PagerDutyUser } from 'common';
+import { PagerDutyChangeEvent, PagerDutyIncident, PagerDutyUser } from '@pagerduty/backstage-plugin-common';
 import { Entity } from '@backstage/catalog-model';
 import { v4 as uuidv4 } from 'uuid';
 

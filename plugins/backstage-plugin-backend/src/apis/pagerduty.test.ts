@@ -1,5 +1,5 @@
 /* eslint-disable jest/no-conditional-expect */
-import { HttpError, PagerDutyAccountConfig, PagerDutyChangeEvent, PagerDutyIncident, PagerDutyIncidentsResponse, PagerDutyService } from "common";
+import { HttpError, PagerDutyAccountConfig, PagerDutyChangeEvent, PagerDutyIncident, PagerDutyIncidentsResponse, PagerDutyService } from "@pagerduty/backstage-plugin-common";
 import { getAllEscalationPolicies, getAllServices, getChangeEvents, getIncidents, getOncallUsers, getServiceById, getServiceByIntegrationKey, getServiceMetrics, getServiceStandards, insertEndpointConfig, setFallbackEndpointConfig } from "./pagerduty";
 
 import { mocked } from "jest-mock";

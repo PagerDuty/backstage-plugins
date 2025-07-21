@@ -38,7 +38,7 @@ import {
     PagerDutyService,
     PagerDutyServiceDependency,
     PagerDutySetting
-} from 'common';
+} from '@pagerduty/backstage-plugin-common';
 import { loadAuthConfig } from '../auth/auth';
 import {
     PagerDutyBackendStore,

@@ -1,4 +1,4 @@
-import { PagerDutyEntityMapping, PagerDutySetting } from "common";
+import { PagerDutyEntityMapping, PagerDutySetting } from "@pagerduty/backstage-plugin-common";
 import { resolvePackagePath } from "@backstage/backend-plugin-api";
 import { Knex } from 'knex';
 import { v4 as uuid } from 'uuid';

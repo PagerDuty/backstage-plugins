@@ -4,7 +4,7 @@ import express from 'express';
 import request from 'supertest';
 
 import { createRouter, createComponentEntitiesReferenceDict, buildEntityMappingsResponse } from './router';
-import { PagerDutyEscalationPolicy, PagerDutyService, PagerDutyServiceResponse, PagerDutyOnCallUsersResponse, PagerDutyChangeEventsResponse, PagerDutyChangeEvent, PagerDutyIncidentsResponse, PagerDutyIncident, PagerDutyServiceStandardsResponse, PagerDutyServiceMetricsResponse, PagerDutyEntityMappingsResponse, PagerDutyServiceDependencyResponse } from 'common';
+import { PagerDutyEscalationPolicy, PagerDutyService, PagerDutyServiceResponse, PagerDutyOnCallUsersResponse, PagerDutyChangeEventsResponse, PagerDutyChangeEvent, PagerDutyIncidentsResponse, PagerDutyIncident, PagerDutyServiceStandardsResponse, PagerDutyServiceMetricsResponse, PagerDutyEntityMappingsResponse, PagerDutyServiceDependencyResponse } from '@pagerduty/backstage-plugin-common';
 
 import { mocked } from "jest-mock";
 import fetch, { Response } from "node-fetch";

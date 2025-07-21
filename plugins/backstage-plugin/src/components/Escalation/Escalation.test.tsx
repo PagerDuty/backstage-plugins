@@ -17,7 +17,7 @@
 import { render, waitFor } from "@testing-library/react";
 import { EscalationPolicy } from "./EscalationPolicy";
 import { TestApiRegistry, wrapInTestApp } from "@backstage/test-utils";
-import { PagerDutyUser } from "common";
+import { PagerDutyUser } from "@pagerduty/backstage-plugin-common";
 import { pagerDutyApiRef } from "../../api";
 import { ApiProvider } from "@backstage/core-app-api";
 

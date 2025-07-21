@@ -13,8 +13,7 @@
     "useUnknownInCatchVariables": false,
     "declaration": true,  
     "paths": {
-      "@pagerduty/backstage-plugin-backend": ["./dist"],
-      "common": ["../../libs/common/dist"]
+      "@pagerduty/backstage-plugin-backend": ["./dist"]
     }
   }
 }

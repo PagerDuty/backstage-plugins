@@ -24,7 +24,7 @@ import { PagerDutyChangeEventsResponse,
   PagerDutyServiceMetrics,
   PagerDutyEntityMappingsResponse,
   PagerDutySetting
- } from 'common';
+ } from '@pagerduty/backstage-plugin-common';
 import { DiscoveryApi, FetchApi } from '@backstage/core-plugin-api';
 import { Entity } from '@backstage/catalog-model';
 import { PagerDutyEntity } from '../types';

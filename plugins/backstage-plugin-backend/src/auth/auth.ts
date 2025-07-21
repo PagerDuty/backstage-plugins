@@ -1,5 +1,5 @@
 import { LoggerService, RootConfigService } from "@backstage/backend-plugin-api";
-import { HttpError, PagerDutyAccountConfig } from "common";
+import { HttpError, PagerDutyAccountConfig } from "@pagerduty/backstage-plugin-common";
 
 type AccountTokenInfo = {
     authToken: string;

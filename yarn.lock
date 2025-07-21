@@ -10075,9 +10075,9 @@ __metadata:
     "@backstage/plugin-catalog-node": "npm:^1.12.4"
     "@backstage/plugin-scaffolder-node": "npm:^0.4.8"
     "@material-ui/core": "npm:^4.12.4"
+    "@pagerduty/backstage-plugin-common": "workspace:~"
     "@rjsf/core": "npm:^5.14.3"
     "@types/express": "npm:^4.17.6"
-    common: "workspace:^"
     express: "npm:^4.20.0"
     express-promise-router: "npm:^4.1.0"
     jest-mock: "npm:^30.0.2"
@@ -10088,6 +10088,17 @@ __metadata:
     uuid: "npm:^9.0.1"
     winston: "npm:^3.2.1"
     yn: "npm:^4.0.0"
+  languageName: unknown
+  linkType: soft
+
+"@pagerduty/backstage-plugin-common@workspace:plugins/backstage-plugin-common, @pagerduty/backstage-plugin-common@workspace:~":
+  version: 0.0.0-use.local
+  resolution: "@pagerduty/backstage-plugin-common@workspace:plugins/backstage-plugin-common"
+  dependencies:
+    "@backstage/cli": "npm:^0.25.1"
+    "@commitlint/cli": "npm:^17.7.1"
+    "@commitlint/config-conventional": "npm:^17.7.0"
+    typescript: "npm:^5.3.3"
   languageName: unknown
   linkType: soft
 
@@ -10103,8 +10114,8 @@ __metadata:
     "@backstage/config": "npm:^1.2.0"
     "@backstage/plugin-catalog-common": "npm:^1.0.25"
     "@backstage/plugin-catalog-node": "npm:^1.12.4"
+    "@pagerduty/backstage-plugin-common": "workspace:~"
     "@rjsf/core": "npm:^5.14.3"
-    common: "workspace:^"
     node-fetch: "npm:^2.6.7"
     winston: "npm:^3.2.1"
     yn: "npm:^4.0.0"
@@ -10123,10 +10134,10 @@ __metadata:
     "@backstage/cli": "npm:^0.33.0"
     "@backstage/config": "npm:^1.2.0"
     "@backstage/plugin-scaffolder-node": "npm:^0.4.7"
+    "@pagerduty/backstage-plugin-common": "workspace:~"
     "@rjsf/core": "npm:^5.14.3"
     "@rjsf/utils": "npm:^5.19.3"
     "@spotify/prettier-config": "npm:^15.0.0"
-    common: "workspace:^"
     jest-mock: "npm:^30.0.2"
     node-fetch: "npm:^2.6.7"
     react: "npm:18.3.1"
@@ -10159,11 +10170,11 @@ __metadata:
     "@mui/icons-material": "npm:^5.15.19"
     "@mui/material": "npm:^5.15.19"
     "@mui/x-date-pickers": "npm:^7.6.1"
+    "@pagerduty/backstage-plugin-common": "workspace:~"
     "@tanstack/react-query": "npm:^5.40.1"
     "@testing-library/jest-dom": "npm:^6.6.3"
     "@types/copyfiles": "npm:^2"
     classnames: "npm:^2.2.6"
-    common: "workspace:^"
     copyfiles: "npm:^2.4.1"
     luxon: "npm:^3.4.1"
     material-react-table: "npm:^2.13.0"
@@ -19033,14 +19044,6 @@ __metadata:
   checksum: 10c0/23efe47ff0a1a7c91489271b3a1e1d2a171c12ec7f9b35b29b2fce51270124aff0ec890087e2bc2182c1cb746e232ab7561aaafe05f1e7452aea733d2bfe3f63
   languageName: node
   linkType: hard
-
-"common@workspace:^, common@workspace:libs/common":
-  version: 0.0.0-use.local
-  resolution: "common@workspace:libs/common"
-  dependencies:
-    typescript: "npm:~5.8.0"
-  languageName: unknown
-  linkType: soft
 
 "commondir@npm:^1.0.1":
   version: 1.0.1
