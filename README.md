@@ -40,7 +40,7 @@ Before starting the Backstage instance make sure you have the correct environmen
 ```shell
 export PAGERDUTY_CLIENT_ID=<your_oauth_2_client_id>
 export PAGERDUTY_CLIENT_SECRET=<your_oauth_2_client_secret>
-export PAGERDUTY_SUBDOMAIN=pdt-<your_pd_subdomain>
+export PAGERDUTY_SUBDOMAIN=<your_pd_subdomain>
 ```
 
 Also, you should update your `examples/entities.yaml` file to use your own service ID.
@@ -53,3 +53,7 @@ yarn start
 ## Contributing
 
 **TODO**: Please update this section correctly before we publicly announce this repository.
+
+## Publishing packages
+
+Check [Publishing](./docs/publishing.md) for informations about how to publish new plugin version.
