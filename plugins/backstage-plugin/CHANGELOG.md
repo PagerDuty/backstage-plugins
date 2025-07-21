@@ -1,5 +1,11 @@
 # @backstage/plugin-pagerduty
 
+## 0.15.7
+
+### Patch Changes
+
+- 60c1117: Release healthy versions
+
 ## 0.15.6
 
 ### Patch Changes
