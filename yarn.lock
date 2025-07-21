@@ -10163,7 +10163,7 @@ __metadata:
     "@testing-library/jest-dom": "npm:^6.6.3"
     "@types/copyfiles": "npm:^2"
     classnames: "npm:^2.2.6"
-    common: "workspace:^"
+    common: "file:./../../libs/common"
     copyfiles: "npm:^2.4.1"
     luxon: "npm:^3.4.1"
     material-react-table: "npm:^2.13.0"
@@ -19031,6 +19031,13 @@ __metadata:
   version: 1.8.2
   resolution: "common-tags@npm:1.8.2"
   checksum: 10c0/23efe47ff0a1a7c91489271b3a1e1d2a171c12ec7f9b35b29b2fce51270124aff0ec890087e2bc2182c1cb746e232ab7561aaafe05f1e7452aea733d2bfe3f63
+  languageName: node
+  linkType: hard
+
+"common@file:./../../libs/common::locator=%40pagerduty%2Fbackstage-plugin%40workspace%3Aplugins%2Fbackstage-plugin":
+  version: 0.2.3
+  resolution: "common@file:./../../libs/common#./../../libs/common::hash=b1cfa6&locator=%40pagerduty%2Fbackstage-plugin%40workspace%3Aplugins%2Fbackstage-plugin"
+  checksum: 10c0/14368246c04600d6a8c505ce12e9e17367b6fc3e30e873e89c1663f08742a968788a26aa13d7cbef0a73a4cbbbbae55ab5c606667b3d510f78006e529934af3b
   languageName: node
   linkType: hard
 
