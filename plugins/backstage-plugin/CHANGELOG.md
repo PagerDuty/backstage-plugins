@@ -1,5 +1,11 @@
 # @backstage/plugin-pagerduty
 
+## 0.15.8
+
+### Patch Changes
+
+- 44ea32e: Release new patch version to use new release pipeline
+
 ## 0.15.7
 
 ### Patch Changes

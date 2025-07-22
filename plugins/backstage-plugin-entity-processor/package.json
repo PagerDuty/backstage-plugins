@@ -1,6 +1,6 @@
 {
   "name": "@pagerduty/backstage-plugin-entity-processor",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "main": "dist/index.cjs.js",
   "types": "dist/index.d.ts",
   "license": "Apache-2.0",
