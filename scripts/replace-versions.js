@@ -38,6 +38,13 @@ if (isRollback) {
   var matches = /^workspace:(\^|\~|)$/.exec(workspaceProtocol)
 
   if (matches === null) {
+    matches = /^(\^|\~|)\d*\.\d*\.\d*$/.exec(workspaceProtocol)
+
+    if (matches !== null) {
+      console.warn(`Expected '@pagerduty/backstage-plugin-common' already has a version. No need to replace it.`)
+      exit(0)
+    }
+
     console.error(`\x1b[35mError: Expected '@pagerduty/backstage-plugin-common' to be a workspace protocol, but got '${workspaceProtocol}'\x1b[0m`)
     exit(1)
   }
