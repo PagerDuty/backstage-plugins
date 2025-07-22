@@ -23,7 +23,7 @@ Provides plugin-shared TS types.
 
 ## Setting up the project
 
-Check [Setting Up](./docs/setting-up.md) for informations about how to set up the project.
+Check [Setting Up](./docs/setting-up.md) for information about how to set up the project.
 
 ## Contributing
 
