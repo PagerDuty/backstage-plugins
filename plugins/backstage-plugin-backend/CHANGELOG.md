@@ -1,5 +1,11 @@
 # @pagerduty/backstage-plugin-backend
 
+## 0.9.9
+
+### Patch Changes
+
+- 44ea32e: Release new patch version to use new release pipeline
+
 ## 0.9.8
 
 ### Patch Changes
