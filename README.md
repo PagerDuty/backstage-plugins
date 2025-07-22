@@ -18,37 +18,12 @@ The PagerDuty Entity Processor package allows users to map their existing PagerD
 #### `backstage-plugin-scaffolder-actions`
 The PagerDuty Scaffolder Actions package allows users to create services in PagerDuty directly from their Software Templates in a single step by leveraging the pagerduty:service:create custom action.
 
-### Libs
-
-#### `common`
-Contains plugin-shared TS types.
+#### `backstage-plugin-common`
+Provides plugin-shared TS types.
 
 ## Setting up the project
 
-Install all the dependencies.
-```shell
-yarn install
-```
-
-Build the entire plugin ecosystem.
-```shell
-yarn build
-```
-
-Before starting the Backstage instance make sure you have the correct environment variables set for testing.
-
-```shell
-export PAGERDUTY_CLIENT_ID=<your_oauth_2_client_id>
-export PAGERDUTY_CLIENT_SECRET=<your_oauth_2_client_secret>
-export PAGERDUTY_SUBDOMAIN=<your_pd_subdomain>
-```
-
-Also, you should update your `examples/entities.yaml` file to use your own service ID.
-
-Then, run the backstage instance.
-```shell
-yarn start
-```
+Check [Setting Up](./docs/setting-up.md) for informations about how to set up the project.
 
 ## Contributing
 
