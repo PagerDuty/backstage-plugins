@@ -8,7 +8,7 @@
   "scripts": {
     "start": "backstage-cli repo start",
     "build:backend": "yarn workspace backend build",
-    "build": "yarn tsc:plugins && yarn build:plugins && yarn tsc && yarn workspaces foreach --all --topological-dev run build",
+    "build": "yarn tsc:plugins && yarn build:plugins && yarn tsc",
     "build:plugins": "yarn workspace @pagerduty/backstage-plugin-common build && yarn workspace @pagerduty/backstage-plugin build && yarn workspace @pagerduty/backstage-plugin-backend build && yarn workspace @pagerduty/backstage-plugin-entity-processor build && yarn workspace @pagerduty/backstage-plugin-scaffolder-actions build",
     "build:backstage": "backstage-cli repo build --all",
     "build-image": "yarn workspace backend build-image",

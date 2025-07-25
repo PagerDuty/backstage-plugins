@@ -27,9 +27,10 @@ yarn start
 
 ## Running single plugins
 
-If instead of running the entire project you just want to run a specific plugin you can simply run it inside its local folder (`/plugins/<name-of-the-plugin>`):
-```shell
-yarn start
+If instead of running the entire project you just want to run a specific plugin you can simply run:
+
+```
+yarn --cwd plugins/<name-of-the-plugin> start
 ```
 
 This will provide you hot reload, which makes developing more comfortable.
