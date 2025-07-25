@@ -1,5 +1,11 @@
 # @pagerduty/backstage-plugin-backend
 
+## 0.9.10
+
+### Patch Changes
+
+- 987dda8: Release package with correct type definition
+
 ## 0.9.9
 
 ### Patch Changes
