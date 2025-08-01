@@ -50,7 +50,7 @@ Do your thing but please make sure you follow the rules:
 * Try to maintain a single feature/bugfix per pull request. It's okay to introduce a little bit of housekeeping changes along the way, but try to avoid conflating multiple features. Eventually, all these are going to go into a single commit, so you can use that to frame your scope.
 * Add **unit tests** that test your changes when applicable. This is especially important for new features and bug fixes, as it helps you to make sure that your changes are working as intended.
 * Lint and test the code. Pull request builds will run the same checks as well.
-* Follow conventional commits gudelines.
+* Follow conventional commits guidelines.
 
     >**Note:** Maintainers use a [Visual Studio Code extension](https://marketplace.visualstudio.com/items?itemName=vivaxy.vscode-conventional-commits) to simplify the enforcement of [conventional commits](https://www.conventionalcommits.org).
     >
