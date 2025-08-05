@@ -35,7 +35,9 @@ export type EntityPagerDutySmallCardProps = {
 };
 
 /** @public */
-export const EntityPagerDutySmallCard = (props: EntityPagerDutySmallCardProps) => {
+export const EntityPagerDutySmallCard = (
+  props: EntityPagerDutySmallCardProps,
+) => {
   const { readOnly, disableInsights, disableOnCall } = props;
   const { entity } = useEntity();
   const pagerDutyEntity = getPagerDutyEntity(entity);

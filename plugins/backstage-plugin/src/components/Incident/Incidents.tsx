@@ -39,7 +39,7 @@ export const Incidents = ({ serviceId, account, refreshIncidents }: Props) => {
     async () => {
       const { incidents: foundIncidents } = await api.getIncidentsByServiceId(
         serviceId,
-        account
+        account,
       );
       return foundIncidents;
     },

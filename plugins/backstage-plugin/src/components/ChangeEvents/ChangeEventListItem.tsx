@@ -31,27 +31,27 @@ import OpenInBrowserIcon from '@material-ui/icons/OpenInBrowser';
 import LinkIcon from '@material-ui/icons/Link';
 import { BackstageTheme } from '@backstage/theme';
 
-const useStyles = makeStyles<BackstageTheme>((theme) => ({
+const useStyles = makeStyles<BackstageTheme>(theme => ({
   denseListIcon: {
     marginRight: 0,
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   listItemPrimary: {
-    fontWeight: "bold",
+    fontWeight: 'bold',
   },
   smallExternalLinkIconStyle: {
     color: theme.palette.text.primary,
   },
   smallExternalLinkWithoutMarginIconStyle: {
     color: theme.palette.text.primary,
-    marginRight: "-20px",
+    marginRight: '-20px',
   },
   smallIconStyle: {
     color: theme.palette.text.primary,
-    marginRight: "-20px",
+    marginRight: '-20px',
   },
 }));
 
@@ -66,7 +66,7 @@ export const ChangeEventListItem = ({ changeEvent }: Props) => {
   const changedAt = DateTime.local()
     .minus(Duration.fromMillis(duration))
     .toRelative({ locale: 'en' });
-  
+
   let externalLinkElem: JSX.Element | undefined;
   if (changeEvent.links.length > 0) {
     const text: string = changeEvent.links[0].text;

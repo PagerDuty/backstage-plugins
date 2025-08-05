@@ -43,23 +43,25 @@ describe('Incidents', () => {
     expect(screen.getByText('Nice! No incidents found!')).toBeInTheDocument();
   });
 
-  it("Renders a forbidden state when incidents is undefined", async () => {
+  it('Renders a forbidden state when incidents is undefined', async () => {
     mockPagerDutyApi.getIncidentsByServiceId = jest
       .fn()
       .mockImplementationOnce(async () => {
-        throw new Error("Forbidden: You are not allowed to perform this action");
+        throw new Error(
+          'Forbidden: You are not allowed to perform this action',
+        );
       });
 
     const { getByText, queryByTestId } = render(
       wrapInTestApp(
         <ApiProvider apis={apis}>
           <Incidents serviceId="abc" refreshIncidents={false} />
-        </ApiProvider>
-      )
+        </ApiProvider>,
+      ),
     );
-    await waitFor(() => !queryByTestId("progress"));
+    await waitFor(() => !queryByTestId('progress'));
     expect(
-      getByText("Feature not available with your account or token.")
+      getByText('Feature not available with your account or token.'),
     ).toBeInTheDocument();
   });
 
@@ -92,7 +94,7 @@ describe('Incidents', () => {
                 summary: 'ep1',
                 html_url: 'http://a.com/ep1',
               },
-            }
+            },
           },
           {
             id: 'id2',

@@ -1,557 +1,643 @@
 import fetch from 'node-fetch';
-import type {
-    RequestInit,
-    Response
-} from 'node-fetch';
+import type { RequestInit, Response } from 'node-fetch';
 import type { EntityMapping } from '../types';
+import { DiscoveryService, LoggerService } from '@backstage/backend-plugin-api';
 import {
-    DiscoveryService,
-    LoggerService
-} from '@backstage/backend-plugin-api';
-import {
-    PagerDutyEntityMapping,
-    PagerDutyEntityMappingResponse,
-    PagerDutyServiceResponse,
-    PagerDutyServiceDependency,
-    PagerDutyServiceDependencyResponse,
-    PagerDutySetting,
-    PagerDutyEntityMappingsResponse,
+  PagerDutyEntityMapping,
+  PagerDutyEntityMappingResponse,
+  PagerDutyServiceResponse,
+  PagerDutyServiceDependency,
+  PagerDutyServiceDependencyResponse,
+  PagerDutySetting,
+  PagerDutyEntityMappingsResponse,
 } from '@pagerduty/backstage-plugin-common';
 
 export interface PagerDutyClientOptions {
-    discovery: DiscoveryService;
-    logger: LoggerService;
-};
+  discovery: DiscoveryService;
+  logger: LoggerService;
+}
 
 export type BackstageEntityRef = {
-    type: string;
-    namespace: string;
-    name: string;
-}
+  type: string;
+  namespace: string;
+  name: string;
+};
 
 export class PagerDutyClient {
-    private discovery: DiscoveryService;
-    private logger: LoggerService;
-    private baseUrl: string = "";
+  private discovery: DiscoveryService;
+  private logger: LoggerService;
+  private baseUrl: string = '';
 
-    constructor({ discovery, logger }: PagerDutyClientOptions) {
-        this.discovery = discovery;
-        this.logger = logger;
+  constructor({ discovery, logger }: PagerDutyClientOptions) {
+    this.discovery = discovery;
+    this.logger = logger;
+  }
+
+  async addServiceRelationToService(
+    serviceId: string,
+    relations: string[],
+  ): Promise<void> {
+    let response: Response;
+
+    if (this.baseUrl === '') {
+      this.baseUrl = await this.discovery.getBaseUrl('pagerduty');
     }
 
-    async addServiceRelationToService(serviceId: string, relations: string[]) : Promise<void> {
-        let response: Response;
+    const options: RequestInit = {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json; charset=UTF-8',
+        Accept: 'application/json, text/plain, */*',
+      },
+      body: JSON.stringify(relations),
+    };
 
-        if (this.baseUrl === "") {
-            this.baseUrl = await this.discovery.getBaseUrl('pagerduty');
-        }
+    const url = `${await this.discovery.getBaseUrl(
+      'pagerduty',
+    )}/dependencies/service/${serviceId}`;
 
-        const options: RequestInit = {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json; charset=UTF-8',
-                Accept: 'application/json, text/plain, */*',
-            },
-            body: JSON.stringify(relations),
-        };
+    try {
+      response = await fetchWithRetries(url, options);
 
-        const url = `${await this.discovery.getBaseUrl(
-            'pagerduty',
-        )}/dependencies/service/${serviceId}`;
+      if (response.status >= 500) {
+        throw new Error(
+          `Failed to add service relation to service ${serviceId}. PagerDuty API returned a server error. Retrying with the same arguments will not work.`,
+        );
+      }
 
-        try {
-            response = await fetchWithRetries(url, options);
+      if (!response.ok) {
+        throw new Error(await response.text());
+      }
+    } catch (error) {
+      this.logger.error(`Failed to add dependencies: ${error}`);
+      throw new Error(`Failed to add dependencies: ${error}`);
+    }
+  }
 
-            if (response.status >= 500) {
-                throw new Error(`Failed to add service relation to service ${serviceId}. PagerDuty API returned a server error. Retrying with the same arguments will not work.`);
-            }
+  async removeServiceRelationFromService(
+    serviceId: string,
+    relations: string[],
+  ): Promise<void> {
+    let response: Response;
 
-            if (!response.ok) {
-                throw new Error(await response.text());
-            }
-        } catch (error) {
-            this.logger.error(`Failed to add dependencies: ${error}`);
-            throw new Error(`Failed to add dependencies: ${error}`);
-        }
+    if (this.baseUrl === '') {
+      this.baseUrl = await this.discovery.getBaseUrl('pagerduty');
     }
 
-    async removeServiceRelationFromService(serviceId: string, relations: string[]): Promise<void> {
-        let response: Response;
+    const options: RequestInit = {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json; charset=UTF-8',
+        Accept: 'application/json, text/plain, */*',
+      },
+      body: JSON.stringify(relations),
+    };
 
-        if (this.baseUrl === "") {
-            this.baseUrl = await this.discovery.getBaseUrl('pagerduty');
-        }
+    const url = `${await this.discovery.getBaseUrl(
+      'pagerduty',
+    )}/dependencies/service/${serviceId}`;
 
-        const options: RequestInit = {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json; charset=UTF-8',
-                Accept: 'application/json, text/plain, */*',
-            },
-            body: JSON.stringify(relations),
-        };
+    try {
+      response = await fetchWithRetries(url, options);
 
-        const url = `${await this.discovery.getBaseUrl(
-            'pagerduty',
-        )}/dependencies/service/${serviceId}`;
+      if (response.status >= 500) {
+        throw new Error(
+          `Failed to remove service relation from service ${serviceId}. PagerDuty API returned a server error. Retrying with the same arguments will not work.`,
+        );
+      }
 
-        try {
-            response = await fetchWithRetries(url, options);
+      if (response.status === 404) {
+        throw new Error(`Service ${serviceId} or dependencies not found.`);
+      }
 
-            if (response.status >= 500) {
-                throw new Error(`Failed to remove service relation from service ${serviceId}. PagerDuty API returned a server error. Retrying with the same arguments will not work.`);
-            }
+      if (!response.ok) {
+        throw new Error(await response.text());
+      }
+    } catch (error) {
+      this.logger.error(
+        `Failed to remove dependencies from ${serviceId}: ${error}`,
+      );
+      throw new Error(
+        `Failed to remove dependencies from ${serviceId}: ${error}`,
+      );
+    }
+  }
 
-            if (response.status === 404) {
-                throw new Error(`Service ${serviceId} or dependencies not found.`);
-            }
+  async getAllServiceMappings(): Promise<Record<string, string>> {
+    let response: Response;
+    const mappings: Record<string, string> = {};
 
-            if (!response.ok) {
-                throw new Error(await response.text());
-            }
-        } catch (error) {
-            this.logger.error(`Failed to remove dependencies from ${serviceId}: ${error}`);
-            throw new Error(`Failed to remove dependencies from ${serviceId}: ${error}`);
-        }
+    if (this.baseUrl === '') {
+      this.baseUrl = await this.discovery.getBaseUrl('pagerduty');
     }
 
-    async getAllServiceMappings(): Promise<Record<string, string>> {
-        let response: Response;
-        const mappings: Record<string, string> = {};
+    const options: RequestInit = {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json; charset=UTF-8',
+        Accept: 'application/json, text/plain, */*',
+      },
+    };
 
-        if (this.baseUrl === "") {
-            this.baseUrl = await this.discovery.getBaseUrl('pagerduty');
-        }
+    const url = `${await this.discovery.getBaseUrl(
+      'pagerduty',
+    )}/mapping/entity`;
 
-        const options: RequestInit = {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json; charset=UTF-8',
-                Accept: 'application/json, text/plain, */*',
-            },
-        };
+    try {
+      response = await fetchWithRetries(url, options);
 
-        const url = `${await this.discovery.getBaseUrl(
-            'pagerduty',
-        )}/mapping/entity`;
+      if (response.status >= 500) {
+        throw new Error(
+          `Failed to get all service mappings. API returned a server error. Retrying with the same arguments will not work.`,
+        );
+      }
 
-        try {
-            response = await fetchWithRetries(url, options);
+      const foundMappings: PagerDutyEntityMappingsResponse =
+        await response.json();
 
-            if (response.status >= 500) {
-                throw new Error(`Failed to get all service mappings. API returned a server error. Retrying with the same arguments will not work.`);
-            }
+      switch (response.status) {
+        case 400:
+          throw new Error(await response.text());
+        case 404:
+          return mappings;
+        default: // 200
+          foundMappings.mappings.forEach(mapping => {
+            mappings[mapping.serviceId] = mapping.entityRef;
+          });
 
-            const foundMappings: PagerDutyEntityMappingsResponse = await response.json();
+          return mappings;
+      }
+    } catch (error) {
+      this.logger.error(`Failed to retrieve mappings: ${error}`);
+      throw new Error(`Failed to retrieve mappings: ${error}`);
+    }
+  }
 
-            switch (response.status) {
-                case 400:
-                    throw new Error(await response.text());
-                case 404:
-                    return mappings;
-                default: // 200
-                    foundMappings.mappings.forEach(mapping => {
-                        mappings[mapping.serviceId] = mapping.entityRef;
-                    });
+  async findServiceMapping({
+    type,
+    namespace,
+    name,
+  }: BackstageEntityRef): Promise<EntityMapping | undefined> {
+    let response: Response;
 
-                    return mappings;
-            }
-        } catch (error) {
-            this.logger.error(`Failed to retrieve mappings: ${error}`);
-            throw new Error(`Failed to retrieve mappings: ${error}`);
-        }
+    if (this.baseUrl === '') {
+      this.baseUrl = await this.discovery.getBaseUrl('pagerduty');
     }
 
-    async findServiceMapping({ type, namespace, name }: BackstageEntityRef): Promise<EntityMapping | undefined> {
-        let response: Response;
+    const options: RequestInit = {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json; charset=UTF-8',
+        Accept: 'application/json, text/plain, */*',
+      },
+    };
 
-        if (this.baseUrl === "") {
-            this.baseUrl = await this.discovery.getBaseUrl('pagerduty');
-        }
+    const url = `${await this.discovery.getBaseUrl(
+      'pagerduty',
+    )}/mapping/entity/${type}/${namespace}/${name}`;
 
-        const options: RequestInit = {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json; charset=UTF-8',
-                Accept: 'application/json, text/plain, */*',
-            },
-        };
+    try {
+      response = await fetchWithRetries(url, options);
 
-        const url = `${await this.discovery.getBaseUrl(
-            'pagerduty',
-        )}/mapping/entity/${type}/${namespace}/${name}`;
+      if (response.status >= 500) {
+        throw new Error(
+          `Failed to find service mapping. API returned a server error. Retrying with the same arguments will not work.`,
+        );
+      }
 
-        try {
-            response = await fetchWithRetries(url, options);
+      const foundMapping: PagerDutyEntityMappingResponse =
+        await response.json();
 
-            if (response.status >= 500) {
-                throw new Error(`Failed to find service mapping. API returned a server error. Retrying with the same arguments will not work.`);
-            }
+      switch (response.status) {
+        case 400:
+          throw new Error(await response.text());
+        case 404:
+          return undefined;
+        default: // 200
+          this.logger.debug(
+            `Found mapping for ${type}:${namespace}/${name}: ${JSON.stringify(
+              foundMapping.mapping,
+            )}`,
+          );
 
-            const foundMapping: PagerDutyEntityMappingResponse = await response.json();
+          return {
+            serviceId: foundMapping.mapping.serviceId,
+            integrationKey: foundMapping.mapping.integrationKey,
+            entityRef: foundMapping.mapping.entityRef,
+            account: foundMapping.mapping.account,
+          };
+      }
+    } catch (error) {
+      this.logger.error(
+        `Failed to retrieve mapping for ${type}:${namespace}/${name}: ${error}`,
+      );
+      throw new Error(
+        `Failed to retrieve mapping for ${type}:${namespace}/${name}: ${error}`,
+      );
+    }
+  }
 
-            switch (response.status) {
-                case 400:
-                    throw new Error(await response.text());
-                case 404:
-                    return undefined;
-                default: // 200
-                    this.logger.debug(`Found mapping for ${type}:${namespace}/${name}: ${JSON.stringify(foundMapping.mapping)}`);
+  async findServiceMappingById(
+    serviceId: string,
+  ): Promise<EntityMapping | undefined> {
+    let response: Response;
 
-                    return {
-                        serviceId: foundMapping.mapping.serviceId,
-                        integrationKey: foundMapping.mapping.integrationKey,
-                        entityRef: foundMapping.mapping.entityRef,
-                        account: foundMapping.mapping.account,
-                    }
-            }
-        } catch (error) {
-            this.logger.error(`Failed to retrieve mapping for ${type}:${namespace}/${name}: ${error}`);
-            throw new Error(`Failed to retrieve mapping for ${type}:${namespace}/${name}: ${error}`);
-        }
+    if (this.baseUrl === '') {
+      this.baseUrl = await this.discovery.getBaseUrl('pagerduty');
     }
 
-    async findServiceMappingById(serviceId: string): Promise<EntityMapping | undefined> {
-        let response: Response;
+    const options: RequestInit = {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json; charset=UTF-8',
+        Accept: 'application/json, text/plain, */*',
+      },
+    };
 
-        if (this.baseUrl === "") {
-            this.baseUrl = await this.discovery.getBaseUrl('pagerduty');
-        }
+    const url = `${await this.discovery.getBaseUrl(
+      'pagerduty',
+    )}/mapping/entity/service/${serviceId}`;
 
-        const options: RequestInit = {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json; charset=UTF-8',
-                Accept: 'application/json, text/plain, */*',
-            },
-        };
+    try {
+      response = await fetchWithRetries(url, options);
 
-        const url = `${await this.discovery.getBaseUrl(
-            'pagerduty',
-        )}/mapping/entity/service/${serviceId}`;
+      if (response.status >= 500) {
+        throw new Error(
+          `Failed to find service mapping by id. API returned a server error. Retrying with the same arguments will not work.`,
+        );
+      }
 
-        try {
-            response = await fetchWithRetries(url, options);
+      const foundMapping: PagerDutyEntityMappingResponse =
+        await response.json();
 
-            if (response.status >= 500) {
-                throw new Error(`Failed to find service mapping by id. API returned a server error. Retrying with the same arguments will not work.`);
-            }
+      switch (response.status) {
+        case 400:
+          throw new Error(await response.text());
+        case 404:
+          return undefined;
+        default: // 200
+          this.logger.debug(
+            `Found mapping for serviceId ${serviceId}: ${JSON.stringify(
+              foundMapping.mapping,
+            )}`,
+          );
 
-            const foundMapping: PagerDutyEntityMappingResponse = await response.json();
+          return {
+            serviceId: foundMapping.mapping.serviceId,
+            integrationKey: foundMapping.mapping.integrationKey,
+            entityRef: foundMapping.mapping.entityRef,
+            account: foundMapping.mapping.account,
+          };
+      }
+    } catch (error) {
+      this.logger.error(
+        `Failed to retrieve mapping for serviceId ${serviceId}: ${error}`,
+      );
+      throw new Error(
+        `Failed to retrieve mapping for serviceId ${serviceId}: ${error}`,
+      );
+    }
+  }
 
-            switch (response.status) {
-                case 400:
-                    throw new Error(await response.text());
-                case 404:
-                    return undefined;
-                default: // 200
-                    this.logger.debug(`Found mapping for serviceId ${serviceId}: ${JSON.stringify(foundMapping.mapping)}`);
+  async insertServiceMapping(mapping: PagerDutyEntityMapping): Promise<void> {
+    let response: Response;
 
-                    return {
-                        serviceId: foundMapping.mapping.serviceId,
-                        integrationKey: foundMapping.mapping.integrationKey,
-                        entityRef: foundMapping.mapping.entityRef,
-                        account: foundMapping.mapping.account,
-                    };
-            }
-        } catch (error) {
-            this.logger.error(`Failed to retrieve mapping for serviceId ${serviceId}: ${error}`);
-            throw new Error(`Failed to retrieve mapping for serviceId ${serviceId}: ${error}`);
-        }
+    if (this.baseUrl === '') {
+      this.baseUrl = await this.discovery.getBaseUrl('pagerduty');
     }
 
-    async insertServiceMapping(mapping: PagerDutyEntityMapping): Promise<void> {
-        let response: Response;
+    const options: RequestInit = {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json; charset=UTF-8',
+        Accept: 'application/json, text/plain, */*',
+      },
+      body: JSON.stringify(mapping),
+    };
 
-        if (this.baseUrl === "") {
-            this.baseUrl = await this.discovery.getBaseUrl('pagerduty');
-        }
+    const url = `${await this.discovery.getBaseUrl(
+      'pagerduty',
+    )}/mapping/entity`;
 
-        const options: RequestInit = {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json; charset=UTF-8',
-                Accept: 'application/json, text/plain, */*',
-            },
-            body: JSON.stringify(mapping),
-        };
+    try {
+      response = await fetchWithRetries(url, options);
 
-        const url = `${await this.discovery.getBaseUrl(
-            'pagerduty',
-        )}/mapping/entity`;
+      if (response.status >= 500) {
+        throw new Error(
+          `Failed to add service mapping. API returned a server error. Retrying with the same arguments will not work.`,
+        );
+      }
 
-        try {
-            response = await fetchWithRetries(url, options);
+      if (!response.ok) {
+        throw new Error(await response.text());
+      }
+    } catch (error) {
+      this.logger.error(
+        `Failed to add mapping for ${mapping.entityRef}: ${error}`,
+      );
+      throw new Error(
+        `Failed to add mapping for ${mapping.entityRef}: ${error}`,
+      );
+    }
+  }
 
-            if (response.status >= 500) {
-                throw new Error(`Failed to add service mapping. API returned a server error. Retrying with the same arguments will not work.`);
-            }
+  async getServiceDependencies(
+    serviceId: string,
+    account?: string,
+  ): Promise<PagerDutyServiceDependency[]> {
+    let response: Response;
 
-            if (!response.ok) {
-                throw new Error(await response.text());
-            }
-        } catch (error) {
-            this.logger.error(`Failed to add mapping for ${mapping.entityRef}: ${error}`);
-            throw new Error(`Failed to add mapping for ${mapping.entityRef}: ${error}`);
-        }
+    if (this.baseUrl === '') {
+      this.baseUrl = await this.discovery.getBaseUrl('pagerduty');
     }
 
-    async getServiceDependencies(serviceId: string, account?: string): Promise<PagerDutyServiceDependency[]> {
-        let response: Response;
+    const options: RequestInit = {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json; charset=UTF-8',
+        Accept: 'application/json, text/plain, */*',
+      },
+    };
 
-        if (this.baseUrl === "") {
-            this.baseUrl = await this.discovery.getBaseUrl('pagerduty');
-        }
+    let url = `${await this.discovery.getBaseUrl(
+      'pagerduty',
+    )}/dependencies/service/${serviceId}`;
 
-        const options: RequestInit = {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json; charset=UTF-8',
-                Accept: 'application/json, text/plain, */*',
-            },
-        };
-
-        let url = `${await this.discovery.getBaseUrl(
-            'pagerduty',
-        )}/dependencies/service/${serviceId}`;
-
-        if (account) {
-            url = url.concat(`?account=${account}`);
-        }
-
-        try {
-            response = await fetchWithRetries(url, options);
-
-            if (response.status >= 500) {
-                throw new Error(`Failed to get service depedencies. PagerDuty API returned a server error. Retrying with the same arguments will not work.`);
-            }
-
-            const foundDependencies: PagerDutyServiceDependencyResponse = await response.json();
-
-            switch (response.status) {
-                case 400:
-                    throw new Error(await response.text());
-                case 404:
-                    return [];
-                default: // 200
-                    return foundDependencies.relationships;
-            }
-        } catch (error) {
-            this.logger.error(`Failed to retrieve mapping for ${serviceId}: ${error}`);
-            throw new Error(`Failed to retrieve mapping for ${serviceId}: ${error}`);
-        }
+    if (account) {
+      url = url.concat(`?account=${account}`);
     }
 
-    async getServiceIdAnnotationFromCatalog(entityRef: string): Promise<string> {
-        let response: Response;
+    try {
+      response = await fetchWithRetries(url, options);
 
-        if (this.baseUrl === "") {
-            this.baseUrl = await this.discovery.getBaseUrl('pagerduty');
-        }
+      if (response.status >= 500) {
+        throw new Error(
+          `Failed to get service depedencies. PagerDuty API returned a server error. Retrying with the same arguments will not work.`,
+        );
+      }
 
-        const options: RequestInit = {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json; charset=UTF-8',
-                Accept: 'application/json, text/plain, */*',
-            },
-        };
+      const foundDependencies: PagerDutyServiceDependencyResponse =
+        await response.json();
 
-        // extract type, namespace and name from type:namespace/name
-        const [type, rest] = entityRef.split(':');
-        const [namespace, name] = rest.split('/');
+      switch (response.status) {
+        case 400:
+          throw new Error(await response.text());
+        case 404:
+          return [];
+        default: // 200
+          return foundDependencies.relationships;
+      }
+    } catch (error) {
+      this.logger.error(
+        `Failed to retrieve mapping for ${serviceId}: ${error}`,
+      );
+      throw new Error(`Failed to retrieve mapping for ${serviceId}: ${error}`);
+    }
+  }
 
-        const url = `${await this.discovery.getBaseUrl(
-            'pagerduty',
-        )}/catalog/entity/${type}/${namespace}/${name}`;
+  async getServiceIdAnnotationFromCatalog(entityRef: string): Promise<string> {
+    let response: Response;
 
-        try {
-            response = await fetchWithRetries(url, options);
-
-            if (response.status >= 500) {
-                throw new Error(`Failed to get service id annotation from catalog. API returned a server error. Retrying with the same arguments will not work.`);
-            }
-
-            const foundServiceId: string = await response.json();
-
-            switch (response.status) {
-                case 400:
-                    throw new Error(await response.text());
-                case 404:
-                    return "";
-                default: // 200
-                    return foundServiceId;
-            }
-        } catch (error) {
-            this.logger.error(`Failed to retrieve a PagerDuty service id for ${entityRef}: ${error}`);
-            throw new Error(`Failed to retrieve a PagerDuty service id for ${entityRef}: ${error}`);
-        }
+    if (this.baseUrl === '') {
+      this.baseUrl = await this.discovery.getBaseUrl('pagerduty');
     }
 
-    async getServiceIdFromIntegrationKey(integrationKey: string, account?: string): Promise<string> {
-        let response: Response;
+    const options: RequestInit = {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json; charset=UTF-8',
+        Accept: 'application/json, text/plain, */*',
+      },
+    };
 
-        if (this.baseUrl === "") {
-            this.baseUrl = await this.discovery.getBaseUrl('pagerduty');
-        }
+    // extract type, namespace and name from type:namespace/name
+    const [type, rest] = entityRef.split(':');
+    const [namespace, name] = rest.split('/');
 
-        const options: RequestInit = {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json; charset=UTF-8',
-                Accept: 'application/json, text/plain, */*',
-            },
-        };
+    const url = `${await this.discovery.getBaseUrl(
+      'pagerduty',
+    )}/catalog/entity/${type}/${namespace}/${name}`;
 
-        let url = `${await this.discovery.getBaseUrl(
-            'pagerduty',
-        )}/services?integration_key=${integrationKey}`;
+    try {
+      response = await fetchWithRetries(url, options);
 
-        if (account) {
-            url = url.concat(`&account=${account}`);
-        }
+      if (response.status >= 500) {
+        throw new Error(
+          `Failed to get service id annotation from catalog. API returned a server error. Retrying with the same arguments will not work.`,
+        );
+      }
 
-        try {
-            response = await fetchWithRetries(url, options);
+      const foundServiceId: string = await response.json();
 
-            if (response.status >= 500) {
-                throw new Error(`Failed to get service id from integration key ${integrationKey}. PagerDuty API returned a server error. Retrying with the same arguments will not work.`);
-            }
+      switch (response.status) {
+        case 400:
+          throw new Error(await response.text());
+        case 404:
+          return '';
+        default: // 200
+          return foundServiceId;
+      }
+    } catch (error) {
+      this.logger.error(
+        `Failed to retrieve a PagerDuty service id for ${entityRef}: ${error}`,
+      );
+      throw new Error(
+        `Failed to retrieve a PagerDuty service id for ${entityRef}: ${error}`,
+      );
+    }
+  }
 
-            const foundService: PagerDutyServiceResponse = await response.json();
+  async getServiceIdFromIntegrationKey(
+    integrationKey: string,
+    account?: string,
+  ): Promise<string> {
+    let response: Response;
 
-            switch (response.status) {
-                case 400:
-                    throw new Error(await response.text());
-                case 404:
-                    return "";
-                default: // 200
-                    return foundService.service.id;
-            }
-        } catch (error) {
-            this.logger.error(`Failed to retrieve a PagerDuty service id for integration key ${integrationKey}: ${error}`);
-            throw new Error(`Failed to retrieve a PagerDuty service id for integration key ${integrationKey}: ${error}`);
-        }
+    if (this.baseUrl === '') {
+      this.baseUrl = await this.discovery.getBaseUrl('pagerduty');
     }
 
-    async getIntegrationKeyFromServiceId(serviceId: string, account?: string): Promise<string | undefined> {
-        let response: Response;
+    const options: RequestInit = {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json; charset=UTF-8',
+        Accept: 'application/json, text/plain, */*',
+      },
+    };
 
-        if (this.baseUrl === "") {
-            this.baseUrl = await this.discovery.getBaseUrl('pagerduty');
-        }
+    let url = `${await this.discovery.getBaseUrl(
+      'pagerduty',
+    )}/services?integration_key=${integrationKey}`;
 
-        const options: RequestInit = {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json; charset=UTF-8',
-                Accept: 'application/json, text/plain, */*',
-            },
-        };
-
-        let url = `${await this.discovery.getBaseUrl(
-            'pagerduty',
-        )}/services/${serviceId}`;
-
-        if (account) {
-            url = url.concat(`?account=${account}`);
-        }
-
-        try {
-            response = await fetchWithRetries(url, options);
-
-            if (response.status >= 500) {
-                throw new Error(`Failed to get integration key from service id ${serviceId}. PagerDuty API returned a server error. Retrying with the same arguments will not work.`);
-            }
-
-            const foundService: PagerDutyServiceResponse = await response.json();
-            const backstageIntegration = foundService.service.integrations?.find(integration => integration.vendor?.id === "PRO19CT");
-
-            switch (response.status) {
-                case 400:
-                    throw new Error(await response.text());
-                case 404:
-                    return "";
-                default: // 200
-
-                    if (!backstageIntegration) {
-                        return undefined;
-                    }
-
-                    return backstageIntegration.integration_key;
-            }
-        } catch (error) {
-            this.logger.error(`No Backstage integration found for service id ${serviceId}: ${error}`);
-            throw new Error(`No Backstage integration found for service id ${serviceId}: ${error}`);
-        }
+    if (account) {
+      url = url.concat(`&account=${account}`);
     }
 
-    async getServiceDependencyStrategySetting(): Promise<string> {
-        const SERVICE_DEPENDENCY_SYNC_STRATEGY = "settings::service-dependency-sync-strategy";
+    try {
+      response = await fetchWithRetries(url, options);
 
-        let response: Response;
+      if (response.status >= 500) {
+        throw new Error(
+          `Failed to get service id from integration key ${integrationKey}. PagerDuty API returned a server error. Retrying with the same arguments will not work.`,
+        );
+      }
 
-        if (this.baseUrl === "") {
-            this.baseUrl = await this.discovery.getBaseUrl('pagerduty');
-        }
+      const foundService: PagerDutyServiceResponse = await response.json();
 
-        const options: RequestInit = {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json; charset=UTF-8',
-                Accept: 'application/json, text/plain, */*',
-            },
-        };
-
-        const url = `${await this.discovery.getBaseUrl(
-            'pagerduty',
-        )}/settings/${SERVICE_DEPENDENCY_SYNC_STRATEGY}`;
-
-        try {
-            response = await fetchWithRetries(url, options);          
-
-            if (response.status >= 500) {
-                throw new Error(`Failed to get service depedency strategy. API returned a server error. Retrying with the same arguments will not work.`);
-            }
-
-            const setting: PagerDutySetting = await response.json();  
-
-            switch (response.status) {
-                case 400:
-                    throw new Error(await response.text());
-                case 404:
-                    return "disabled"; // if setting does not exist in the database, default to disabled
-                default: // 200
-                    return setting.value;
-            }
-        } catch (error) {
-            this.logger.error(`Error getting value for setting: ${error}`);
-            throw new Error(`Error getting value for setting: ${error}`);
-        }
+      switch (response.status) {
+        case 400:
+          throw new Error(await response.text());
+        case 404:
+          return '';
+        default: // 200
+          return foundService.service.id;
+      }
+    } catch (error) {
+      this.logger.error(
+        `Failed to retrieve a PagerDuty service id for integration key ${integrationKey}: ${error}`,
+      );
+      throw new Error(
+        `Failed to retrieve a PagerDuty service id for integration key ${integrationKey}: ${error}`,
+      );
     }
+  }
+
+  async getIntegrationKeyFromServiceId(
+    serviceId: string,
+    account?: string,
+  ): Promise<string | undefined> {
+    let response: Response;
+
+    if (this.baseUrl === '') {
+      this.baseUrl = await this.discovery.getBaseUrl('pagerduty');
+    }
+
+    const options: RequestInit = {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json; charset=UTF-8',
+        Accept: 'application/json, text/plain, */*',
+      },
+    };
+
+    let url = `${await this.discovery.getBaseUrl(
+      'pagerduty',
+    )}/services/${serviceId}`;
+
+    if (account) {
+      url = url.concat(`?account=${account}`);
+    }
+
+    try {
+      response = await fetchWithRetries(url, options);
+
+      if (response.status >= 500) {
+        throw new Error(
+          `Failed to get integration key from service id ${serviceId}. PagerDuty API returned a server error. Retrying with the same arguments will not work.`,
+        );
+      }
+
+      const foundService: PagerDutyServiceResponse = await response.json();
+      const backstageIntegration = foundService.service.integrations?.find(
+        integration => integration.vendor?.id === 'PRO19CT',
+      );
+
+      switch (response.status) {
+        case 400:
+          throw new Error(await response.text());
+        case 404:
+          return '';
+        default: // 200
+          if (!backstageIntegration) {
+            return undefined;
+          }
+
+          return backstageIntegration.integration_key;
+      }
+    } catch (error) {
+      this.logger.error(
+        `No Backstage integration found for service id ${serviceId}: ${error}`,
+      );
+      throw new Error(
+        `No Backstage integration found for service id ${serviceId}: ${error}`,
+      );
+    }
+  }
+
+  async getServiceDependencyStrategySetting(): Promise<string> {
+    const SERVICE_DEPENDENCY_SYNC_STRATEGY =
+      'settings::service-dependency-sync-strategy';
+
+    let response: Response;
+
+    if (this.baseUrl === '') {
+      this.baseUrl = await this.discovery.getBaseUrl('pagerduty');
+    }
+
+    const options: RequestInit = {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json; charset=UTF-8',
+        Accept: 'application/json, text/plain, */*',
+      },
+    };
+
+    const url = `${await this.discovery.getBaseUrl(
+      'pagerduty',
+    )}/settings/${SERVICE_DEPENDENCY_SYNC_STRATEGY}`;
+
+    try {
+      response = await fetchWithRetries(url, options);
+
+      if (response.status >= 500) {
+        throw new Error(
+          `Failed to get service depedency strategy. API returned a server error. Retrying with the same arguments will not work.`,
+        );
+      }
+
+      const setting: PagerDutySetting = await response.json();
+
+      switch (response.status) {
+        case 400:
+          throw new Error(await response.text());
+        case 404:
+          return 'disabled'; // if setting does not exist in the database, default to disabled
+        default: // 200
+          return setting.value;
+      }
+    } catch (error) {
+      this.logger.error(`Error getting value for setting: ${error}`);
+      throw new Error(`Error getting value for setting: ${error}`);
+    }
+  }
 }
 
-export async function fetchWithRetries(url: string, options: RequestInit): Promise<Response> {
-    let response: Response;
-    let error: Error = new Error();
+export async function fetchWithRetries(
+  url: string,
+  options: RequestInit,
+): Promise<Response> {
+  let response: Response;
+  let error: Error = new Error();
 
-    // set retry parameters
-    const maxRetries = 5;
-    const delay = 1000;
-    let factor = 2;
+  // set retry parameters
+  const maxRetries = 5;
+  const delay = 1000;
+  let factor = 2;
 
-    for (let i = 0; i < maxRetries; i++) {
-        try {
-            response = await fetch(url, options);
-            return response;
-        } catch (e) {
-            error = e as Error;
-        }
-
-        const timeout = delay * factor;
-        await new Promise(resolve => setTimeout(resolve, timeout));
-        factor *= 2;
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      response = await fetch(url, options);
+      return response;
+    } catch (e) {
+      error = e as Error;
     }
 
-    throw new Error(`Failed to fetch data after ${maxRetries} retries. Last error: ${error}`);
+    const timeout = delay * factor;
+    await new Promise(resolve => setTimeout(resolve, timeout));
+    factor *= 2;
+  }
+
+  throw new Error(
+    `Failed to fetch data after ${maxRetries} retries. Last error: ${error}`,
+  );
 }

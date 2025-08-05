@@ -18,7 +18,11 @@ import {
   PagerDutyEntity,
   PagerDutyTriggerAlarmRequest,
 } from '../src';
-import { PagerDutyChangeEvent, PagerDutyIncident, PagerDutyUser } from '@pagerduty/backstage-plugin-common';
+import {
+  PagerDutyChangeEvent,
+  PagerDutyIncident,
+  PagerDutyUser,
+} from '@pagerduty/backstage-plugin-common';
 import { Entity } from '@backstage/catalog-model';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -33,55 +37,57 @@ export const mockPagerDutyApi: PagerDutyApi = {
     return new Response(JSON.stringify(settings));
   },
   async getEntityMappings() {
-      return {
-        mappings: [
-          {
-            serviceId: "SERV1CE1D",
-            entityRef: "ENTITY1D",
-            entityName: "Entity1",
-            integrationKey: "INTEGRAT1ONKEY1",
-            team: "Team1",
-            serviceName: "Service1",
-            serviceUrl: "http://service1",
-            escalationPolicy: "Escalation Policy 1",
-            status: "InSync",
-          },
-          {
-            serviceId: "SERV1CE1D",
-            entityRef: "",
-            entityName: "Entity2",
-            integrationKey: "INTEGRAT1ONKEY2",
-            status: "NotMapped",
-            team: "Team1",
-            serviceName: "Service2",
-            serviceUrl: "http://service2",
-            escalationPolicy: "Escalation Policy 1",
-          }
-        ]
-      }
+    return {
+      mappings: [
+        {
+          serviceId: 'SERV1CE1D',
+          entityRef: 'ENTITY1D',
+          entityName: 'Entity1',
+          integrationKey: 'INTEGRAT1ONKEY1',
+          team: 'Team1',
+          serviceName: 'Service1',
+          serviceUrl: 'http://service1',
+          escalationPolicy: 'Escalation Policy 1',
+          status: 'InSync',
+        },
+        {
+          serviceId: 'SERV1CE1D',
+          entityRef: '',
+          entityName: 'Entity2',
+          integrationKey: 'INTEGRAT1ONKEY2',
+          status: 'NotMapped',
+          team: 'Team1',
+          serviceName: 'Service2',
+          serviceUrl: 'http://service2',
+          escalationPolicy: 'Escalation Policy 1',
+        },
+      ],
+    };
   },
   async storeServiceMapping(serviceId, entityId) {
     const uuid = uuidv4();
-    
 
-    return new Response(JSON.stringify({
-      service_id: serviceId,
-      entity_id: entityId,
-      id: uuid,
-    }));
+    return new Response(
+      JSON.stringify({
+        service_id: serviceId,
+        entity_id: entityId,
+        id: uuid,
+      }),
+    );
   },
   async getServiceByPagerDutyEntity(pagerDutyEntity: PagerDutyEntity) {
     return {
       service: {
         name: pagerDutyEntity.name,
-        id: "SERV1CE1D",
-        html_url: "https://www.example.com",
+        id: 'SERV1CE1D',
+        html_url: 'https://www.example.com',
         escalation_policy: {
-          id: "ESCALAT1ONP01ICY1D",
-          name: "ep-one",
-          html_url: "http://www.example.com/escalation-policy/ESCALAT1ONP01ICY1D",
+          id: 'ESCALAT1ONP01ICY1D',
+          name: 'ep-one',
+          html_url:
+            'http://www.example.com/escalation-policy/ESCALAT1ONP01ICY1D',
         },
-        status: "critical",
+        status: 'critical',
       },
     };
   },
@@ -90,14 +96,15 @@ export const mockPagerDutyApi: PagerDutyApi = {
     return {
       service: {
         name: entity.metadata.name,
-        id: "SERV1CE1D",
-        html_url: "https://www.example.com",
+        id: 'SERV1CE1D',
+        html_url: 'https://www.example.com',
         escalation_policy: {
-          id: "ESCALAT1ONP01ICY1D",
-          name: "ep-one",
-          html_url: "http://www.example.com/escalation-policy/ESCALAT1ONP01ICY1D",
+          id: 'ESCALAT1ONP01ICY1D',
+          name: 'ep-one',
+          html_url:
+            'http://www.example.com/escalation-policy/ESCALAT1ONP01ICY1D',
         },
-        status: "warning",
+        status: 'warning',
       },
     };
   },
@@ -105,15 +112,16 @@ export const mockPagerDutyApi: PagerDutyApi = {
   async getServiceById(serviceId: string) {
     return {
       service: {
-        name: "SERV1CENAME",
+        name: 'SERV1CENAME',
         id: serviceId,
-        html_url: "https://www.example.com",
+        html_url: 'https://www.example.com',
         escalation_policy: {
-          id: "ESCALAT1ONP01ICY1D",
-          name: "ep-one",
-          html_url: "http://www.example.com/escalation-policy/ESCALAT1ONP01ICY1D",
+          id: 'ESCALAT1ONP01ICY1D',
+          name: 'ep-one',
+          html_url:
+            'http://www.example.com/escalation-policy/ESCALAT1ONP01ICY1D',
         },
-        status: "warning",
+        status: 'warning',
       },
     };
   },
@@ -146,7 +154,6 @@ export const mockPagerDutyApi: PagerDutyApi = {
     };
 
     return {
-
       incidents: [
         incident('Some Alerting Incident'),
         incident('Another Alerting Incident'),
@@ -193,17 +200,18 @@ export const mockPagerDutyApi: PagerDutyApi = {
             active: true,
             id: '123',
             name: 'Service has a description',
-            description: 'A description provides critical context about what a service represents or is used for to inform team members and responders. The description should be kept concise and understandable by those without deep knowledge of the service.',
+            description:
+              'A description provides critical context about what a service represents or is used for to inform team members and responders. The description should be kept concise and understandable by those without deep knowledge of the service.',
             pass: true,
-            type: 'has_technical_service_description'
+            type: 'has_technical_service_description',
           },
         ],
-      }
+      };
     };
 
     return {
       standards: standards(),
-    }
+    };
   },
 
   async getServiceMetricsByServiceId(serviceId: string) {
@@ -215,8 +223,8 @@ export const mockPagerDutyApi: PagerDutyApi = {
           total_high_urgency_incidents: 3,
           total_interruptions: 2,
         },
-      ]
-    }
+      ],
+    };
   },
 
   async getOnCallByPolicyId() {
