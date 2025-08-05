@@ -13,7 +13,7 @@ Find the complete project's documentation [here](https://pagerduty.github.io/bac
 
 ### Installation
 
-The installation of the PagerDuty plugin for Backstage is done with *yarn* as all other plugins in Backstage. This plugin follows a modular approach which means that every individual component will be a separate package (e.g. frontend, backend, common).
+The installation of the PagerDuty plugin for Backstage is done with _yarn_ as all other plugins in Backstage. This plugin follows a modular approach which means that every individual component will be a separate package (e.g. frontend, backend, common).
 
 To install this plugin run the following command from the Backstage root folder.
 

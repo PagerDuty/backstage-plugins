@@ -21,15 +21,16 @@ import {
   PagerDutyClientApiConfig,
   RequestOptions,
 } from './types';
-import { PagerDutyChangeEventsResponse, 
-  PagerDutyOnCallUsersResponse, 
-  PagerDutyUser, 
+import {
+  PagerDutyChangeEventsResponse,
+  PagerDutyOnCallUsersResponse,
+  PagerDutyUser,
   PagerDutyServiceResponse,
   PagerDutyIncidentsResponse,
   PagerDutyServiceStandardsResponse,
   PagerDutyServiceMetricsResponse,
   PagerDutyEntityMappingsResponse,
-  PagerDutySetting
+  PagerDutySetting,
 } from '@pagerduty/backstage-plugin-common';
 import { createApiRef, ConfigApi } from '@backstage/core-plugin-api';
 import { NotFoundError } from '@backstage/errors';
@@ -41,7 +42,7 @@ import { PagerDutyEntity } from '../types';
 export class UnauthorizedError extends Error {}
 
 /** @public */
-export class ForbiddenError extends Error { }
+export class ForbiddenError extends Error {}
 
 /** @public */
 export const pagerDutyApiRef = createApiRef<PagerDutyApi>({
@@ -82,10 +83,12 @@ export class PagerDutyClient implements PagerDutyApi {
         'pagerduty',
       )}/services?integration_key=${integrationKey}`;
 
-      if(account) {
+      if (account) {
         url = `${url}&account=${account}`;
       }
-      const serviceResponse = await this.findByUrl<PagerDutyServiceResponse>(url);
+      const serviceResponse = await this.findByUrl<PagerDutyServiceResponse>(
+        url,
+      );
 
       if (serviceResponse.service === undefined) throw new NotFoundError();
 
@@ -142,8 +145,12 @@ export class PagerDutyClient implements PagerDutyApi {
     return await this.findByUrl<PagerDutyEntityMappingsResponse>(url);
   }
 
-  async storeServiceMapping(serviceId: string, integrationKey: string, backstageEntityRef: string, account: string): Promise<Response> {
-
+  async storeServiceMapping(
+    serviceId: string,
+    integrationKey: string,
+    backstageEntityRef: string,
+    account: string,
+  ): Promise<Response> {
     const body = JSON.stringify({
       entityRef: backstageEntityRef,
       serviceId: serviceId,
@@ -171,12 +178,15 @@ export class PagerDutyClient implements PagerDutyApi {
     return await this.getServiceByPagerDutyEntity(getPagerDutyEntity(entity));
   }
 
-  async getServiceById(serviceId: string, account?: string): Promise<PagerDutyServiceResponse> {
+  async getServiceById(
+    serviceId: string,
+    account?: string,
+  ): Promise<PagerDutyServiceResponse> {
     let url = `${await this.config.discoveryApi.getBaseUrl(
       'pagerduty',
     )}/services/${serviceId}`;
 
-    if(account) {
+    if (account) {
       url = url.concat(`?account=${account}`);
     }
 
@@ -191,7 +201,7 @@ export class PagerDutyClient implements PagerDutyApi {
       'pagerduty',
     )}/services/${serviceId}/incidents`;
 
-    if(account) {
+    if (account) {
       url = url.concat(`?account=${account}`);
     }
 
@@ -206,7 +216,7 @@ export class PagerDutyClient implements PagerDutyApi {
       'pagerduty',
     )}/services/${serviceId}/change-events`;
 
-    if(account) {
+    if (account) {
       url = url.concat(`?account=${account}`);
     }
 
@@ -215,13 +225,13 @@ export class PagerDutyClient implements PagerDutyApi {
 
   async getServiceStandardsByServiceId(
     serviceId: string,
-    account?: string
+    account?: string,
   ): Promise<PagerDutyServiceStandardsResponse> {
     let url = `${await this.config.discoveryApi.getBaseUrl(
       'pagerduty',
     )}/services/${serviceId}/standards`;
 
-    if(account) {
+    if (account) {
       url = url.concat(`?account=${account}`);
     }
 
@@ -230,13 +240,13 @@ export class PagerDutyClient implements PagerDutyApi {
 
   async getServiceMetricsByServiceId(
     serviceId: string,
-    account?: string
+    account?: string,
   ): Promise<PagerDutyServiceMetricsResponse> {
     let url = `${await this.config.discoveryApi.getBaseUrl(
       'pagerduty',
     )}/services/${serviceId}/metrics`;
 
-    if (account){
+    if (account) {
       url = url.concat(`?account=${account}`);
     }
 
@@ -256,7 +266,8 @@ export class PagerDutyClient implements PagerDutyApi {
       url = url.concat(`&account=${account}`);
     }
 
-    const response: PagerDutyOnCallUsersResponse = await this.findByUrl<PagerDutyOnCallUsersResponse>(url);
+    const response: PagerDutyOnCallUsersResponse =
+      await this.findByUrl<PagerDutyOnCallUsersResponse>(url);
     return response.users;
   }
 
@@ -311,15 +322,19 @@ export class PagerDutyClient implements PagerDutyApi {
   ): Promise<Response> {
     const response = await this.config.fetchApi.fetch(url, options);
     if (response.status === 401) {
-      throw new UnauthorizedError("Unauthorized: You don't have access to this resource");
+      throw new UnauthorizedError(
+        "Unauthorized: You don't have access to this resource",
+      );
     }
 
     if (response.status === 403) {
-      throw new ForbiddenError("Forbidden: You are not allowed to perform this action");
+      throw new ForbiddenError(
+        'Forbidden: You are not allowed to perform this action',
+      );
     }
 
     if (response.status === 404) {
-      throw new NotFoundError("Not Found: Resource not found");
+      throw new NotFoundError('Not Found: Resource not found');
     }
 
     if (!response.ok) {

@@ -15,12 +15,12 @@
  */
 
 // eslint-disable-next-line @backstage/no-undeclared-imports
-import { useCallback, useState } from "react";
-import { makeStyles, IconButton } from "@material-ui/core";
-import { BackstageTheme } from "@backstage/theme";
+import { useCallback, useState } from 'react';
+import { makeStyles, IconButton, Typography } from '@material-ui/core';
+import { BackstageTheme } from '@backstage/theme';
 
-import { TriggerDialog } from "../TriggerDialog";
-import AddAlert from "@material-ui/icons/AddAlert";
+import { TriggerDialog } from '../TriggerDialog';
+import AddAlert from '@material-ui/icons/AddAlert';
 
 /** @public */
 export type TriggerIncidentButtonProps = {
@@ -28,29 +28,34 @@ export type TriggerIncidentButtonProps = {
   entityName: string;
   compact?: boolean;
   handleRefresh: () => void;
-}
+};
 
 /** @public */
-export function TriggerIncidentButton({ integrationKey, entityName, compact, handleRefresh } : TriggerIncidentButtonProps) {
-  const useStyles = makeStyles<BackstageTheme>((theme) => ({
+export function TriggerIncidentButton({
+  integrationKey,
+  entityName,
+  compact,
+  handleRefresh,
+}: TriggerIncidentButtonProps) {
+  const useStyles = makeStyles<BackstageTheme>(theme => ({
     buttonStyle: {
       color: theme.palette.text.primary,
-      "&:hover": {
-        backgroundColor: "transparent",
-        textDecoration: "underline",
+      '&:hover': {
+        backgroundColor: 'transparent',
+        textDecoration: 'underline',
       },
     },
     containerStyle: {
-      fontSize: compact !== true ? "12px" : "10px",
-      width: compact !== true ? "80px" : "60px",
-      marginRight: "-10px",
+      fontSize: compact !== true ? '12px' : '10px',
+      width: compact !== true ? '80px' : '60px',
+      marginRight: '-10px',
     },
     iconStyle: {
-      fontSize: "30px",
-      marginBottom: "-10px",
+      fontSize: '30px',
+      marginBottom: '-10px',
     },
     textStyle: {
-      marginBottom: "-10px",
+      marginBottom: '-10px',
     },
   }));
 
@@ -63,20 +68,20 @@ export function TriggerIncidentButton({ integrationKey, entityName, compact, han
   const hideDialog = useCallback(() => {
     setDialogShown(false);
   }, [setDialogShown]);
-  
+
   const disabled = !integrationKey;
-  
+
   return (
     <>
       <IconButton
         aria-label="create-incident"
         onClick={showDialog}
-        className={disabled ? "" : buttonStyle}
+        className={disabled ? '' : buttonStyle}
         disabled={disabled}
       >
         <div className={containerStyle}>
           <AddAlert className={iconStyle} />
-          <p className={textStyle}>Create new incident</p>
+          <Typography className={textStyle}>Create new incident</Typography>
         </div>
       </IconButton>
       {integrationKey && (

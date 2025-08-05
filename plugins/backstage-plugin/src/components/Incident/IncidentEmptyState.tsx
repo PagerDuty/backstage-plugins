@@ -15,7 +15,7 @@
  */
 // eslint-disable-next-line @backstage/no-undeclared-imports
 import { Grid, Typography } from '@material-ui/core';
-import EmptyStateImage from "../../assets/emptystate.svg";
+import EmptyStateImage from '../../assets/emptystate.svg';
 
 export const IncidentsEmptyState = () => {
   return (

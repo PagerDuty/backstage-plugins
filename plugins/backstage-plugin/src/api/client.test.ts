@@ -16,7 +16,10 @@
 import { MockFetchApi } from '@backstage/test-utils';
 import { DiscoveryApi } from '@backstage/core-plugin-api';
 import { PagerDutyClient, UnauthorizedError } from './client';
-import { PagerDutyService, PagerDutySetting } from '@pagerduty/backstage-plugin-common';
+import {
+  PagerDutyService,
+  PagerDutySetting,
+} from '@pagerduty/backstage-plugin-common';
 import { NotFoundError } from '@backstage/errors';
 import { Entity } from '@backstage/catalog-model';
 
@@ -35,13 +38,13 @@ let client: PagerDutyClient;
 let entity: Entity;
 
 const service: PagerDutyService = {
-  id: "SERV1CE1D",
-  name: "service-one",
-  html_url: "www.example.com",
+  id: 'SERV1CE1D',
+  name: 'service-one',
+  html_url: 'www.example.com',
   escalation_policy: {
-    id: "ESCALAT1ONP01ICY1D",
-    name: "ep-one",
-    html_url: "http://www.example.com/escalation-policy/ESCALAT1ONP01ICY1D",
+    id: 'ESCALAT1ONP01ICY1D',
+    name: 'ep-one',
+    html_url: 'http://www.example.com/escalation-policy/ESCALAT1ONP01ICY1D',
   },
 };
 
@@ -151,7 +154,7 @@ describe('PagerDutyClient', () => {
           mockFetch.mockResolvedValueOnce({
             status: 200,
             ok: true,
-            json: () => Promise.resolve({ }),
+            json: () => Promise.resolve({}),
           });
         });
 
@@ -332,7 +335,7 @@ describe('PagerDutyClient', () => {
           mockFetch.mockResolvedValueOnce({
             status: 200,
             ok: true,
-            json: () => Promise.resolve({ }),
+            json: () => Promise.resolve({}),
           });
         });
 
@@ -441,5 +444,4 @@ describe('getSetting', () => {
       );
     });
   });
-
 });

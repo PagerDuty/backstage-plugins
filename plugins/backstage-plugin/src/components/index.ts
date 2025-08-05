@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-
 export type { EntityPagerDutyCardProps } from './EntityPagerDutyCard';
 export type { EntityPagerDutySmallCardProps } from './EntityPagerDutySmallCard';
 export type { HomePagePagerDutyCardProps } from './HomePagePagerDutyCard';

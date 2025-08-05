@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState } from 'react';
 import {
   Card,
   FormControlLabel,
@@ -6,20 +6,20 @@ import {
   Radio,
   RadioGroup,
   Typography,
-} from "@material-ui/core";
+} from '@material-ui/core';
 import {
   Header,
   Page,
   Content,
   TabbedLayout,
-} from "@backstage/core-components";
-import { ServiceMappingComponent } from "./ServiceMappingComponent";
-import { useApi } from "@backstage/core-plugin-api";
-import { pagerDutyApiRef } from "../../api";
-import { NotFoundError } from "@backstage/errors";
+} from '@backstage/core-components';
+import { ServiceMappingComponent } from './ServiceMappingComponent';
+import { useApi } from '@backstage/core-plugin-api';
+import { pagerDutyApiRef } from '../../api';
+import { NotFoundError } from '@backstage/errors';
 
 const SERVICE_DEPENDENCY_SYNC_STRATEGY =
-  "settings::service-dependency-sync-strategy";
+  'settings::service-dependency-sync-strategy';
 
 /** @public */
 export const PagerDutyPage = () => {
@@ -27,21 +27,21 @@ export const PagerDutyPage = () => {
   const [
     selectedServiceDependencyStrategy,
     setSelectedServiceDependencyStrategy,
-  ] = useState("disabled");
+  ] = useState('disabled');
 
   useEffect(() => {
     function fetchSetting() {
       pagerDutyApi
         .getSetting(SERVICE_DEPENDENCY_SYNC_STRATEGY)
-        .then((result) => {
+        .then(result => {
           if (result !== undefined) {
             setSelectedServiceDependencyStrategy(result.value);
           }
         })
-        .catch((error) => {
+        .catch(error => {
           if (error instanceof NotFoundError) {
             // If the setting is not found, set the default value to "disabled"
-            setSelectedServiceDependencyStrategy("disabled");
+            setSelectedServiceDependencyStrategy('disabled');
           }
         });
     }
@@ -63,17 +63,17 @@ export const PagerDutyPage = () => {
   };
 
   function getSelectedValue(
-    value: string
-  ): "backstage" | "pagerduty" | "both" | "disabled" {
+    value: string,
+  ): 'backstage' | 'pagerduty' | 'both' | 'disabled' {
     switch (value) {
-      case "backstage":
-        return "backstage";
-      case "pagerduty":
-        return "pagerduty";
-      case "both":
-        return "both";
+      case 'backstage':
+        return 'backstage';
+      case 'pagerduty':
+        return 'pagerduty';
+      case 'both':
+        return 'both';
       default:
-        return "disabled";
+        return 'disabled';
     }
   }
 
@@ -110,14 +110,15 @@ export const PagerDutyPage = () => {
               </Grid>
               <Card
                 title="Service dependency synchronization preferences"
-                style={{ padding: "10px", paddingLeft: "15px", width: "50%" }}
+                style={{ padding: '10px', paddingLeft: '15px', width: '50%' }}
               >
                 <>
                   <Typography variant="h6">
                     Service dependency synchronization strategy
                   </Typography>
                   <Typography variant="body1">
-                    Select the main source of truth for your service dependencies
+                    Select the main source of truth for your service
+                    dependencies
                   </Typography>
                   <RadioGroup
                     value={selectedServiceDependencyStrategy}
@@ -151,7 +152,15 @@ export const PagerDutyPage = () => {
                 <Typography variant="body1">
                   <b>Warning: </b>Changing this setting will affect how your
                   service dependencies are synchronized and may cause data loss.
-                  Check the <a style={{color: "cadetblue"}} href="https://pagerduty.github.io/backstage-plugin-docs/index.html"> documentation </a> for more information.
+                  Check the{' '}
+                  <a
+                    style={{ color: 'cadetblue' }}
+                    href="https://pagerduty.github.io/backstage-plugin-docs/index.html"
+                  >
+                    {' '}
+                    documentation{' '}
+                  </a>{' '}
+                  for more information.
                 </Typography>
               </Card>
             </Grid>

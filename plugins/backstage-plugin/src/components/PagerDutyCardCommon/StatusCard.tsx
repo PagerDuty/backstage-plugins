@@ -1,12 +1,12 @@
-import { Card, Typography } from "@material-ui/core";
-import { useEffect } from "react";
-import { Theme, makeStyles } from "@material-ui/core/styles";
-import { BackstageTheme } from "@backstage/theme";
-import { useApi } from "@backstage/core-plugin-api";
-import { pagerDutyApiRef } from "../../api";
-import { useAsyncFn } from "react-use";
-import Alert from "@material-ui/lab/Alert/Alert";
-import { Progress } from "@backstage/core-components";
+import { Card, Typography } from '@material-ui/core';
+import { useEffect } from 'react';
+import { Theme, makeStyles } from '@material-ui/core/styles';
+import { BackstageTheme } from '@backstage/theme';
+import { useApi } from '@backstage/core-plugin-api';
+import { pagerDutyApiRef } from '../../api';
+import { useAsyncFn } from 'react-use';
+import Alert from '@material-ui/lab/Alert/Alert';
+import { Progress } from '@backstage/core-components';
 
 type Props = {
   serviceId: string;
@@ -18,23 +18,23 @@ type Props = {
 function labelFromStatus(status: string) {
   let label;
   switch (status) {
-    case "active":
-      label = "OK";
+    case 'active':
+      label = 'OK';
       break;
-    case "warning":
-      label = "ACTIVE";
+    case 'warning':
+      label = 'ACTIVE';
       break;
-    case "critical":
-      label = "ALARM";
+    case 'critical':
+      label = 'ALARM';
       break;
-    case "maintenance":
-      label = "MAINTENANCE";
+    case 'maintenance':
+      label = 'MAINTENANCE';
       break;
-    case "disabled":
-      label = "DISABLED";
+    case 'disabled':
+      label = 'DISABLED';
       break;
     default:
-      label = "OK";
+      label = 'OK';
       break;
   }
 
@@ -44,20 +44,20 @@ function labelFromStatus(status: string) {
 function colorFromStatus(theme: Theme, status: string) {
   let color;
   switch (status) {
-    case "active":
+    case 'active':
       color = theme.palette.success.main;
       break;
-    case "warning":
+    case 'warning':
       color = theme.palette.warningBackground;
       break;
-    case "critical":
+    case 'critical':
       color = theme.palette.error.main;
       break;
-    case "maintenance":
-      color = "#ebdc00";
+    case 'maintenance':
+      color = '#ebdc00';
       break;
-    case "disabled":
-      color = "#A9A9A9";
+    case 'disabled':
+      color = '#A9A9A9';
       break;
     default:
       color = theme.palette.success.main;
@@ -67,32 +67,35 @@ function colorFromStatus(theme: Theme, status: string) {
   return color;
 }
 
-function StatusCard({ serviceId, refreshStatus, account, compact}: Props) {
+function StatusCard({ serviceId, refreshStatus, account, compact }: Props) {
   const api = useApi(pagerDutyApiRef);
   const [{ value: status, loading, error }, getStatus] = useAsyncFn(
     async () => {
-      const { service: foundService } = await api.getServiceById(serviceId, account);
+      const { service: foundService } = await api.getServiceById(
+        serviceId,
+        account,
+      );
       return foundService.status;
-    }
+    },
   );
 
-  const useStyles = makeStyles<BackstageTheme>((theme) => ({
+  const useStyles = makeStyles<BackstageTheme>(theme => ({
     cardStyle: {
-      height: compact !== true ? "120px" : "80px",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
+      height: compact !== true ? '120px' : '80px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
       backgroundColor:
         status !== undefined
           ? colorFromStatus(theme, status)
-          : colorFromStatus(theme, "active"),
-      marginRight: "10px",
+          : colorFromStatus(theme, 'active'),
+      marginRight: '10px',
     },
     largeTextStyle: {
-      color: "white",
-      fontWeight: "bold",
-      fontSize: "20px",
-      wordWrap: "break-word",
+      color: 'white',
+      fontWeight: 'bold',
+      fontSize: '20px',
+      wordWrap: 'break-word',
     },
   }));
 
@@ -103,8 +106,8 @@ function StatusCard({ serviceId, refreshStatus, account, compact}: Props) {
   }, [refreshStatus, getStatus]);
 
   if (error) {
-    if (error.message.includes("Forbidden")) {
-      return <p>forbidden</p>;
+    if (error.message.includes('Forbidden')) {
+      return <Typography>forbidden</Typography>;
     }
 
     return (
@@ -119,7 +122,7 @@ function StatusCard({ serviceId, refreshStatus, account, compact}: Props) {
   }
 
   if (!status) {
-    return <p>not found</p>;
+    return <Typography>not found</Typography>;
   }
 
   return (

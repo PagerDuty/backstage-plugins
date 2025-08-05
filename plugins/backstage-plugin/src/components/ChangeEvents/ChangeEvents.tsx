@@ -37,7 +37,10 @@ export const ChangeEvents = ({ serviceId, account, refreshEvents }: Props) => {
 
   const [{ value: changeEvents, loading, error }, getChangeEvents] = useAsyncFn(
     async () => {
-      const { change_events } = await api.getChangeEventsByServiceId(serviceId, account);
+      const { change_events } = await api.getChangeEventsByServiceId(
+        serviceId,
+        account,
+      );
       return change_events;
     },
   );

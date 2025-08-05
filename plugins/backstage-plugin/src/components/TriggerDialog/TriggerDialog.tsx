@@ -15,7 +15,7 @@
  */
 
 // eslint-disable-next-line @backstage/no-undeclared-imports
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -86,7 +86,7 @@ export const TriggerDialog = ({
         });
 
         // clear description state
-        setDescription("");
+        setDescription('');
 
         handleDialog();
 
@@ -107,7 +107,8 @@ export const TriggerDialog = ({
   return (
     <Dialog maxWidth="md" open={showDialog} onClose={handleDialog} fullWidth>
       <DialogTitle>
-        This action will trigger an incident for <strong>"{serviceName}"</strong>.
+        This action will trigger an incident for{' '}
+        <strong>"{serviceName}"</strong>.
       </DialogTitle>
       <DialogContent>
         <Alert severity="info">

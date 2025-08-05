@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 // eslint-disable-next-line @backstage/no-undeclared-imports
-import { ReactNode, useCallback, useState } from "react";
+import { ReactNode, useCallback, useState } from 'react';
 import {
   Card,
   CardHeader,
@@ -22,85 +22,85 @@ import {
   CardContent,
   Grid,
   Typography,
-} from "@material-ui/core";
-import { Incidents } from "../Incident";
-import { EscalationPolicy } from "../Escalation";
-import useAsync from "react-use/lib/useAsync";
-import { pagerDutyApiRef, UnauthorizedError } from "../../api";
-import { MissingTokenError, ServiceNotFoundError } from "../Errors";
-import { ChangeEvents } from "../ChangeEvents";
-import PDGreenImage from "../../assets/PD-Green.svg";
-import PDWhiteImage from "../../assets/PD-White.svg";
+} from '@material-ui/core';
+import { Incidents } from '../Incident';
+import { EscalationPolicy } from '../Escalation';
+import useAsync from 'react-use/lib/useAsync';
+import { pagerDutyApiRef, UnauthorizedError } from '../../api';
+import { MissingTokenError, ServiceNotFoundError } from '../Errors';
+import { ChangeEvents } from '../ChangeEvents';
+import PDGreenImage from '../../assets/PD-Green.svg';
+import PDWhiteImage from '../../assets/PD-White.svg';
 
-import { useApi } from "@backstage/core-plugin-api";
-import { NotFoundError } from "@backstage/errors";
+import { useApi } from '@backstage/core-plugin-api';
+import { NotFoundError } from '@backstage/errors';
 import {
   Progress,
   TabbedCard,
   CardTab,
   InfoCard,
-} from "@backstage/core-components";
-import { PagerDutyEntity } from "../../types";
-import { ForbiddenError } from "../Errors/ForbiddenError";
+} from '@backstage/core-components';
+import { PagerDutyEntity } from '../../types';
+import { ForbiddenError } from '../Errors/ForbiddenError';
 import {
   InsightsCard,
   OpenServiceButton,
   ServiceStandardsCard,
   StatusCard,
   TriggerIncidentButton,
-} from "../PagerDutyCardCommon";
-import { createStyles, makeStyles, useTheme } from "@material-ui/core/styles";
-import { BackstageTheme } from "@backstage/theme";
-import { PagerDutyCardServiceResponse } from "../../api/types";
+} from '../PagerDutyCardCommon';
+import { createStyles, makeStyles, useTheme } from '@material-ui/core/styles';
+import { BackstageTheme } from '@backstage/theme';
+import { PagerDutyCardServiceResponse } from '../../api/types';
 
-const useStyles = makeStyles<BackstageTheme>((theme) =>
+const useStyles = makeStyles<BackstageTheme>(theme =>
   createStyles({
     overviewHeaderTextStyle: {
-      fontSize: "14px",
+      fontSize: '14px',
       fontWeight: 500,
       color:
-        theme.palette.type === "light"
-          ? "rgba(0, 0, 0, 0.54)"
-          : "rgba(255, 255, 255, 0.7)",
+        theme.palette.type === 'light'
+          ? 'rgba(0, 0, 0, 0.54)'
+          : 'rgba(255, 255, 255, 0.7)',
     },
     oncallHeaderTextStyle: {
-      fontSize: "14px",
+      fontSize: '14px',
       fontWeight: 500,
-      marginTop: "10px",
+      marginTop: '10px',
       color:
-        theme.palette.type === "light"
-          ? "rgba(0, 0, 0, 0.54)"
-          : "rgba(255, 255, 255, 0.7)",
+        theme.palette.type === 'light'
+          ? 'rgba(0, 0, 0, 0.54)'
+          : 'rgba(255, 255, 255, 0.7)',
     },
     headerStyle: {
-      marginBottom: "0px",
-      fontSize: "0px",
+      marginBottom: '0px',
+      fontSize: '0px',
     },
     overviewHeaderContainerStyle: {
-      display: "flex",
-      margin: "15px",
-      marginBottom: "20px",
+      display: 'flex',
+      margin: '15px',
+      marginBottom: '20px',
     },
     headerWithSubheaderContainerStyle: {
-      display: "flex",
-      alignItems: "center",
+      display: 'flex',
+      alignItems: 'center',
     },
     subheaderTextStyle: {
-      fontSize: "10px",
-      marginLeft: "5px",
+      fontSize: '10px',
+      marginLeft: '5px',
     },
     overviewCardsContainerStyle: {
-      display: "flex",
-      margin: "15px",
-      marginTop: "-15px",
+      display: 'flex',
+      margin: '15px',
+      marginTop: '-15px',
     },
     incidentMetricsContainerStyle: {
-      display: "flex",
-      height: "100%",
-      justifyContent: "center",
-      columnSpan: "all",
+      display: 'flex',
+      height: '100%',
+      justifyContent: 'center',
+      columnSpan: 'all',
     },
-  })
+  }),
 );
 
 const BasicCard = ({ children }: { children: ReactNode }) => (
@@ -127,9 +127,9 @@ export const PagerDutyCard = (props: PagerDutyCardProps) => {
   const [refreshStatus, setRefreshStatus] = useState<boolean>(false);
 
   const handleRefresh = useCallback(() => {
-    setRefreshIncidents((x) => !x);
-    setRefreshChangeEvents((x) => !x);
-    setRefreshStatus((x) => !x);
+    setRefreshIncidents(x => !x);
+    setRefreshChangeEvents(x => !x);
+    setRefreshStatus(x => !x);
   }, []);
 
   const {
@@ -138,17 +138,17 @@ export const PagerDutyCard = (props: PagerDutyCardProps) => {
     error,
   } = useAsync(async () => {
     const { service: foundService } = await api.getServiceByPagerDutyEntity(
-      props
+      props,
     );
 
     const serviceStandards = await api.getServiceStandardsByServiceId(
       foundService.id,
-      props.account
+      props.account,
     );
 
     const serviceMetrics = await api.getServiceMetricsByServiceId(
       foundService.id,
-      props.account
+      props.account,
     );
 
     const result: PagerDutyCardServiceResponse = {
@@ -199,7 +199,7 @@ export const PagerDutyCard = (props: PagerDutyCardProps) => {
       <CardHeader
         className={classes.headerStyle}
         title={
-          theme.palette.type === "dark" ? (
+          theme.palette.type === 'dark' ? (
             <img src={PDWhiteImage} alt="PagerDuty" height="35" />
           ) : (
             <img src={PDGreenImage} alt="PagerDuty" height="35" />
@@ -228,14 +228,14 @@ export const PagerDutyCard = (props: PagerDutyCardProps) => {
           </Typography>
         </Grid>
         <Grid item md={6}>
-          <span className={classes.headerWithSubheaderContainerStyle}>
+          <Typography className={classes.headerWithSubheaderContainerStyle}>
             <Typography className={classes.overviewHeaderTextStyle}>
               INSIGHTS
             </Typography>
             <Typography className={classes.subheaderTextStyle}>
               (last 30 days)
             </Typography>
-          </span>
+          </Typography>
         </Grid>
         <Grid item md={3}>
           <Typography className={classes.overviewHeaderTextStyle}>
