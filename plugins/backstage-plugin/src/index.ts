@@ -33,5 +33,6 @@ export * from './components';
 
 export * from './api';
 export * from './deprecated';
+export * from './alpha';
 
 export type { PagerDutyEntity } from './types';
