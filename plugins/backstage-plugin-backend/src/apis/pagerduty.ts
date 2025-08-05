@@ -253,7 +253,7 @@ export async function getServiceRelationshipsById(serviceId: string, account?: s
 }
 
 
-async function getEscalationPolicies(offset: number, limit: number, account?: string): Promise<[Boolean, PagerDutyEscalationPolicy[]]> {
+async function getEscalationPolicies(offset: number, limit: number, account?: string): Promise<[boolean, PagerDutyEscalationPolicy[]]> {
     let response: Response;
     const params = `total=true&sort_by=name&offset=${offset}&limit=${limit}`;
     const options: RequestInit = {
