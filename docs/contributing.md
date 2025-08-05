@@ -6,15 +6,15 @@
 
 * **Do not open up a GitHub issue if the bug is a security vulnerability**, and instead send us an [email](mailto:open-source@pagerduty.com).
 
-* **Ensure the bug was not already reported** by searching on GitHub's [issues](https://github.com/pagerduty/backstage-plugin-monorepo/issues) page.
+* **Ensure the bug was not already reported** by searching on GitHub's [issues](https://github.com/pagerduty/backstage-plugins/issues) page.
 
-* If you're unable to find an open issue addressing the problem, [open a new one](https://github.com/PagerDuty/backstage-plugin-monorepo/issues/new?labels=bug&projects=&template=bug_report.md). **Use the bug template.**
+* If you're unable to find an open issue addressing the problem, [open a new one](https://github.com/PagerDuty/backstage-plugins/issues/new?labels=bug&projects=&template=bug_report.md). **Use the bug template.**
 
 ## **Do you intend to add a new feature or change an existing one?**
 
-* Check for a similar feature request on the [issues](https://github.com/pagerduty/backstage-plugin-monorepo/issues) page.
+* Check for a similar feature request on the [issues](https://github.com/pagerduty/backstage-plugins/issues) page.
   
-* If you can't find it, open an issue on GitHub using the [Feature Request](https://github.com/PagerDuty/backstage-plugin-monorepo/issues/new?assignees=&labels=enhancement&projects=&template=feature_request.md&title=) template.
+* If you can't find it, open an issue on GitHub using the [Feature Request](https://github.com/PagerDuty/backstage-plugins/issues/new?assignees=&labels=enhancement&projects=&template=feature_request.md&title=) template.
 
 * Provide as much details as possible so the request can be analysed by the team.
 
@@ -28,9 +28,9 @@ Contributions via pull requests are much appreciated but we need you to follow s
 
 ### Step 1: Find something to work on
 
-If you want to contribute a specific feature or fix you have in mind, look at active [pull requests](https://github.com/pagerduty/backstage-plugin-monorepo/pulls) to see if someone else is already working on it. If not, please propose that feature request/fix on the [issues page](https://github.com/pagerduty/backstage-plugin-monorepo/issues). You will need to reference the issue number on the PR.
+If you want to contribute a specific feature or fix you have in mind, look at active [pull requests](https://github.com/pagerduty/backstage-plugins/pulls) to see if someone else is already working on it. If not, please propose that feature request/fix on the [issues page](https://github.com/pagerduty/backstage-plugins/issues). You will need to reference the issue number on the PR.
 
-On the other hand, if you are here looking for an issue/bug to work on, check out our [backlog of issues](https://github.com/pagerduty/backstage-plugin-monorepo/issues) and find something that looks interesting. We label our issues with [GitHub's default labels](https://docs.github.com/en/issues/using-labels-and-milestones-to-track-work/managing-labels#about-default-labels). Use that as a reference.
+On the other hand, if you are here looking for an issue/bug to work on, check out our [backlog of issues](https://github.com/pagerduty/backstage-plugins/issues) and find something that looks interesting. We label our issues with [GitHub's default labels](https://docs.github.com/en/issues/using-labels-and-milestones-to-track-work/managing-labels#about-default-labels). Use that as a reference.
 
 It's a good idea to keep the priority of issues in mind when deciding what to work on. If we have labelled an issue as `low priority`, it means it's something we won't get to work soon while `high priority` issues have a bigger impact, so we are much more likely to give a PR for those issues prompt attention.
 
@@ -38,7 +38,7 @@ It's a good idea to keep the priority of issues in mind when deciding what to wo
 
 We ask you to seek feedback and consensus on your proposed change by iterating on a design document. This is especially useful when you plan a big change or feature, or you want advice on what would be the best path forward.
 
-If you're picking up an existing issue, you can simply post your comment and discuss your proposed changes. If instead you're proposing a new feature, you can start by creating a new [feature request issue](https://github.com/PagerDuty/backstage-plugin-monorepo/issues/new?assignees=&labels=enhancement&projects=&template=feature_request.md&title=) and discuss your proposed change with the maintainers.
+If you're picking up an existing issue, you can simply post your comment and discuss your proposed changes. If instead you're proposing a new feature, you can start by creating a new [feature request issue](https://github.com/PagerDuty/backstage-plugins/issues/new?assignees=&labels=enhancement&projects=&template=feature_request.md&title=) and discuss your proposed change with the maintainers.
 
 Another way to collect feedback on a new feature request is to use Backstage's [Discord](https://discord.gg/backstage-687207715902193673) server or by sharing it in [PagerDuty's community forum](https://community.pagerduty.com).
 
