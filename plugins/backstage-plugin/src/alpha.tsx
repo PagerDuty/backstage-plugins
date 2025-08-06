@@ -21,6 +21,7 @@ import {
   createRouteRef, 
   FrontendPlugin, 
   PageBlueprint,
+  NavItemBlueprint,
   discoveryApiRef,
   configApiRef,
   fetchApiRef,
@@ -31,6 +32,7 @@ import {
 import { compatWrapper } from "@backstage/core-compat-api";
 import { EntityCardBlueprint } from "@backstage/plugin-catalog-react/alpha"
 import { pagerDutyApiRef, PagerDutyClient } from './api';
+import { PagerDutyIcon } from './components';
 
 export const rootRouteRef = createRouteRef();
 
@@ -76,12 +78,12 @@ const EntityPagerDutyCard = EntityCardBlueprint.make({
 });
 
 /** @alpha */
-const EntityPagerDutySmallCard = EntityCardBlueprint.make({
-  name: 'EntityPagerDutySmallCard',
+const PagerDutyNavBarItem = NavItemBlueprint.make({
+  name: 'PagerDutyNavBarItem',
   params: {
-    filter: 'kind:component',
-    loader: async () => import('./components/EntityPagerDutySmallCard') 
-      .then(m => compatWrapper(<m.EntityPagerDutySmallCard />)),
+    title: 'PagerDuty',
+    icon: () => <PagerDutyIcon />,
+    routeRef: rootRouteRef,
   }
 });
 
@@ -90,9 +92,9 @@ export default createFrontendPlugin({
   pluginId: 'pagerduty',
   extensions: [
     EntityPagerDutyCard,
-    EntityPagerDutySmallCard,
     PagerDutyAPI,
-    PagerDutyPage
+    PagerDutyPage,
+    PagerDutyNavBarItem
   ],
   routes: {
     root: rootRouteRef

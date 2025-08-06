@@ -93,8 +93,12 @@
   },
   "typesVersions": {
     "*": {
-      "alpha": ["src/alpha.tsx"],
-      "package.json": ["package.json"]
+      "alpha": [
+        "src/alpha.tsx"
+      ],
+      "package.json": [
+        "package.json"
+      ]
     }
   },
   "configSchema": "config.d.ts",
