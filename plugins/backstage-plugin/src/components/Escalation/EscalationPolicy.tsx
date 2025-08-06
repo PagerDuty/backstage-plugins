@@ -14,17 +14,22 @@
  * limitations under the License.
  */
 // eslint-disable-next-line @backstage/no-undeclared-imports
-import { List, ListSubheader, createStyles, makeStyles } from "@material-ui/core";
-import { EscalationUsersEmptyState } from "./EscalationUsersEmptyState";
-import { EscalationUsersForbiddenState } from "./EscalationUsersForbiddenState";
-import { EscalationUser } from "./EscalationUser";
-import useAsync from "react-use/lib/useAsync";
-import { pagerDutyApiRef } from "../../api";
-import { Alert } from "@material-ui/lab";
+import {
+  List,
+  ListSubheader,
+  createStyles,
+  makeStyles,
+} from '@material-ui/core';
+import { EscalationUsersEmptyState } from './EscalationUsersEmptyState';
+import { EscalationUsersForbiddenState } from './EscalationUsersForbiddenState';
+import { EscalationUser } from './EscalationUser';
+import useAsync from 'react-use/lib/useAsync';
+import { pagerDutyApiRef } from '../../api';
+import { Alert } from '@material-ui/lab';
 
-import { useApi } from "@backstage/core-plugin-api";
-import { Progress } from "@backstage/core-components";
-import { BackstageTheme } from "@backstage/theme";
+import { useApi } from '@backstage/core-plugin-api';
+import { Progress } from '@backstage/core-components';
+import { BackstageTheme } from '@backstage/theme';
 
 type Props = {
   policyId: string;
@@ -35,9 +40,9 @@ type Props = {
 const useStyles = makeStyles<BackstageTheme>(() =>
   createStyles({
     listStyle: {
-      marginLeft: "-15px",
+      marginLeft: '-15px',
     },
-  })
+  }),
 );
 
 export const EscalationPolicy = ({
@@ -58,7 +63,7 @@ export const EscalationPolicy = ({
   });
 
   if (error) {
-    if (error.message.includes("Forbidden")) {
+    if (error.message.includes('Forbidden')) {
       return (
         <List dense subheader={<ListSubheader>ON CALL</ListSubheader>}>
           <EscalationUsersForbiddenState />
@@ -82,10 +87,7 @@ export const EscalationPolicy = ({
   }
 
   return (
-    <List
-      dense
-      className={classes.listStyle}
-    >
+    <List dense className={classes.listStyle}>
       {users!.map((user, index) => (
         <EscalationUser
           key={index}

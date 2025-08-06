@@ -14,38 +14,41 @@
  * limitations under the License.
  */
 
-import { PagerDutyAccountConfig, PagerDutyOAuthConfig } from '@pagerduty/backstage-plugin-common';
+import {
+  PagerDutyAccountConfig,
+  PagerDutyOAuthConfig,
+} from '@pagerduty/backstage-plugin-common';
 
 export interface Config {
+  /**
+   * Configuration for the PagerDuty plugin
+   * @visibility frontend
+   */
+  pagerDuty?: {
     /**
-     * Configuration for the PagerDuty plugin
+     * Optional Events Base URL to override the default.
      * @visibility frontend
      */
-    pagerDuty?: {
-        /**
-         * Optional Events Base URL to override the default.
-         * @visibility frontend
-         */
-        eventsBaseUrl?: string;
-        /**
-         * Optional API Base URL to override the default.
-         * @visibility frontend
-         */
-        apiBaseUrl?: string;
-        /**
-         * Optional PagerDuty API Token used in API calls from the backend component.
-         * @visibility secret
-         */
-        apiToken?: string;
-        /**
-         * Optional PagerDuty Scoped OAuth Token used in API calls from the backend component.
-         * @deepVisibility secret
-         */
-        oauth?: PagerDutyOAuthConfig;
-        /**
-         * Optional PagerDuty multi-account configuration
-         * @deepVisibility secret
-         */
-        accounts?: PagerDutyAccountConfig[];
-    };
+    eventsBaseUrl?: string;
+    /**
+     * Optional API Base URL to override the default.
+     * @visibility frontend
+     */
+    apiBaseUrl?: string;
+    /**
+     * Optional PagerDuty API Token used in API calls from the backend component.
+     * @visibility secret
+     */
+    apiToken?: string;
+    /**
+     * Optional PagerDuty Scoped OAuth Token used in API calls from the backend component.
+     * @deepVisibility secret
+     */
+    oauth?: PagerDutyOAuthConfig;
+    /**
+     * Optional PagerDuty multi-account configuration
+     * @deepVisibility secret
+     */
+    accounts?: PagerDutyAccountConfig[];
+  };
 }

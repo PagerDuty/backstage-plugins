@@ -25,54 +25,54 @@ import {
 } from '@material-ui/core';
 import Avatar from '@material-ui/core/Avatar';
 import { PagerDutyUser } from '@pagerduty/backstage-plugin-common';
-import NotificationsIcon from "@material-ui/icons/Notifications";
+import NotificationsIcon from '@material-ui/icons/Notifications';
 import { BackstageTheme } from '@backstage/theme';
 
-const useStyles = makeStyles<BackstageTheme>((theme) => ({
+const useStyles = makeStyles<BackstageTheme>(theme => ({
   listItemPrimary: {
-    fontWeight: "bold",
+    fontWeight: 'bold',
   },
   listItemSecondary: {
-    fontWeight: "normal",
-    textDecoration: "underline",
-    marginTop: "-5px",
+    fontWeight: 'normal',
+    textDecoration: 'underline',
+    marginTop: '-5px',
   },
   buttonStyle: {
-    marginLeft: "-11px",
-    marginTop: "-10px",
-    fontSize: "15px",
+    marginLeft: '-11px',
+    marginTop: '-10px',
+    fontSize: '15px',
     color: theme.palette.text.primary,
-    "&:hover": {
-      backgroundColor: "transparent",
-      textDecoration: "underline",
+    '&:hover': {
+      backgroundColor: 'transparent',
+      textDecoration: 'underline',
     },
   },
   userTextButtonStyle: {
-    marginLeft: "-11px",
-    marginTop: "-10px",
-    marginBottom: "-10px",
-    fontSize: "15px",
+    marginLeft: '-11px',
+    marginTop: '-10px',
+    marginBottom: '-10px',
+    fontSize: '15px',
     color: theme.palette.text.primary,
-    "&:hover": {
-      backgroundColor: "transparent",
-      textDecoration: "underline",
+    '&:hover': {
+      backgroundColor: 'transparent',
+      textDecoration: 'underline',
     },
   },
   containerStyle: {
-    display: "flex",
-    alignItems: "center",
-    fontWeight: "bold",
+    display: 'flex',
+    alignItems: 'center',
+    fontWeight: 'bold',
   },
   iconStyle: {
-    fontSize: "25px",
-    marginLeft: "-4px",
+    fontSize: '25px',
+    marginLeft: '-4px',
     color: theme.palette.text.primary,
   },
   smallIconStyle: {
     color: theme.palette.text.primary,
   },
   avatarStyle: {
-    marginTop: "-20px",
+    marginTop: '-20px',
   },
 }));
 
@@ -84,7 +84,7 @@ type Props = {
 
 function navigateToUrl(url: string) {
   // open url in new browser window
-  window.open(url, "_blank");
+  window.open(url, '_blank');
 }
 
 export const EscalationUser = ({ user, policyUrl, policyName }: Props) => {
@@ -108,7 +108,9 @@ export const EscalationUser = ({ user, policyUrl, policyName }: Props) => {
                 onClick={() => navigateToUrl(user.html_url)}
                 className={classes.userTextButtonStyle}
               >
-                <span className={classes.containerStyle}>{user.name}</span>
+                <Typography className={classes.containerStyle}>
+                  {user.name}
+                </Typography>
               </IconButton>
             </Tooltip>
 
@@ -126,10 +128,10 @@ export const EscalationUser = ({ user, policyUrl, policyName }: Props) => {
             onClick={() => navigateToUrl(policyUrl)}
             className={classes.buttonStyle}
           >
-            <span className={classes.containerStyle}>
+            <Typography className={classes.containerStyle}>
               <NotificationsIcon className={classes.iconStyle} />
               {policyName}
-            </span>
+            </Typography>
           </IconButton>
         }
       />

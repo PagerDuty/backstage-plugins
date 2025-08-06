@@ -14,17 +14,18 @@
  * limitations under the License.
  */
 
-import { PagerDutyChangeEventsResponse, 
-  PagerDutyServiceResponse, 
-  PagerDutyUser, 
+import {
+  PagerDutyChangeEventsResponse,
+  PagerDutyServiceResponse,
+  PagerDutyUser,
   PagerDutyIncidentsResponse,
   PagerDutyServiceStandardsResponse,
   PagerDutyServiceMetricsResponse,
   PagerDutyServiceStandards,
   PagerDutyServiceMetrics,
   PagerDutyEntityMappingsResponse,
-  PagerDutySetting
- } from '@pagerduty/backstage-plugin-common';
+  PagerDutySetting,
+} from '@pagerduty/backstage-plugin-common';
 import { DiscoveryApi, FetchApi } from '@backstage/core-plugin-api';
 import { Entity } from '@backstage/catalog-model';
 import { PagerDutyEntity } from '../types';
@@ -49,7 +50,7 @@ export type PagerDutyCardServiceResponse = {
   account?: string;
   standards?: PagerDutyServiceStandards;
   metrics?: PagerDutyServiceMetrics[];
-}
+};
 
 /** @public */
 export interface PagerDutyApi {
@@ -60,7 +61,7 @@ export interface PagerDutyApi {
   getSetting(id: string): Promise<PagerDutySetting>;
   /**
    * Stores PagerDuty setting in the database.
-   * 
+   *
    */
   storeSettings(settings: PagerDutySetting[]): Promise<Response>;
   /**
@@ -71,9 +72,14 @@ export interface PagerDutyApi {
 
   /**
    * Stores the service mapping in the database.
-   * 
+   *
    */
-  storeServiceMapping(serviceId: string, integrationKey: string, entityRef: string, account: string): Promise<Response>;
+  storeServiceMapping(
+    serviceId: string,
+    integrationKey: string,
+    entityRef: string,
+    account: string,
+  ): Promise<Response>;
 
   /**
    * Fetches the service for the provided pager duty Entity.
@@ -138,7 +144,10 @@ export interface PagerDutyApi {
    * Fetches the list of users in an escalation policy.
    *
    */
-  getOnCallByPolicyId(policyId: string, account?: string): Promise<PagerDutyUser[]>;
+  getOnCallByPolicyId(
+    policyId: string,
+    account?: string,
+  ): Promise<PagerDutyUser[]>;
 
   /**
    * Triggers an incident to whoever is on-call.

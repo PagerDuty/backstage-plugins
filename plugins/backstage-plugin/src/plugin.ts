@@ -52,10 +52,11 @@ export const pagerDutyPlugin = createPlugin({
 export const PagerDutyPage = pagerDutyPlugin.provide(
   createRoutableExtension({
     name: 'PagerDutyPage',
-    component: () => import('./components/PagerDutyPage').then(m => m.PagerDutyPage),
+    component: () =>
+      import('./components/PagerDutyPage').then(m => m.PagerDutyPage),
     mountPoint: rootRouteRef,
-  })
-)
+  }),
+);
 
 /** @public */
 export const EntityPagerDutyCard = pagerDutyPlugin.provide(

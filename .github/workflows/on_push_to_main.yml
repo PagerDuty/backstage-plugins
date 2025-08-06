@@ -25,7 +25,7 @@ jobs:
       - uses: release-drafter/release-drafter@v5
         # (Optional) specify config name to use, relative to .github/. Default: release-drafter.yml
         with:
-            config-name: release-drafter.yml
+          config-name: release-drafter.yml
         #   disable-autolabeler: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -44,11 +44,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          registry-url: "https://registry.npmjs.org"
+          registry-url: 'https://registry.npmjs.org'
 
       - name: Install yarn
         run: corepack enable
-      
+
       - name: Set yarn version to latest stable
         run: corepack prepare yarn@stable --activate
 

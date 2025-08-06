@@ -6,7 +6,7 @@ import { RootConfigService } from '@backstage/backend-plugin-api';
 
 global.fetch = jest.fn() as jest.Mock;
 
-function mockedResponse(status: number, body: any): Promise<Response> {
+function mockedResponse(status: number, body: unknown): Promise<Response> {
   return Promise.resolve({
     json: () => Promise.resolve(body),
     status,

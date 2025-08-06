@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 
-import { PagerDutyAccountConfig, PagerDutyOAuthConfig } from '@pagerduty/backstage-plugin-common';
+import {
+  PagerDutyAccountConfig,
+  PagerDutyOAuthConfig,
+} from '@pagerduty/backstage-plugin-common';
 
 export interface Config {
   /**
