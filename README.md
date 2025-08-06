@@ -32,7 +32,7 @@ Check [Setting Up](./docs/setting-up.md) for information about how to set up the
 
 ## Contributing
 
-**TODO**: Please update this section correctly before we publicly announce this repository.
+Check [Contributing](./docs/contributing.md) for information about how to contribute to the project.
 
 ## Publishing packages
 
