@@ -1,10 +1,10 @@
 export type PagerDutyEscalationPolicyDropDownOption = {
-    label: string;
-    value: string;
+  label: string;
+  value: string;
 };
 
 export type CreateServiceResponse = {
-    id: string;
-    url: string;
-    alertGrouping: string;
+  id: string;
+  url: string;
+  alertGrouping: string;
 };

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 // eslint-disable-next-line @backstage/no-undeclared-imports
-import { ReactNode, useCallback, useState } from "react";
+import { ReactNode, useCallback, useState } from 'react';
 import {
   Accordion,
   AccordionDetails,
@@ -23,79 +23,79 @@ import {
   CardHeader,
   Grid,
   Typography,
-} from "@material-ui/core";
-import useAsync from "react-use/lib/useAsync";
-import { pagerDutyApiRef, UnauthorizedError } from "../../api";
-import { MissingTokenError, ServiceNotFoundError } from "../Errors";
-import PDGreenImage from "../../assets/PD-Green.svg";
-import PDWhiteImage from "../../assets/PD-White.svg";
+} from '@material-ui/core';
+import useAsync from 'react-use/lib/useAsync';
+import { pagerDutyApiRef, UnauthorizedError } from '../../api';
+import { MissingTokenError, ServiceNotFoundError } from '../Errors';
+import PDGreenImage from '../../assets/PD-Green.svg';
+import PDWhiteImage from '../../assets/PD-White.svg';
 
-import { useApi } from "@backstage/core-plugin-api";
-import { NotFoundError } from "@backstage/errors";
-import { Progress, InfoCard } from "@backstage/core-components";
-import { PagerDutyEntity } from "../../types";
-import { ForbiddenError } from "../Errors/ForbiddenError";
+import { useApi } from '@backstage/core-plugin-api';
+import { NotFoundError } from '@backstage/errors';
+import { Progress, InfoCard } from '@backstage/core-components';
+import { PagerDutyEntity } from '../../types';
+import { ForbiddenError } from '../Errors/ForbiddenError';
 import {
   InsightsCard,
   OpenServiceButton,
   ServiceStandardsCard,
   StatusCard,
   TriggerIncidentButton,
-} from "../PagerDutyCardCommon";
-import { createStyles, makeStyles, useTheme } from "@material-ui/core/styles";
-import { BackstageTheme } from "@backstage/theme";
-import { PagerDutyCardServiceResponse } from "../../api/types";
-import { EscalationPolicy } from "../Escalation";
-import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
+} from '../PagerDutyCardCommon';
+import { createStyles, makeStyles, useTheme } from '@material-ui/core/styles';
+import { BackstageTheme } from '@backstage/theme';
+import { PagerDutyCardServiceResponse } from '../../api/types';
+import { EscalationPolicy } from '../Escalation';
+import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 
-const useStyles = makeStyles<BackstageTheme>((theme) =>
+const useStyles = makeStyles<BackstageTheme>(theme =>
   createStyles({
     overviewHeaderTextStyle: {
-      fontSize: "14px",
+      fontSize: '14px',
       fontWeight: 500,
       color:
-        theme.palette.type === "light"
-          ? "rgba(0, 0, 0, 0.54)"
-          : "rgba(255, 255, 255, 0.7)",
+        theme.palette.type === 'light'
+          ? 'rgba(0, 0, 0, 0.54)'
+          : 'rgba(255, 255, 255, 0.7)',
     },
     headerStyle: {
-      marginBottom: "0px",
-      fontSize: "0px",
+      marginBottom: '0px',
+      fontSize: '0px',
     },
     overviewHeaderContainerStyle: {
-      display: "flex",
-      margin: "0px",
-      padding: "15px",
-      marginBottom: "5px",
+      display: 'flex',
+      margin: '0px',
+      padding: '15px',
+      marginBottom: '5px',
     },
     headerWithSubheaderContainerStyle: {
-      display: "flex",
-      alignItems: "center",
+      display: 'flex',
+      alignItems: 'center',
     },
     subheaderTextStyle: {
-      fontSize: "10px",
-      marginLeft: "5px",
+      fontSize: '10px',
+      marginLeft: '5px',
     },
     overviewCardsContainerStyle: {
-      display: "flex",
-      margin: "15px",
-      marginTop: "-15px",
+      display: 'flex',
+      margin: '15px',
+      marginTop: '-15px',
     },
     onCallAccordionDetails: {
-      display: "flex",
-      width: "100%",
-      marginTop: "-25px",
-      marginBottom: "-15px",
+      display: 'flex',
+      width: '100%',
+      marginTop: '-25px',
+      marginBottom: '-15px',
     },
     incidentMetricsContainerStyle: {
-      display: "flex",
-      height: "100%",
-      justifyContent: "center",
-      columnSpan: "all",
-      margin: "15px",
-      marginTop: "-15px",
+      display: 'flex',
+      height: '100%',
+      justifyContent: 'center',
+      columnSpan: 'all',
+      margin: '15px',
+      marginTop: '-15px',
     },
-  })
+  }),
 );
 
 const BasicCard = ({ children }: { children: ReactNode }) => (
@@ -119,7 +119,7 @@ export const PagerDutySmallCard = (props: PagerDutyCardProps) => {
   const [refreshStatus, setRefreshStatus] = useState<boolean>(false);
 
   const handleRefresh = useCallback(() => {
-    setRefreshStatus((x) => !x);
+    setRefreshStatus(x => !x);
   }, []);
 
   const {
@@ -128,17 +128,17 @@ export const PagerDutySmallCard = (props: PagerDutyCardProps) => {
     error,
   } = useAsync(async () => {
     const { service: foundService } = await api.getServiceByPagerDutyEntity(
-      props
+      props,
     );
 
     const serviceStandards = await api.getServiceStandardsByServiceId(
       foundService.id,
-      props.account
+      props.account,
     );
 
     const serviceMetrics = await api.getServiceMetricsByServiceId(
       foundService.id,
-      props.account
+      props.account,
     );
 
     const result: PagerDutyCardServiceResponse = {
@@ -189,7 +189,7 @@ export const PagerDutySmallCard = (props: PagerDutyCardProps) => {
       <CardHeader
         className={classes.headerStyle}
         title={
-          theme.palette.type === "dark" ? (
+          theme.palette.type === 'dark' ? (
             <img src={PDWhiteImage} alt="PagerDuty" height="25" />
           ) : (
             <img src={PDGreenImage} alt="PagerDuty" height="25" />
@@ -227,7 +227,12 @@ export const PagerDutySmallCard = (props: PagerDutyCardProps) => {
 
       <Grid item md={12} className={classes.overviewCardsContainerStyle}>
         <Grid item md={6}>
-          <StatusCard compact serviceId={service!.id} refreshStatus={refreshStatus} account={service!.account} />
+          <StatusCard
+            compact
+            serviceId={service!.id}
+            refreshStatus={refreshStatus}
+            account={service!.account}
+          />
         </Grid>
         <Grid item md={6}>
           <ServiceStandardsCard
@@ -257,14 +262,14 @@ export const PagerDutySmallCard = (props: PagerDutyCardProps) => {
             aria-controls="panel1a-content"
             id="panel1a-header"
           >
-            <span className={classes.headerWithSubheaderContainerStyle}>
+            <Typography className={classes.headerWithSubheaderContainerStyle}>
               <Typography className={classes.overviewHeaderTextStyle}>
                 INSIGHTS
               </Typography>
               <Typography className={classes.subheaderTextStyle}>
                 (last 30 days)
               </Typography>
-            </span>
+            </Typography>
           </AccordionSummary>
           <AccordionDetails>
             <Grid

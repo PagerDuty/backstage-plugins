@@ -1,17 +1,13 @@
 {
   "extends": "@backstage/cli/config/tsconfig.json",
-  "include": [
-    "src",
-    "dev",
-    "migrations"
-  ],
+  "include": ["src", "dev", "migrations"],
   "files": ["../../node_modules/@backstage/cli/asset-types/asset-types.d.ts"],
   "exclude": ["node_modules"],
   "compilerOptions": {
     "outDir": "dist-types",
     "rootDir": ".",
     "useUnknownInCatchVariables": false,
-    "declaration": true,  
+    "declaration": true,
     "paths": {
       "@pagerduty/backstage-plugin-backend": ["./dist"]
     }

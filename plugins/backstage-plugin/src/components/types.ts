@@ -34,6 +34,6 @@ export type BackstageEntity = {
 };
 
 export type Annotations = {
-  "pagerduty.com/integration-key": string;
-  "pagerduty.com/service-id": string;
+  'pagerduty.com/integration-key': string;
+  'pagerduty.com/service-id': string;
 };

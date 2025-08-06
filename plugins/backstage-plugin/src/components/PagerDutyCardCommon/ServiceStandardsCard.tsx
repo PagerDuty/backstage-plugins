@@ -1,4 +1,4 @@
-import { BackstageTheme } from "@backstage/theme";
+import { BackstageTheme } from '@backstage/theme';
 import {
   Card,
   IconButton,
@@ -8,11 +8,11 @@ import {
   Typography,
   makeStyles,
   withStyles,
-} from "@material-ui/core";
-import InfoIcon from "@material-ui/icons/Info";
-import { PagerDutyServiceStandard } from "@pagerduty/backstage-plugin-common";
-import CheckCircle from "@material-ui/icons/CheckCircle";
-import RadioButtonUncheckedIcon from "@material-ui/icons/RadioButtonUnchecked";
+} from '@material-ui/core';
+import InfoIcon from '@material-ui/icons/Info';
+import { PagerDutyServiceStandard } from '@pagerduty/backstage-plugin-common';
+import CheckCircle from '@material-ui/icons/CheckCircle';
+import RadioButtonUncheckedIcon from '@material-ui/icons/RadioButtonUnchecked';
 
 type Props = {
   total: number | undefined;
@@ -31,47 +31,47 @@ function colorFromPercentage(theme: Theme, percentage: number) {
 }
 
 function ServiceStandardsCard({ total, completed, standards, compact }: Props) {
-  const useStyles = makeStyles<BackstageTheme>((theme) => ({
+  const useStyles = makeStyles<BackstageTheme>(theme => ({
     cardStyle: {
-      height: compact !== true ? "120px" : "80px",
-      display: "grid",
-      gridTemplateRows: "1fr auto auto",
-      backgroundColor: "rgba(0, 0, 0, 0.03)",
+      height: compact !== true ? '120px' : '80px',
+      display: 'grid',
+      gridTemplateRows: '1fr auto auto',
+      backgroundColor: 'rgba(0, 0, 0, 0.03)',
     },
     containerStyle: {
-      display: "flex",
-      justifyContent: "center",
-      marginTop: compact !== true ? "-100px" : "-50px",
+      display: 'flex',
+      justifyContent: 'center',
+      marginTop: compact !== true ? '-100px' : '-50px',
     },
     largeTextStyle: {
-      fontSize: compact !== true ? "50px" : "40px",
+      fontSize: compact !== true ? '50px' : '40px',
       color:
         completed !== undefined && total !== undefined
           ? colorFromPercentage(theme, completed / total)
           : colorFromPercentage(theme, 0),
-      alignSelf: "center",
-      justifyContent: "center",
+      alignSelf: 'center',
+      justifyContent: 'center',
     },
     smallTextStyle: {
       color: theme.palette.textSubtle,
-      fontSize: compact !== true ? "14px" : "12px",
-      fontWeight: "bold",
-      alignSelf: "center",
-      justifyContent: "center",
-      marginLeft: "-2px",
-      marginTop: compact !== true ? "25px" : "20px",
+      fontSize: compact !== true ? '14px' : '12px',
+      fontWeight: 'bold',
+      alignSelf: 'center',
+      justifyContent: 'center',
+      marginLeft: '-2px',
+      marginTop: compact !== true ? '25px' : '20px',
     },
     tooltipContainer: {},
     tooltipIcon: {
-      marginRight: "5px",
+      marginRight: '5px',
     },
     standardItem: {
-      display: "flex",
-      alignItems: "center",
+      display: 'flex',
+      alignItems: 'center',
     },
   }));
 
-  const BorderLinearProgress = withStyles((theme) => ({
+  const BorderLinearProgress = withStyles(theme => ({
     root: {
       height: 10,
       borderRadius: 5,
@@ -79,7 +79,7 @@ function ServiceStandardsCard({ total, completed, standards, compact }: Props) {
     },
     colorPrimary: {
       backgroundColor:
-        theme.palette.grey[theme.palette.type === "light" ? 200 : 700],
+        theme.palette.grey[theme.palette.type === 'light' ? 200 : 700],
     },
     bar: {
       borderRadius: 5,
@@ -100,7 +100,11 @@ function ServiceStandardsCard({ total, completed, standards, compact }: Props) {
     standardItem,
   } = useStyles();
 
-  if (standards === undefined || completed === undefined || total === undefined) {
+  if (
+    standards === undefined ||
+    completed === undefined ||
+    total === undefined
+  ) {
     return (
       <Card className={cardStyle}>
         <div className={containerStyle}>
@@ -111,7 +115,7 @@ function ServiceStandardsCard({ total, completed, standards, compact }: Props) {
       </Card>
     );
   }
-  
+
   return (
     <Card className={cardStyle}>
       {completed !== undefined && total !== undefined ? (
@@ -123,19 +127,19 @@ function ServiceStandardsCard({ total, completed, standards, compact }: Props) {
                 title={
                   <>
                     {standards?.map((standard, key) => (
-                      <p key={key}>
+                      <Typography key={key}>
                         {standard.pass ? (
-                          <span className={standardItem}>
-                            <CheckCircle className={tooltipIcon} />{" "}
+                          <Typography className={standardItem}>
+                            <CheckCircle className={tooltipIcon} />{' '}
                             {standard.name}
-                          </span>
+                          </Typography>
                         ) : (
-                          <span className={standardItem}>
-                            <RadioButtonUncheckedIcon className={tooltipIcon} />{" "}
+                          <Typography className={standardItem}>
+                            <RadioButtonUncheckedIcon className={tooltipIcon} />{' '}
                             {standard.name}
-                          </span>
+                          </Typography>
                         )}
-                      </p>
+                      </Typography>
                     ))}
                   </>
                 }

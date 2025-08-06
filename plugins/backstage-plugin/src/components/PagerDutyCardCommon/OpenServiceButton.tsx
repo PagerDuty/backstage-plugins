@@ -15,10 +15,10 @@
  */
 
 // eslint-disable-next-line @backstage/no-undeclared-imports
-import { makeStyles, IconButton } from "@material-ui/core";
-import { BackstageTheme } from "@backstage/theme";
+import { makeStyles, IconButton, Typography } from '@material-ui/core';
+import { BackstageTheme } from '@backstage/theme';
 
-import OpenInBrowser from "@material-ui/icons/OpenInBrowser";
+import OpenInBrowser from '@material-ui/icons/OpenInBrowser';
 
 type OpenServiceButtonProps = {
   serviceUrl: string;
@@ -26,32 +26,35 @@ type OpenServiceButtonProps = {
 };
 
 /** @public */
-export function OpenServiceButton({ serviceUrl, compact }: OpenServiceButtonProps) {
-  const useStyles = makeStyles<BackstageTheme>((theme) => ({
+export function OpenServiceButton({
+  serviceUrl,
+  compact,
+}: OpenServiceButtonProps) {
+  const useStyles = makeStyles<BackstageTheme>(theme => ({
     buttonStyle: {
       color: theme.palette.text.primary,
-      "&:hover": {
-        backgroundColor: "transparent",
-        textDecoration: "underline",
+      '&:hover': {
+        backgroundColor: 'transparent',
+        textDecoration: 'underline',
       },
     },
     containerStyle: {
-      fontSize: compact !== true ? "12px" : "10px",
-      width: compact !== true ? "85px" : "70px",
+      fontSize: compact !== true ? '12px' : '10px',
+      width: compact !== true ? '85px' : '70px',
     },
     iconStyle: {
-      fontSize: "30px",
-      marginBottom: "-10px",
+      fontSize: '30px',
+      marginBottom: '-10px',
     },
     textStyle: {
-      marginBottom: "-10px",
+      marginBottom: '-10px',
     },
   }));
 
   const { buttonStyle, containerStyle, iconStyle, textStyle } = useStyles();
 
   function navigateToService() {
-    window.open(serviceUrl, "_blank");
+    window.open(serviceUrl, '_blank');
   }
 
   return (
@@ -63,7 +66,9 @@ export function OpenServiceButton({ serviceUrl, compact }: OpenServiceButtonProp
       >
         <div className={containerStyle}>
           <OpenInBrowser className={iconStyle} />
-          <p className={textStyle}>Open service in PagerDuty</p>
+          <Typography className={textStyle}>
+            Open service in PagerDuty
+          </Typography>
         </div>
       </IconButton>
     </>

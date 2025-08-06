@@ -2,6 +2,7 @@
 // import App from './App';
 
 describe('App', () => {
+  // eslint-disable-next-line
   it('should render', async () => {
     // TODO: fix later
     // process.env = {
@@ -19,9 +20,7 @@ describe('App', () => {
     //     },
     //   ] as any,
     // };
-
     // const rendered = render(<App />);
-
     // await waitFor(() => {
     //   expect(rendered.baseElement).toBeInTheDocument();
     // });

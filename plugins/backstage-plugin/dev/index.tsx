@@ -17,11 +17,15 @@
 // eslint-disable-next-line @backstage/no-undeclared-imports
 import { EntityProvider } from '@backstage/plugin-catalog-react';
 import { createDevApp } from '@backstage/dev-utils';
-import {pagerDutyPlugin, EntityPagerDutyCard, EntityPagerDutySmallCard} from '../src/plugin';
+import {
+  pagerDutyPlugin,
+  EntityPagerDutyCard,
+  EntityPagerDutySmallCard,
+} from '../src/plugin';
 import { pagerDutyApiRef } from '../src/api';
 import { mockPagerDutyApi } from './mockPagerDutyApi';
 import { mockEntity } from './mockEntity';
-import {Grid} from '@material-ui/core';
+import { Grid } from '@material-ui/core';
 
 createDevApp()
   .registerApi({
@@ -45,7 +49,7 @@ createDevApp()
     element: (
       <EntityProvider entity={mockEntity}>
         <Grid md={4}>
-          <EntityPagerDutySmallCard/>
+          <EntityPagerDutySmallCard />
         </Grid>
       </EntityProvider>
     ),

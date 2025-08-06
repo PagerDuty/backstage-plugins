@@ -1,11 +1,13 @@
 # Setting up
 
 Install all the dependencies.
+
 ```shell
 yarn install
 ```
 
 Build the entire plugin ecosystem.
+
 ```shell
 yarn build
 ```
@@ -21,6 +23,7 @@ export PAGERDUTY_SUBDOMAIN=<your_pd_subdomain>
 Also, you should update your `examples/entities.yaml` file to use your own service ID.
 
 Then, run the backstage instance.
+
 ```shell
 yarn start
 ```

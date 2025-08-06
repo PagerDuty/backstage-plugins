@@ -16,7 +16,11 @@
 
 import { Entity } from '@backstage/catalog-model';
 import { PagerDutyEntity } from '../types';
-import { PAGERDUTY_INTEGRATION_KEY, PAGERDUTY_SERVICE_ID, PAGERDUTY_ACCOUNT_NAME } from './constants';
+import {
+  PAGERDUTY_INTEGRATION_KEY,
+  PAGERDUTY_SERVICE_ID,
+  PAGERDUTY_ACCOUNT_NAME,
+} from './constants';
 
 export function getPagerDutyEntity(entity: Entity): PagerDutyEntity {
   const {

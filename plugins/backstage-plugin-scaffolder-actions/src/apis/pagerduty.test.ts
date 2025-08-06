@@ -20,7 +20,7 @@ jest.mock('../auth/auth', () => ({
 
 const testInputs = ['apiToken', 'oauth'];
 
-function mockedResponse(status: number, body: any): Promise<Response> {
+function mockedResponse(status: number, body: unknown): Promise<Response> {
   return Promise.resolve({
     json: () => Promise.resolve(body),
     status,
@@ -341,8 +341,9 @@ describe('PagerDuty API', () => {
           }),
         );
 
-        const account =
-          await getAccountByEscalationPolicyId(escalationPolicyId);
+        const account = await getAccountByEscalationPolicyId(
+          escalationPolicyId,
+        );
 
         expect(account).toEqual('testaccount');
         expect(fetch).toHaveBeenCalledTimes(1);

@@ -8,10 +8,7 @@
     "plugins/*/dev",
     "plugins/*/migrations"
   ],
-  "exclude": [
-    "node_modules",
-    "dist-types"
-  ],
+  "exclude": ["node_modules", "dist-types"],
   "compilerOptions": {
     "outDir": "dist-types",
     "rootDir": ".",
@@ -21,8 +18,6 @@
     "emitDeclarationOnly": true
   },
   "ts-node": {
-    "require": [
-      "tsconfig-paths/register"
-    ]
-  },
+    "require": ["tsconfig-paths/register"]
+  }
 }

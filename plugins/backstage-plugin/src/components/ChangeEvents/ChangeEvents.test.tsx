@@ -43,21 +43,25 @@ describe('Incidents', () => {
     expect(getByText('No change events to display yet.')).toBeInTheDocument();
   });
 
-  it("Renders a forbidden state when change events is undefined", async () => {
+  it('Renders a forbidden state when change events is undefined', async () => {
     mockPagerDutyApi.getChangeEventsByServiceId = jest
       .fn()
-      .mockImplementationOnce(async () => {throw new Error("Forbidden: You are not allowed to perform this action");});
+      .mockImplementationOnce(async () => {
+        throw new Error(
+          'Forbidden: You are not allowed to perform this action',
+        );
+      });
 
     const { getByText, queryByTestId } = render(
       wrapInTestApp(
         <ApiProvider apis={apis}>
           <ChangeEvents serviceId="abc" refreshEvents={false} />
-        </ApiProvider>
-      )
+        </ApiProvider>,
+      ),
     );
-    await waitFor(() => !queryByTestId("progress"));
+    await waitFor(() => !queryByTestId('progress'));
     expect(
-      getByText("Feature not available with your account or token.")
+      getByText('Feature not available with your account or token.'),
     ).toBeInTheDocument();
   });
 

@@ -1,12 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
-import { PagerDutyEntityMapping } from "@pagerduty/backstage-plugin-common";
+import { useEffect, useMemo, useState } from 'react';
+import { PagerDutyEntityMapping } from '@pagerduty/backstage-plugin-common';
 import {
   MRT_ColumnDef,
   MRT_EditActionButtons,
   MRT_TableOptions,
   MaterialReactTable,
   useMaterialReactTable,
-} from "material-react-table";
+} from 'material-react-table';
 import {
   Box,
   DialogActions,
@@ -15,15 +15,15 @@ import {
   IconButton,
   Tooltip,
   Typography,
-} from "@material-ui/core";
+} from '@material-ui/core';
 import {
   QueryClient,
   QueryClientProvider,
   useMutation,
-} from "@tanstack/react-query";
-import { Edit, OpenInBrowser } from "@mui/icons-material";
-import { useApi } from "@backstage/core-plugin-api";
-import { pagerDutyApiRef } from "../../api";
+} from '@tanstack/react-query';
+import { Edit, OpenInBrowser } from '@mui/icons-material';
+import { useApi } from '@backstage/core-plugin-api';
+import { pagerDutyApiRef } from '../../api';
 
 type BackstageEntity = {
   id: string;
@@ -37,33 +37,33 @@ type BackstageEntity = {
 };
 
 export type Annotations = {
-  "pagerduty.com/integration-key": string;
-  "pagerduty.com/service-id": string;
+  'pagerduty.com/integration-key': string;
+  'pagerduty.com/service-id': string;
 };
 
 function getColorFromStatus(status?: string) {
   switch (status) {
-    case "InSync":
-      return "green";
-    case "OutOfSync":
-      return "red";
-    case "NotMapped":
-      return "orange";
+    case 'InSync':
+      return 'green';
+    case 'OutOfSync':
+      return 'red';
+    case 'NotMapped':
+      return 'orange';
     default:
-      return "gray";
+      return 'gray';
   }
 }
 
 function makeReadable(status?: string) {
   switch (status) {
-    case "InSync":
-      return "In Sync";
-    case "OutOfSync":
-      return "Out of Sync";
-    case "NotMapped":
-      return "Not Mapped";
+    case 'InSync':
+      return 'In Sync';
+    case 'OutOfSync':
+      return 'Out of Sync';
+    case 'NotMapped':
+      return 'Not Mapped';
     default:
-      return "Refresh to Update";
+      return 'Refresh to Update';
   }
 }
 
@@ -86,7 +86,7 @@ export const MappingTable = ({
       Record<string, string | undefined>
     >({});
     const [entityOptions, setEntityOptions] = useState<CatalogEntityOptions[]>(
-      []
+      [],
     );
     const pagerDutyApi = useApi(pagerDutyApiRef);
 
@@ -97,9 +97,9 @@ export const MappingTable = ({
     const columns = useMemo<MRT_ColumnDef<PagerDutyEntityMapping>[]>(
       () => [
         {
-          id: "serviceId",
-          accessorKey: "serviceId",
-          header: "Service ID",
+          id: 'serviceId',
+          accessorKey: 'serviceId',
+          header: 'Service ID',
           visibleInShowHideMenu: false,
           enableEditing: false,
           Edit: () => null,
@@ -110,64 +110,64 @@ export const MappingTable = ({
           ),
         },
         {
-          id: "integrationKey",
-          accessorKey: "integrationKey",
-          header: "Integration Key",
+          id: 'integrationKey',
+          accessorKey: 'integrationKey',
+          header: 'Integration Key',
           visibleInShowHideMenu: false,
           enableEditing: false,
           Edit: () => null,
         },
         {
-          id: "serviceName",
-          accessorKey: "serviceName",
-          header: "PagerDuty Service",
+          id: 'serviceName',
+          accessorKey: 'serviceName',
+          header: 'PagerDuty Service',
           enableEditing: false,
         },
         {
-          id: "account",
-          accessorKey: "account",
-          header: "Account",
+          id: 'account',
+          accessorKey: 'account',
+          header: 'Account',
           enableEditing: false,
           Edit: () => null,
         },
         {
-          id: "team",
-          accessorKey: "team",
-          header: "Team",
+          id: 'team',
+          accessorKey: 'team',
+          header: 'Team',
           enableEditing: false,
         },
         {
-          id: "escalationPolicy",
-          accessorKey: "escalationPolicy",
-          header: "Escalation Policy",
+          id: 'escalationPolicy',
+          accessorKey: 'escalationPolicy',
+          header: 'Escalation Policy',
           enableEditing: false,
         },
         {
-          id: "entityRef",
-          accessorKey: "entityRef",
-          header: "Mapping",
+          id: 'entityRef',
+          accessorKey: 'entityRef',
+          header: 'Mapping',
           visibleInShowHideMenu: false,
-          editVariant: "select",
+          editVariant: 'select',
           editSelectOptions: entityOptions,
           muiEditTextFieldProps: {
             select: true,
             error: !!validationErrors?.state,
             helperText: validationErrors?.state,
             multiline: true,
-            type: "range",
+            type: 'range',
           },
         },
         {
-          id: "entityName",
-          accessorKey: "entityName",
-          header: "Mapped Entity Name",
+          id: 'entityName',
+          accessorKey: 'entityName',
+          header: 'Mapped Entity Name',
           enableEditing: false,
           Edit: () => null,
         },
         {
-          id: "status",
-          accessorKey: "status",
-          header: "Status",
+          id: 'status',
+          accessorKey: 'status',
+          header: 'Status',
           enableEditing: false,
           Edit: () => null,
           Cell: ({ cell }) => (
@@ -183,15 +183,15 @@ export const MappingTable = ({
           ),
         },
         {
-          id: "serviceUrl",
-          accessorKey: "serviceUrl",
-          header: "Service URL",
+          id: 'serviceUrl',
+          accessorKey: 'serviceUrl',
+          header: 'Service URL',
           visibleInShowHideMenu: false,
           enableEditing: false,
           Edit: () => null,
         },
       ],
-      [validationErrors, entityOptions]
+      [validationErrors, entityOptions],
     );
 
     // UPDATE hook (put mapping in api)
@@ -200,9 +200,9 @@ export const MappingTable = ({
         mutationFn: async (mapping: PagerDutyEntityMapping) => {
           return await pagerDutyApi.storeServiceMapping(
             mapping.serviceId,
-            mapping.integrationKey ?? "",
+            mapping.integrationKey ?? '',
             mapping.entityRef,
-            mapping.account ?? ""
+            mapping.account ?? '',
           );
         },
       });
@@ -213,24 +213,24 @@ export const MappingTable = ({
       useUpdateMapping();
 
     // UPDATE action
-    const handleSaveMapping: MRT_TableOptions<PagerDutyEntityMapping>["onEditingRowSave"] =
+    const handleSaveMapping: MRT_TableOptions<PagerDutyEntityMapping>['onEditingRowSave'] =
       async ({ values, table }) => {
         setValidationErrors({});
 
         values.entityName =
           catalogEntities.find(
-            (entity) =>
+            entity =>
               `${entity.type}:${entity.namespace}/${entity.name}`.toLowerCase() ===
-              values.entityRef
-          )?.name ?? "";
-        values.status = "RefreshToUpdate";
+              values.entityRef,
+          )?.name ?? '';
+        values.status = 'RefreshToUpdate';
 
         await updateMapping(values);
 
         // find corresponding mapping in mappings array
         // and update it with new values
         const existingMapping = mappings.find(
-          (item) => item.serviceId === values.serviceId
+          item => item.serviceId === values.serviceId,
         );
         if (existingMapping) {
           existingMapping.entityRef = values.entityRef;
@@ -241,28 +241,28 @@ export const MappingTable = ({
       };
 
     const openInBrowser = (url: string) => {
-      window.open(url, "_blank", "noreferrer");
+      window.open(url, '_blank', 'noreferrer');
     };
 
     const dataTable = useMaterialReactTable({
       columns,
       data: mappings,
-      editDisplayMode: "modal",
+      editDisplayMode: 'modal',
       enableEditing: true,
-      positionActionsColumn: "last",
+      positionActionsColumn: 'last',
       enableStickyHeader: true,
       enableFilters: true,
-      getRowId: (row) => row.serviceId,
+      getRowId: row => row.serviceId,
       muiToolbarAlertBannerProps:
         mappings === undefined
           ? {
-              color: "error",
-              children: "Error loading data",
+              color: 'error',
+              children: 'Error loading data',
             }
           : undefined,
       muiTableContainerProps: {
         sx: {
-          minHeight: "500px",
+          minHeight: '500px',
         },
       },
       onEditingRowCancel: () => setValidationErrors({}),
@@ -271,7 +271,7 @@ export const MappingTable = ({
         <>
           <DialogTitle>Update Entity Mapping</DialogTitle>
           <DialogContent
-            style={{ display: "flex", flexDirection: "column", gap: "1rem" }}
+            style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
           >
             {internalEditComponents}
           </DialogContent>
@@ -281,7 +281,7 @@ export const MappingTable = ({
         </>
       ),
       renderRowActions: ({ row, table }) => (
-        <Box sx={{ display: "flex" }}>
+        <Box sx={{ display: 'flex' }}>
           <Tooltip title="Edit">
             <IconButton
               onClick={() => {
@@ -294,7 +294,7 @@ export const MappingTable = ({
           </Tooltip>
           <Tooltip title="Open in PagerDuty">
             <IconButton
-              onClick={() => openInBrowser(row.getValue("serviceUrl"))}
+              onClick={() => openInBrowser(row.getValue('serviceUrl'))}
             >
               <OpenInBrowser />
             </IconButton>
@@ -321,24 +321,24 @@ export const MappingTable = ({
     function getEntityOptions() {
       const options: CatalogEntityOptions[] = [];
       // initialize with empty object
-      options.push({ value: "", label: "None" });
+      options.push({ value: '', label: 'None' });
 
-      catalogEntities.forEach((entity) => {
+      catalogEntities.forEach(entity => {
         // find service-id annotation in entity
         const foundServiceAnnotation =
-          entity.annotations["pagerduty.com/service-id"];
+          entity.annotations['pagerduty.com/service-id'];
 
         // find integration-key annotation in entity
         const foundIntegrationKeyAnnotation =
-          entity.annotations["pagerduty.com/integration-key"];
+          entity.annotations['pagerduty.com/integration-key'];
 
         // find entity with service-id in mappings array if service-id is found in entity
         let foundServiceMapping: PagerDutyEntityMapping | undefined;
         if (foundServiceAnnotation || foundIntegrationKeyAnnotation) {
           foundServiceMapping = mappings.find(
-            (item) =>
+            item =>
               item.serviceId === foundServiceAnnotation ||
-              item.integrationKey === foundIntegrationKeyAnnotation
+              item.integrationKey === foundIntegrationKeyAnnotation,
           );
         }
 
@@ -346,7 +346,7 @@ export const MappingTable = ({
           `${entity.type}:${entity.namespace}/${entity.name}`.toLowerCase();
         // find entity with entity.id in entityMappings array
         const foundEntityMapping = mappings.find(
-          (item) => item.entityRef === entityRef
+          item => item.entityRef === entityRef,
         );
 
         if (
