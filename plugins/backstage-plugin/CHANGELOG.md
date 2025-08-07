@@ -1,5 +1,11 @@
 # @backstage/plugin-pagerduty
 
+## 0.15.9
+
+### Patch Changes
+
+- b25f467: Change module main entry for backstage-plugin (frontend)
+
 ## 0.15.8
 
 ### Patch Changes
