@@ -1,10 +1,7 @@
 import { BackstageTheme } from '@backstage/theme';
 import {
-  Card,
-  IconButton,
   LinearProgress,
   Theme,
-  Tooltip,
   Typography,
   makeStyles,
   withStyles,
@@ -13,6 +10,9 @@ import InfoIcon from '@material-ui/icons/Info';
 import { PagerDutyServiceStandard } from '@pagerduty/backstage-plugin-common';
 import CheckCircle from '@material-ui/icons/CheckCircle';
 import RadioButtonUncheckedIcon from '@material-ui/icons/RadioButtonUnchecked';
+import { ButtonIcon, Card, Flex, Tooltip, TooltipTrigger } from '@backstage/ui';
+
+import '@backstage/ui/css/styles.css';
 
 type Props = {
   total: number | undefined;
@@ -21,7 +21,7 @@ type Props = {
   compact?: boolean;
 };
 
-function colorFromPercentage(theme: Theme, percentage: number) {
+export function colorFromPercentage(theme: Theme, percentage: number) {
   if (percentage < 0.5) {
     return theme.palette.error.main;
   } else if (percentage < 0.8) {
@@ -34,14 +34,9 @@ function ServiceStandardsCard({ total, completed, standards, compact }: Props) {
   const useStyles = makeStyles<BackstageTheme>(theme => ({
     cardStyle: {
       height: compact !== true ? '120px' : '80px',
-      display: 'grid',
-      gridTemplateRows: '1fr auto auto',
+      padding: 0,
+      position: 'relative',
       backgroundColor: 'rgba(0, 0, 0, 0.03)',
-    },
-    containerStyle: {
-      display: 'flex',
-      justifyContent: 'center',
-      marginTop: compact !== true ? '-100px' : '-50px',
     },
     largeTextStyle: {
       fontSize: compact !== true ? '50px' : '40px',
@@ -57,17 +52,37 @@ function ServiceStandardsCard({ total, completed, standards, compact }: Props) {
       fontSize: compact !== true ? '14px' : '12px',
       fontWeight: 'bold',
       alignSelf: 'center',
-      justifyContent: 'center',
-      marginLeft: '-2px',
-      marginTop: compact !== true ? '25px' : '20px',
+      marginLeft: '-20px',
+      marginBottom: '-20px',
     },
-    tooltipContainer: {},
     tooltipIcon: {
       marginRight: '5px',
+    },
+    infoIcon: {
+      color: 'gray',
+      '&:hover': {
+        backgroundColor: 'transparent',
+      },
     },
     standardItem: {
       display: 'flex',
       alignItems: 'center',
+    },
+    linearProgressContainer: {
+      left: 0,
+      position: 'absolute',
+      bottom: 0,
+      width: '100%',
+      padding: '0px',
+    },
+    textContainerStyle: {
+      position: 'absolute',
+      top: compact ? '5px' : '20px',
+      width: '100%',
+    },
+    tooltipTriggerStyles: {
+      position: 'relative',
+      zIndex: 1,
     },
   }));
 
@@ -92,12 +107,14 @@ function ServiceStandardsCard({ total, completed, standards, compact }: Props) {
 
   const {
     cardStyle,
-    containerStyle,
     largeTextStyle,
     smallTextStyle,
-    tooltipContainer,
+    linearProgressContainer,
     tooltipIcon,
+    textContainerStyle,
+    infoIcon,
     standardItem,
+    tooltipTriggerStyles,
   } = useStyles();
 
   if (
@@ -107,65 +124,52 @@ function ServiceStandardsCard({ total, completed, standards, compact }: Props) {
   ) {
     return (
       <Card className={cardStyle}>
-        <div className={containerStyle}>
+        <Flex justify="center">
           <Typography className={smallTextStyle}>
             Unable to retrieve Scores
           </Typography>
-        </div>
+        </Flex>
       </Card>
     );
   }
 
   return (
     <Card className={cardStyle}>
-      {completed !== undefined && total !== undefined ? (
-        <>
-          <div className={tooltipContainer}>
-            <IconButton>
-              <Tooltip
-                interactive
-                title={
-                  <>
-                    {standards?.map((standard, key) => (
-                      <Typography key={key}>
-                        {standard.pass ? (
-                          <Typography className={standardItem}>
-                            <CheckCircle className={tooltipIcon} />{' '}
-                            {standard.name}
-                          </Typography>
-                        ) : (
-                          <Typography className={standardItem}>
-                            <RadioButtonUncheckedIcon className={tooltipIcon} />{' '}
-                            {standard.name}
-                          </Typography>
-                        )}
-                      </Typography>
-                    ))}
-                  </>
-                }
-              >
-                <InfoIcon />
-              </Tooltip>
-            </IconButton>
-          </div>
-          <div className={containerStyle}>
-            <Typography className={largeTextStyle}>{completed}</Typography>
-            <Typography className={smallTextStyle}>/{total}</Typography>
-          </div>
-          <div>
-            <BorderLinearProgress
-              variant="determinate"
-              value={(completed! / total!) * 100}
-            />
-          </div>
-        </>
-      ) : (
-        <div className={containerStyle}>
-          <Typography className={smallTextStyle}>
-            Unable to retrieve Scores
-          </Typography>
+      <Flex direction="column">
+        <TooltipTrigger>
+          <ButtonIcon
+            className={tooltipTriggerStyles}
+            icon={<InfoIcon className={infoIcon} />}
+            variant="tertiary"
+          />
+          <Tooltip>
+            {standards?.map((standard, key) => (
+              <Typography key={key}>
+                {standard.pass ? (
+                  <Typography className={standardItem}>
+                    <CheckCircle className={tooltipIcon} /> {standard.name}
+                  </Typography>
+                ) : (
+                  <Typography className={standardItem}>
+                    <RadioButtonUncheckedIcon className={tooltipIcon} />{' '}
+                    {standard.name}
+                  </Typography>
+                )}
+              </Typography>
+            ))}
+          </Tooltip>
+        </TooltipTrigger>
+        <Flex justify="center" className={textContainerStyle}>
+          <Typography className={largeTextStyle}>{completed}</Typography>
+          <Typography className={smallTextStyle}>/{total}</Typography>
+        </Flex>
+        <div className={linearProgressContainer}>
+          <BorderLinearProgress
+            variant="determinate"
+            value={(completed! / total!) * 100}
+          />
         </div>
-      )}
+      </Flex>
     </Card>
   );
 }

@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-// eslint-disable-next-line @backstage/no-undeclared-imports
-import { makeStyles, IconButton, Typography } from '@material-ui/core';
+import { makeStyles, Typography } from '@material-ui/core';
 import { BackstageTheme } from '@backstage/theme';
 
 import OpenInBrowser from '@material-ui/icons/OpenInBrowser';
+import { ButtonIcon } from '@backstage/ui';
 
 type OpenServiceButtonProps = {
   serviceUrl: string;
@@ -30,47 +30,34 @@ export function OpenServiceButton({
   serviceUrl,
   compact,
 }: OpenServiceButtonProps) {
-  const useStyles = makeStyles<BackstageTheme>(theme => ({
-    buttonStyle: {
-      color: theme.palette.text.primary,
-      '&:hover': {
-        backgroundColor: 'transparent',
-        textDecoration: 'underline',
-      },
-    },
+  const useStyles = makeStyles<BackstageTheme>(() => ({
     containerStyle: {
       fontSize: compact !== true ? '12px' : '10px',
       width: compact !== true ? '85px' : '70px',
-    },
-    iconStyle: {
-      fontSize: '30px',
-      marginBottom: '-10px',
-    },
-    textStyle: {
-      marginBottom: '-10px',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      textAlign: 'center',
     },
   }));
 
-  const { buttonStyle, containerStyle, iconStyle, textStyle } = useStyles();
+  const { containerStyle } = useStyles();
 
   function navigateToService() {
     window.open(serviceUrl, '_blank');
   }
 
   return (
-    <>
-      <IconButton
+    <div className={containerStyle}>
+      <ButtonIcon
         aria-label="open-service-in-browser"
+        size="medium"
         onClick={navigateToService}
-        className={buttonStyle}
-      >
-        <div className={containerStyle}>
-          <OpenInBrowser className={iconStyle} />
-          <Typography className={textStyle}>
-            Open service in PagerDuty
-          </Typography>
-        </div>
-      </IconButton>
-    </>
+        variant="tertiary"
+        icon={<OpenInBrowser />}
+      />
+
+      <Typography>Open service in PagerDuty</Typography>
+    </div>
   );
 }
