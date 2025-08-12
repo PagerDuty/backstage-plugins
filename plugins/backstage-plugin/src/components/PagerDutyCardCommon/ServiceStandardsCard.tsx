@@ -12,8 +12,6 @@ import CheckCircle from '@material-ui/icons/CheckCircle';
 import RadioButtonUncheckedIcon from '@material-ui/icons/RadioButtonUnchecked';
 import { ButtonIcon, Card, Flex, Tooltip, TooltipTrigger } from '@backstage/ui';
 
-import '@backstage/ui/css/styles.css';
-
 type Props = {
   total: number | undefined;
   completed: number | undefined;
