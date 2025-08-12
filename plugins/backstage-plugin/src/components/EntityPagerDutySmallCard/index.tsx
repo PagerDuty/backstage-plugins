@@ -40,13 +40,19 @@ export const EntityPagerDutySmallCard = (
 ) => {
   const { readOnly, disableInsights, disableOnCall } = props;
   const { entity } = useEntity();
-  const pagerDutyEntity = getPagerDutyEntity(entity);
-  return (
-    <PagerDutySmallCard
-      {...pagerDutyEntity}
-      readOnly={readOnly}
-      disableInsights={disableInsights}
-      disableOnCall={disableOnCall}
-    />
-  );
+
+   if (isPluginApplicableToEntity(entity)) {
+    const pagerDutyEntity = getPagerDutyEntity(entity);
+  
+    return (
+      <PagerDutySmallCard
+        {...pagerDutyEntity}
+        readOnly={readOnly}
+        disableInsights={disableInsights}
+        disableOnCall={disableOnCall}
+      />
+    );
+  }
+
+  return null;
 };
