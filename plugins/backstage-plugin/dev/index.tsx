@@ -16,7 +16,6 @@
 
 // eslint-disable-next-line @backstage/no-undeclared-imports
 import { EntityProvider } from '@backstage/plugin-catalog-react';
-
 import { createDevApp } from '@backstage/dev-utils';
 import {
   pagerDutyPlugin,
@@ -27,7 +26,6 @@ import { pagerDutyApiRef } from '../src/api';
 import { mockPagerDutyApi } from './mockPagerDutyApi';
 import { mockEntity } from './mockEntity';
 import { Grid } from '@material-ui/core';
-
 import '@backstage/ui/css/styles.css';
 
 createDevApp()
