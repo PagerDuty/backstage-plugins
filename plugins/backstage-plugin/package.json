@@ -41,11 +41,14 @@
     "clean": "backstage-cli package clean"
   },
   "dependencies": {
+    "@backstage/catalog-client": "^1.10.2",
     "@backstage/catalog-model": "^1.5.0",
+    "@backstage/core-compat-api": "^0.4.4",
     "@backstage/core-components": "^0.14.9",
     "@backstage/core-plugin-api": "^1.9.3",
     "@backstage/errors": "^1.2.4",
-    "@backstage/plugin-catalog-react": "^1.12.2",
+    "@backstage/frontend-plugin-api": "^0.10.4",
+    "@backstage/plugin-catalog-react": "^1.19.1",
     "@backstage/plugin-home-react": "^0.1.15",
     "@backstage/theme": "^0.5.6",
     "@backstage/ui": "^0.6.1",
@@ -85,6 +88,20 @@
     "config.d.ts",
     "assets/**/*"
   ],
+  "exports": {
+    ".": "./src/index.ts",
+    "./alpha": "./src/alpha.tsx"
+  },
+  "typesVersions": {
+    "*": {
+      "alpha": [
+        "src/alpha.tsx"
+      ],
+      "package.json": [
+        "package.json"
+      ]
+    }
+  },
   "configSchema": "config.d.ts",
   "module": "./dist/index.esm.js"
 }
