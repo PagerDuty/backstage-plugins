@@ -152,7 +152,12 @@ export const PagerDutySmallCard = (props: PagerDutyCardProps) => {
   }
 
   return (
-    <Card data-testid="pagerduty-card">
+    <Card
+      data-testid="pagerduty-card"
+      style={{
+        backgroundColor: theme.palette.background.paper,
+      }}
+    >
       <CardHeader
         title={
           theme.palette.type === 'dark' ? (

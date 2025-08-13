@@ -58,6 +58,7 @@ const useStyles = makeStyles<BackstageTheme>(theme => ({
     display: 'flex',
     alignItems: 'center',
     fontWeight: 'bold',
+    color: theme.palette.text.primary,
   },
   iconStyle: {
     fontSize: '25px',
