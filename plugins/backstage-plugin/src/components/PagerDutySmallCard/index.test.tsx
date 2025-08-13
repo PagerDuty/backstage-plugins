@@ -15,22 +15,6 @@
  */
 // eslint-disable-next-line @backstage/no-undeclared-imports
 import { render, waitFor, fireEvent, act } from '@testing-library/react';
-
-beforeAll(() => {
-  Object.defineProperty(window, 'matchMedia', {
-    writable: true,
-    value: jest.fn().mockImplementation(query => ({
-      matches: false,
-      media: query,
-      onchange: null,
-      addListener: jest.fn(),
-      removeListener: jest.fn(),
-      addEventListener: jest.fn(),
-      removeEventListener: jest.fn(),
-      dispatchEvent: jest.fn(),
-    })),
-  });
-});
 import { PagerDutySmallCard } from '../PagerDutySmallCard';
 import { NotFoundError } from '@backstage/errors';
 import { TestApiRegistry, wrapInTestApp } from '@backstage/test-utils';
@@ -96,6 +80,21 @@ const apis = TestApiRegistry.from(
 );
 
 describe('PagerDutySmallCard', () => {
+  beforeAll(() => {
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      value: jest.fn().mockImplementation(query => ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addListener: jest.fn(),
+        removeListener: jest.fn(),
+        addEventListener: jest.fn(),
+        removeEventListener: jest.fn(),
+        dispatchEvent: jest.fn(),
+      })),
+    });
+  });
   it('Render pagerduty', async () => {
     mockPagerDutyApi.getServiceByPagerDutyEntity = jest
       .fn()
