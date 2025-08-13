@@ -17715,6 +17715,7 @@ __metadata:
     "@backstage/plugin-user-settings": "npm:^0.8.23"
     "@backstage/test-utils": "npm:^1.7.9"
     "@backstage/theme": "npm:^0.6.6"
+    "@backstage/ui": "npm:^0.6.1"
     "@material-ui/core": "npm:^4.12.2"
     "@material-ui/icons": "npm:^4.9.1"
     "@pagerduty/backstage-plugin": "workspace:^"
