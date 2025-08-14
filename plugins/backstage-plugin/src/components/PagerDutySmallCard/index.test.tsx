@@ -80,6 +80,21 @@ const apis = TestApiRegistry.from(
 );
 
 describe('PagerDutySmallCard', () => {
+  beforeAll(() => {
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      value: jest.fn().mockImplementation(query => ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addListener: jest.fn(),
+        removeListener: jest.fn(),
+        addEventListener: jest.fn(),
+        removeEventListener: jest.fn(),
+        dispatchEvent: jest.fn(),
+      })),
+    });
+  });
   it('Render pagerduty', async () => {
     mockPagerDutyApi.getServiceByPagerDutyEntity = jest
       .fn()
@@ -96,10 +111,11 @@ describe('PagerDutySmallCard', () => {
     expect(getByText('Open service in PagerDuty')).toBeInTheDocument();
     expect(getByText('Create new incident')).toBeInTheDocument();
     await waitFor(() => !queryByTestId('escalation-progress'));
-
-    expect(
-      getByText('No one is on-call. Update the escalation policy.'),
-    ).toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        getByText('No one is on-call. Update the escalation policy.'),
+      ).toBeInTheDocument(),
+    );
   });
 
   it('Handles custom error for missing token', async () => {
@@ -159,7 +175,7 @@ describe('PagerDutySmallCard', () => {
       .fn()
       .mockImplementationOnce(async () => ({ service }));
 
-    const { getByText, queryByTestId, getByRole } = render(
+    const { getByText, queryByTestId, getByRole, getByLabelText } = render(
       wrapInTestApp(
         <ApiProvider apis={apis}>
           <PagerDutySmallCard name="blah" integrationKey="abc123" />
@@ -169,8 +185,8 @@ describe('PagerDutySmallCard', () => {
     await waitFor(() => !queryByTestId('progress'));
     expect(getByText('Open service in PagerDuty')).toBeInTheDocument();
 
-    const triggerLink = getByText('Create new incident');
-    await act(async () => {
+    const triggerLink = getByLabelText('create-incident');
+    await act(() => {
       fireEvent.click(triggerLink);
     });
     expect(getByRole('dialog')).toBeInTheDocument();
@@ -194,9 +210,11 @@ describe('PagerDutySmallCard', () => {
       expect(getByText('Create new incident')).toBeInTheDocument();
       await waitFor(() => !queryByTestId('escalation-progress'));
 
-      expect(
-        getByText('No one is on-call. Update the escalation policy.'),
-      ).toBeInTheDocument();
+      await waitFor(() =>
+        expect(
+          getByText('No one is on-call. Update the escalation policy.'),
+        ).toBeInTheDocument(),
+      );
     });
 
     it('Handles custom error for missing token', async () => {
@@ -304,9 +322,11 @@ describe('PagerDutySmallCard', () => {
       expect(getByText('Create new incident')).toBeInTheDocument();
       await waitFor(() => !queryByTestId('escalation-progress'));
 
-      expect(
-        getByText('No one is on-call. Update the escalation policy.'),
-      ).toBeInTheDocument();
+      await waitFor(() =>
+        expect(
+          getByText('No one is on-call. Update the escalation policy.'),
+        ).toBeInTheDocument(),
+      );
     });
   });
 
@@ -332,9 +352,11 @@ describe('PagerDutySmallCard', () => {
       expect(getByText('Open service in PagerDuty')).toBeInTheDocument();
       await waitFor(() => !queryByTestId('escalation-progress'));
 
-      expect(
-        getByText('No one is on-call. Update the escalation policy.'),
-      ).toBeInTheDocument();
+      await waitFor(() =>
+        expect(
+          getByText('No one is on-call. Update the escalation policy.'),
+        ).toBeInTheDocument(),
+      );
       expect(() => getByText('Create new incident')).toThrow();
     });
   });

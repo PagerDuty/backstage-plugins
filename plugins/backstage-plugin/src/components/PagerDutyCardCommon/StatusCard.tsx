@@ -1,4 +1,3 @@
-import { Card, Typography } from '@material-ui/core';
 import { useEffect } from 'react';
 import { Theme, makeStyles } from '@material-ui/core/styles';
 import { BackstageTheme } from '@backstage/theme';
@@ -7,6 +6,8 @@ import { pagerDutyApiRef } from '../../api';
 import { useAsyncFn } from 'react-use';
 import Alert from '@material-ui/lab/Alert/Alert';
 import { Progress } from '@backstage/core-components';
+import { Card } from '@backstage/ui';
+import { Typography } from '@material-ui/core';
 
 type Props = {
   serviceId: string;
@@ -89,7 +90,6 @@ function StatusCard({ serviceId, refreshStatus, account, compact }: Props) {
         status !== undefined
           ? colorFromStatus(theme, status)
           : colorFromStatus(theme, 'active'),
-      marginRight: '10px',
     },
     largeTextStyle: {
       color: 'white',
