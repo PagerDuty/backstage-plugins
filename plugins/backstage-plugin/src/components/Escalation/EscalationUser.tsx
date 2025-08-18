@@ -20,13 +20,12 @@ import {
   Tooltip,
   ListItemText,
   makeStyles,
-  IconButton,
   Typography,
 } from '@material-ui/core';
-import Avatar from '@material-ui/core/Avatar';
 import { PagerDutyUser } from '@pagerduty/backstage-plugin-common';
 import NotificationsIcon from '@material-ui/icons/Notifications';
 import { BackstageTheme } from '@backstage/theme';
+import { Avatar, Button } from '@backstage/ui';
 
 const useStyles = makeStyles<BackstageTheme>(theme => ({
   listItemPrimary: {
@@ -38,12 +37,9 @@ const useStyles = makeStyles<BackstageTheme>(theme => ({
     marginTop: '-5px',
   },
   buttonStyle: {
-    marginLeft: '-11px',
-    marginTop: '-10px',
+    marginLeft: '-5px',
     fontSize: '15px',
-    color: theme.palette.text.primary,
     '&:hover': {
-      backgroundColor: 'transparent',
       textDecoration: 'underline',
     },
   },
@@ -62,6 +58,7 @@ const useStyles = makeStyles<BackstageTheme>(theme => ({
     display: 'flex',
     alignItems: 'center',
     fontWeight: 'bold',
+    color: theme.palette.text.primary,
   },
   iconStyle: {
     fontSize: '25px',
@@ -94,7 +91,7 @@ export const EscalationUser = ({ user, policyUrl, policyName }: Props) => {
     <ListItem>
       <ListItemIcon>
         <Avatar
-          alt={user.name}
+          name={user.name}
           src={user.avatar_url}
           className={classes.avatarStyle}
         />
@@ -103,7 +100,8 @@ export const EscalationUser = ({ user, policyUrl, policyName }: Props) => {
         primary={
           <>
             <Tooltip title="Open user in PagerDuty" placement="top">
-              <IconButton
+              <Button
+                variant="tertiary"
                 aria-label="open-user-in-browser"
                 onClick={() => navigateToUrl(user.html_url)}
                 className={classes.userTextButtonStyle}
@@ -111,7 +109,7 @@ export const EscalationUser = ({ user, policyUrl, policyName }: Props) => {
                 <Typography className={classes.containerStyle}>
                   {user.name}
                 </Typography>
-              </IconButton>
+              </Button>
             </Tooltip>
 
             <Typography
@@ -123,16 +121,18 @@ export const EscalationUser = ({ user, policyUrl, policyName }: Props) => {
           </>
         }
         secondary={
-          <IconButton
+          <Button
             aria-label="open-escalation-policy-in-browser"
             onClick={() => navigateToUrl(policyUrl)}
+            variant="tertiary"
+            size="small"
             className={classes.buttonStyle}
+            iconStart={<NotificationsIcon className={classes.iconStyle} />}
           >
             <Typography className={classes.containerStyle}>
-              <NotificationsIcon className={classes.iconStyle} />
               {policyName}
             </Typography>
-          </IconButton>
+          </Button>
         }
       />
     </ListItem>

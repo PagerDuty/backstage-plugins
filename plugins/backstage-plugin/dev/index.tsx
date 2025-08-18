@@ -26,6 +26,7 @@ import { pagerDutyApiRef } from '../src/api';
 import { mockPagerDutyApi } from './mockPagerDutyApi';
 import { mockEntity } from './mockEntity';
 import { Grid } from '@material-ui/core';
+import '@backstage/ui/css/styles.css';
 
 createDevApp()
   .registerApi({
