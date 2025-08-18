@@ -14,17 +14,14 @@
  * limitations under the License.
  */
 
-// eslint-disable-next-line @backstage/no-undeclared-imports
-import { Link } from '@backstage/core-components';
 import {
   ListItem,
   ListItemSecondaryAction,
-  Tooltip,
   ListItemText,
   makeStyles,
-  IconButton,
   Typography,
 } from '@material-ui/core';
+import { ButtonIcon, Tooltip, TooltipTrigger } from '@backstage/ui';
 import { DateTime, Duration } from 'luxon';
 import { PagerDutyChangeEvent } from '@pagerduty/backstage-plugin-common';
 import OpenInBrowserIcon from '@material-ui/icons/OpenInBrowser';
@@ -42,16 +39,8 @@ const useStyles = makeStyles<BackstageTheme>(theme => ({
   listItemPrimary: {
     fontWeight: 'bold',
   },
-  smallExternalLinkIconStyle: {
-    color: theme.palette.text.primary,
-  },
-  smallExternalLinkWithoutMarginIconStyle: {
-    color: theme.palette.text.primary,
-    marginRight: '-20px',
-  },
   smallIconStyle: {
     color: theme.palette.text.primary,
-    marginRight: '-20px',
   },
 }));
 
@@ -67,23 +56,29 @@ export const ChangeEventListItem = ({ changeEvent }: Props) => {
     .minus(Duration.fromMillis(duration))
     .toRelative({ locale: 'en' });
 
+  const handleExternalLinkClick = (url: string) => {
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
+  const handlePagerDutyClick = () => {
+    if (changeEvent.html_url) {
+      window.open(changeEvent.html_url, '_blank', 'noopener,noreferrer');
+    }
+  };
+
   let externalLinkElem: JSX.Element | undefined;
-  if (changeEvent.links.length > 0) {
+  if (changeEvent.links.length > 0 && changeEvent.links[0]?.href) {
     const text: string = changeEvent.links[0].text;
+    const linkHref = changeEvent.links[0].href;
     externalLinkElem = (
-      <Tooltip title={text} placement="top">
-        <IconButton
-          component={Link}
-          to={changeEvent.links[0].href}
-          className={
-            changeEvent.html_url === undefined
-              ? classes.smallExternalLinkWithoutMarginIconStyle
-              : classes.smallExternalLinkIconStyle
-          }
-        >
-          <LinkIcon />
-        </IconButton>
-      </Tooltip>
+      <TooltipTrigger>
+        <ButtonIcon
+          icon={<LinkIcon className={classes.smallIconStyle} />}
+          variant="tertiary"
+          onClick={() => handleExternalLinkClick(linkHref)}
+        />
+        <Tooltip>{text}</Tooltip>
+      </TooltipTrigger>
     );
   }
 
@@ -104,15 +99,15 @@ export const ChangeEventListItem = ({ changeEvent }: Props) => {
       <ListItemSecondaryAction>
         {externalLinkElem}
         {changeEvent.html_url === undefined ? null : (
-          <Tooltip title="View in PagerDuty" placement="top">
-            <IconButton
-              component={Link}
-              to={changeEvent.html_url}
-              className={classes.smallIconStyle}
-            >
-              <OpenInBrowserIcon />
-            </IconButton>
-          </Tooltip>
+          <TooltipTrigger>
+            <ButtonIcon
+              aria-label="view-in-pd-button"
+              icon={<OpenInBrowserIcon className={classes.smallIconStyle} />}
+              variant="tertiary"
+              onClick={handlePagerDutyClick}
+            />
+            <Tooltip>View in PagerDuty</Tooltip>
+          </TooltipTrigger>
         )}
       </ListItemSecondaryAction>
     </ListItem>

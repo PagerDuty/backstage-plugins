@@ -13,15 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-// eslint-disable-next-line @backstage/no-undeclared-imports
+
 import { ReactNode, useCallback, useState } from 'react';
 import {
-  Card,
   CardHeader,
-  Divider,
   CardContent,
-  Grid,
   Typography,
+  Divider,
 } from '@material-ui/core';
 import { Incidents } from '../Incident';
 import { EscalationPolicy } from '../Escalation';
@@ -52,6 +50,7 @@ import {
 import { createStyles, makeStyles, useTheme } from '@material-ui/core/styles';
 import { BackstageTheme } from '@backstage/theme';
 import { PagerDutyCardServiceResponse } from '../../api/types';
+import { Card, Flex, Grid } from '@backstage/ui';
 
 const useStyles = makeStyles<BackstageTheme>(theme =>
   createStyles({
@@ -72,33 +71,12 @@ const useStyles = makeStyles<BackstageTheme>(theme =>
           ? 'rgba(0, 0, 0, 0.54)'
           : 'rgba(255, 255, 255, 0.7)',
     },
-    headerStyle: {
-      marginBottom: '0px',
-      fontSize: '0px',
-    },
-    overviewHeaderContainerStyle: {
-      display: 'flex',
-      margin: '15px',
-      marginBottom: '20px',
-    },
-    headerWithSubheaderContainerStyle: {
-      display: 'flex',
-      alignItems: 'center',
-    },
+
     subheaderTextStyle: {
       fontSize: '10px',
-      marginLeft: '5px',
-    },
-    overviewCardsContainerStyle: {
-      display: 'flex',
-      margin: '15px',
-      marginTop: '-15px',
-    },
-    incidentMetricsContainerStyle: {
-      display: 'flex',
-      height: '100%',
-      justifyContent: 'center',
-      columnSpan: 'all',
+      marginLeft: '-10px',
+      paddingTop: '3px',
+      color: theme.palette.text.secondary,
     },
   }),
 );
@@ -195,9 +173,13 @@ export const PagerDutyCard = (props: PagerDutyCardProps) => {
   }
 
   return (
-    <Card data-testid="pagerduty-card">
+    <Card
+      data-testid="pagerduty-card"
+      style={{
+        backgroundColor: theme.palette.background.paper,
+      }}
+    >
       <CardHeader
-        className={classes.headerStyle}
         title={
           theme.palette.type === 'dark' ? (
             <img src={PDWhiteImage} alt="PagerDuty" height="35" />
@@ -207,7 +189,7 @@ export const PagerDutyCard = (props: PagerDutyCardProps) => {
         }
         action={
           !readOnly && props.integrationKey ? (
-            <div>
+            <Flex>
               <TriggerIncidentButton
                 data-testid="trigger-incident-button"
                 integrationKey={props.integrationKey}
@@ -215,78 +197,81 @@ export const PagerDutyCard = (props: PagerDutyCardProps) => {
                 handleRefresh={handleRefresh}
               />
               <OpenServiceButton serviceUrl={service!.url} />
-            </div>
+            </Flex>
           ) : (
             <OpenServiceButton serviceUrl={service!.url} />
           )
         }
       />
-      <Grid item md={12} className={classes.overviewHeaderContainerStyle}>
-        <Grid item md={3}>
+      <Grid.Root columns="4" gap="1" pl="1" pr="1">
+        <Grid.Item colSpan="1">
           <Typography className={classes.overviewHeaderTextStyle}>
             STATUS
           </Typography>
-        </Grid>
-        <Grid item md={6}>
-          <Typography className={classes.headerWithSubheaderContainerStyle}>
+        </Grid.Item>
+        <Grid.Item colSpan="2">
+          <Flex>
             <Typography className={classes.overviewHeaderTextStyle}>
               INSIGHTS
             </Typography>
             <Typography className={classes.subheaderTextStyle}>
               (last 30 days)
             </Typography>
-          </Typography>
-        </Grid>
-        <Grid item md={3}>
+          </Flex>
+        </Grid.Item>
+        <Grid.Item colSpan="1">
           <Typography className={classes.overviewHeaderTextStyle}>
             STANDARDS
           </Typography>
-        </Grid>
-      </Grid>
-      <Grid item md={12} className={classes.overviewCardsContainerStyle}>
-        <Grid item md={3}>
+        </Grid.Item>
+      </Grid.Root>
+
+      <Grid.Root gap="1" columns="4" pl="1" pr="1">
+        <Grid.Item colSpan="1">
           <StatusCard
             serviceId={service!.id}
             account={service!.account}
             refreshStatus={refreshStatus}
           />
-        </Grid>
-        <Grid item md={6} className={classes.incidentMetricsContainerStyle}>
-          <Grid item md={4}>
-            <InsightsCard
-              count={
-                service?.metrics !== undefined && service.metrics.length > 0
-                  ? service?.metrics[0].total_interruptions
-                  : undefined
-              }
-              label="interruptions"
-              color={theme.palette.textSubtle}
-            />
-          </Grid>
-          <Grid item md={4}>
-            <InsightsCard
-              count={
-                service?.metrics !== undefined && service.metrics.length > 0
-                  ? service?.metrics[0].total_high_urgency_incidents
-                  : undefined
-              }
-              label="high urgency"
-              color={theme.palette.warning.main}
-            />
-          </Grid>
-          <Grid item md={4}>
-            <InsightsCard
-              count={
-                service?.metrics !== undefined && service?.metrics?.length > 0
-                  ? service?.metrics[0].total_incident_count
-                  : undefined
-              }
-              label="incidents"
-              color={theme.palette.error.main}
-            />
-          </Grid>
-        </Grid>
-        <Grid item md={3}>
+        </Grid.Item>
+        <Grid.Item colSpan="2">
+          <Grid.Root gap="1" columns="3" pl="1" pr="1">
+            <Grid.Item>
+              <InsightsCard
+                count={
+                  service?.metrics !== undefined && service.metrics.length > 0
+                    ? service?.metrics[0].total_interruptions
+                    : undefined
+                }
+                label="interruptions"
+                color={theme.palette.textSubtle}
+              />
+            </Grid.Item>
+            <Grid.Item>
+              <InsightsCard
+                count={
+                  service?.metrics !== undefined && service.metrics.length > 0
+                    ? service?.metrics[0].total_high_urgency_incidents
+                    : undefined
+                }
+                label="high urgency"
+                color={theme.palette.warning.main}
+              />
+            </Grid.Item>
+            <Grid.Item>
+              <InsightsCard
+                count={
+                  service?.metrics !== undefined && service?.metrics?.length > 0
+                    ? service?.metrics[0].total_incident_count
+                    : undefined
+                }
+                label="incidents"
+                color={theme.palette.error.main}
+              />
+            </Grid.Item>
+          </Grid.Root>
+        </Grid.Item>
+        <Grid.Item colSpan="1">
           <ServiceStandardsCard
             total={
               service?.standards?.score !== undefined
@@ -304,8 +289,8 @@ export const PagerDutyCard = (props: PagerDutyCardProps) => {
                 : undefined
             }
           />
-        </Grid>
-      </Grid>
+        </Grid.Item>
+      </Grid.Root>
 
       <Divider />
       <CardContent>
