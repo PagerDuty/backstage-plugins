@@ -152,12 +152,7 @@ export const PagerDutySmallCard = (props: PagerDutyCardProps) => {
   }
 
   return (
-    <Card
-      data-testid="pagerduty-card"
-      style={{
-        backgroundColor: theme.palette.background.paper,
-      }}
-    >
+    <Card data-testid="pagerduty-card">
       <CardHeader
         title={
           theme.palette.type === 'dark' ? (
@@ -229,7 +224,7 @@ export const PagerDutySmallCard = (props: PagerDutyCardProps) => {
       </Grid.Root>
 
       {disableInsights !== true ? (
-        <Accordion>
+        <Accordion style={{ background: 'transparent' }}>
           <AccordionSummary
             expandIcon={<ExpandMoreIcon />}
             aria-controls="panel1a-content"
@@ -295,7 +290,7 @@ export const PagerDutySmallCard = (props: PagerDutyCardProps) => {
       )}
 
       {disableOnCall !== true ? (
-        <Accordion>
+        <Accordion style={{ background: 'transparent' }}>
           <AccordionSummary
             expandIcon={<ExpandMoreIcon />}
             aria-controls="panel1a-content"

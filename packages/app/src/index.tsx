@@ -11,4 +11,6 @@ import '@backstage/ui/css/styles.css';
 // Uncomment the lines below if you want to use the alpha version of the app
 import AppAlpha from './App-Alpha';
 
-ReactDOM.createRoot(document.getElementById('root')!).render(AppAlpha);
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <div data-theme={localStorage.getItem('theme') ?? 'light'}>{AppAlpha}</div>,
+);

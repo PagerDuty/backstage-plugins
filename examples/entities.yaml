@@ -13,7 +13,7 @@ kind: Component
 metadata:
   name: example-website
   annotations:
-    pagerduty.com/service-id: P6V1UFE
+    pagerduty.com/service-id: PLOGA2F
 spec:
   type: website
   lifecycle: experimental

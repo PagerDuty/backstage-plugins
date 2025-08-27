@@ -50,8 +50,8 @@ function ServiceStandardsCard({ total, completed, standards, compact }: Props) {
       fontSize: compact !== true ? '14px' : '12px',
       fontWeight: 'bold',
       alignSelf: 'center',
-      marginLeft: '-20px',
-      marginBottom: '-20px',
+      marginLeft: '-17px',
+      marginBottom: '-26px',
     },
     tooltipIcon: {
       marginRight: '5px',
