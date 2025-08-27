@@ -62,7 +62,11 @@ export const Incidents = ({ serviceId, account, refreshIncidents }: Props) => {
   }
 
   if (loading) {
-    return <Progress />;
+    return (
+      <div style={{ height: '253px' }}>
+        <Progress />
+      </div>
+    );
   }
 
   if (!incidents?.length) {

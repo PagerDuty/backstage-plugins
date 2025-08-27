@@ -38,26 +38,20 @@ export function TriggerIncidentButton({
   compact,
   handleRefresh,
 }: TriggerIncidentButtonProps) {
-  const useStyles = makeStyles<BackstageTheme>(theme => ({
+  const useStyles = makeStyles<BackstageTheme>(() => ({
     containerStyle: {
       fontSize: compact !== true ? '12px' : '10px',
       width: compact !== true ? '80px' : '60px',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
-      color: theme.palette.text.primary,
     },
-
-    iconStyle: {
-      color: theme.palette.text.primary,
-    },
-
     textStyle: {
       textAlign: 'center',
     },
   }));
 
-  const { containerStyle, textStyle, iconStyle } = useStyles();
+  const { containerStyle, textStyle } = useStyles();
   const [dialogShown, setDialogShown] = useState<boolean>(false);
 
   const showDialog = useCallback(() => {
@@ -78,7 +72,7 @@ export function TriggerIncidentButton({
           aria-label="create-incident"
           onClick={showDialog}
           isDisabled={disabled}
-          icon={<AddAlert className={iconStyle} />}
+          icon={<AddAlert />}
         />
 
         <Typography className={textStyle}>Create new incident</Typography>

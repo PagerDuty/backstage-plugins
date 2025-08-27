@@ -61,7 +61,11 @@ export const ChangeEvents = ({ serviceId, account, refreshEvents }: Props) => {
   }
 
   if (loading) {
-    return <Progress />;
+    return (
+      <div style={{ height: '253px' }}>
+        <Progress />
+      </div>
+    );
   }
 
   if (!changeEvents?.length) {

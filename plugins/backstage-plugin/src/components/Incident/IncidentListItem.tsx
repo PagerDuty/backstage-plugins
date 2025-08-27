@@ -84,9 +84,6 @@ const useStyles = makeStyles<BackstageTheme>(theme => ({
     display: 'flex',
     alignItems: 'baseline',
   },
-  smallIconStyle: {
-    color: theme.palette.text.primary,
-  },
 }));
 
 type Props = {
@@ -151,7 +148,7 @@ export const IncidentListItem = ({ incident }: Props) => {
         <TooltipTrigger>
           <ButtonIcon
             aria-label="view-in-pd-button"
-            icon={<OpenInBrowserIcon className={classes.smallIconStyle} />}
+            icon={<OpenInBrowserIcon />}
             variant="tertiary"
             onClick={handleIncidentClick}
           />

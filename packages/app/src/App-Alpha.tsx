@@ -15,7 +15,7 @@ import PagerDutyPlugin from '@pagerduty/backstage-plugin/alpha';
 // const OverriddenPagerDutyPlugin = PagerDutyPlugin.withOverrides({
 //   extensions: [
 //     PagerDutyPlugin.getExtension('entity-card:pagerduty/EntityPagerDutyCard').override({
-//       factory: originalFactory => 
+//       factory: originalFactory =>
 //         originalFactory({
 //           params: {
 //             loader: async () => Promise.resolve(<EntityPagerDutySmallCard />)
@@ -38,7 +38,7 @@ const app = createApp({
     PagerDutyPlugin,
     // Uncomment the line below if you want to use the overridden version of PagerDuty plugin
     // OverriddenPagerDutyPlugin
-  ]
+  ],
 });
 
 export default app.createRoot();
