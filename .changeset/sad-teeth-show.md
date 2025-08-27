@@ -5,4 +5,4 @@
 '@pagerduty/backstage-plugin': patch
 ---
 
-Fix package.json metada to improve Portal relations
+Fix package.json metadata to improve Portal relations
