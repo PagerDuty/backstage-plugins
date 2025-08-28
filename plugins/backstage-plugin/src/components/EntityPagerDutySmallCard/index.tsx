@@ -45,14 +45,12 @@ export const EntityPagerDutySmallCard = (
     const pagerDutyEntity = getPagerDutyEntity(entity);
 
     return (
-      <div data-theme={localStorage.getItem('theme') ?? 'light'}>
-        <PagerDutySmallCard
-          {...pagerDutyEntity}
-          readOnly={readOnly}
-          disableInsights={disableInsights}
-          disableOnCall={disableOnCall}
-        />
-      </div>
+      <PagerDutySmallCard
+        {...pagerDutyEntity}
+        readOnly={readOnly}
+        disableInsights={disableInsights}
+        disableOnCall={disableOnCall}
+      />
     );
   }
 

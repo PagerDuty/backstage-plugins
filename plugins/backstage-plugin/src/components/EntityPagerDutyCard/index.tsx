@@ -43,14 +43,12 @@ export const EntityPagerDutyCard = (props: EntityPagerDutyCardProps) => {
     const pagerDutyEntity = getPagerDutyEntity(entity);
 
     return (
-      <div data-theme={localStorage.getItem('theme') ?? 'light'}>
-        <PagerDutyCard
-          {...pagerDutyEntity}
-          readOnly={readOnly}
-          disableChangeEvents={disableChangeEvents}
-          disableOnCall={disableOnCall}
-        />
-      </div>
+      <PagerDutyCard
+        {...pagerDutyEntity}
+        readOnly={readOnly}
+        disableChangeEvents={disableChangeEvents}
+        disableOnCall={disableOnCall}
+      />
     );
   }
 

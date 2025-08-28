@@ -62,6 +62,16 @@ const useStyles = makeStyles<BackstageTheme>(theme =>
       paddingLeft: '5px',
       paddingTop: '3px',
     },
+    accordionStyle: {
+      background: 'transparent',
+    },
+    gridRootStyle: {
+      width: '100%',
+    },
+    cardStyles: {
+      paddingLeft: '10px',
+      paddingRight: '10px',
+    },
   }),
 );
 
@@ -152,7 +162,7 @@ export const PagerDutySmallCard = (props: PagerDutyCardProps) => {
   }
 
   return (
-    <Card data-testid="pagerduty-card">
+    <Card data-testid="pagerduty-card" className={classes.cardStyles}>
       <CardHeader
         title={
           theme.palette.type === 'dark' ? (
@@ -224,7 +234,7 @@ export const PagerDutySmallCard = (props: PagerDutyCardProps) => {
       </Grid.Root>
 
       {disableInsights !== true ? (
-        <Accordion style={{ background: 'transparent' }}>
+        <Accordion className={classes.accordionStyle}>
           <AccordionSummary
             expandIcon={<ExpandMoreIcon />}
             aria-controls="panel1a-content"
@@ -243,7 +253,7 @@ export const PagerDutySmallCard = (props: PagerDutyCardProps) => {
               gap="1"
               pl="1"
               pr="1"
-              style={{ width: '100%' }}
+              className={classes.gridRootStyle}
             >
               <Grid.Item>
                 <InsightsCard
@@ -290,7 +300,7 @@ export const PagerDutySmallCard = (props: PagerDutyCardProps) => {
       )}
 
       {disableOnCall !== true ? (
-        <Accordion style={{ background: 'transparent' }}>
+        <Accordion className={classes.accordionStyle}>
           <AccordionSummary
             expandIcon={<ExpandMoreIcon />}
             aria-controls="panel1a-content"

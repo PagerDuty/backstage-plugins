@@ -67,6 +67,13 @@ const useStyles = makeStyles<BackstageTheme>(theme =>
       marginLeft: '-10px',
       paddingTop: '3px',
     },
+    logoContainerStyles: {
+      height: '100%',
+    },
+    cardStyles: {
+      paddingLeft: '20px',
+      paddingRight: '20px',
+    },
   }),
 );
 
@@ -162,10 +169,14 @@ export const PagerDutyCard = (props: PagerDutyCardProps) => {
   }
 
   return (
-    <Card data-testid="pagerduty-card">
+    <Card data-testid="pagerduty-card" className={classes.cardStyles}>
       <Grid.Root columns="6">
         <Grid.Item colSpan="4">
-          <Flex pl="20px" align="center" style={{ height: '100%' }}>
+          <Flex
+            pl="20px"
+            align="center"
+            className={classes.logoContainerStyles}
+          >
             {theme.palette.type === 'dark' ? (
               <img src={PDWhiteImage} alt="PagerDuty" height="35" />
             ) : (

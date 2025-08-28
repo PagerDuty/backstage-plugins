@@ -48,6 +48,8 @@ export function TriggerIncidentButton({
     },
     textStyle: {
       textAlign: 'center',
+      fontSize: '12px',
+      minWidth: '30px',
     },
   }));
 

@@ -15,7 +15,7 @@
  */
 // eslint-disable-next-line @backstage/no-undeclared-imports
 import { useEffect } from 'react';
-import { List } from '@material-ui/core';
+import { createStyles, List, makeStyles } from '@material-ui/core';
 import { IncidentListItem } from './IncidentListItem';
 import { IncidentsEmptyState } from './IncidentEmptyState';
 import useAsyncFn from 'react-use/lib/useAsyncFn';
@@ -25,6 +25,7 @@ import { Alert } from '@material-ui/lab';
 import { useApi } from '@backstage/core-plugin-api';
 import { Progress } from '@backstage/core-components';
 import { IncidentForbiddenState } from './IncidentForbiddenState';
+import { BackstageTheme } from '@backstage/theme';
 
 type Props = {
   serviceId: string;
@@ -32,8 +33,17 @@ type Props = {
   refreshIncidents: boolean;
 };
 
+const useStyles = makeStyles<BackstageTheme>(() =>
+  createStyles({
+    loadingStyles: {
+      height: '253px',
+    },
+  }),
+);
+
 export const Incidents = ({ serviceId, account, refreshIncidents }: Props) => {
   const api = useApi(pagerDutyApiRef);
+  const { loadingStyles } = useStyles();
 
   const [{ value: incidents, loading, error }, getIncidents] = useAsyncFn(
     async () => {
@@ -63,7 +73,7 @@ export const Incidents = ({ serviceId, account, refreshIncidents }: Props) => {
 
   if (loading) {
     return (
-      <div style={{ height: '253px' }}>
+      <div className={loadingStyles}>
         <Progress />
       </div>
     );

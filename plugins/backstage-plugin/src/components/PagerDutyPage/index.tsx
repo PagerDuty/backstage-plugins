@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Typography } from '@material-ui/core';
+import { createStyles, makeStyles, Typography } from '@material-ui/core';
 import { Card, Grid, RadioGroup, Radio } from '@backstage/ui';
 import {
   Header,
@@ -11,6 +11,7 @@ import { ServiceMappingComponent } from './ServiceMappingComponent';
 import { useApi } from '@backstage/core-plugin-api';
 import { pagerDutyApiRef } from '../../api';
 import { NotFoundError } from '@backstage/errors';
+import { BackstageTheme } from '@backstage/theme';
 
 enum StoreSettings {
   backstage = 'backstage',
@@ -22,8 +23,24 @@ enum StoreSettings {
 const SERVICE_DEPENDENCY_SYNC_STRATEGY =
   'settings::service-dependency-sync-strategy';
 
+const useStyles = makeStyles<BackstageTheme>(() =>
+  createStyles({
+    cardStyles: {
+      padding: '15px',
+      marginTop: '16px',
+    },
+    textContainerStyles: {
+      marginTop: '16px',
+    },
+    linkStyles: {
+      color: 'cadetblue',
+    },
+  }),
+);
+
 /** @public */
 export const PagerDutyPage = () => {
+  const { cardStyles, textContainerStyles, linkStyles } = useStyles();
   const pagerDutyApi = useApi(pagerDutyApiRef);
   const [
     selectedServiceDependencyStrategy,
@@ -91,18 +108,12 @@ export const PagerDutyPage = () => {
 
               <Card
                 title="Service dependency synchronization preferences"
-                style={{
-                  padding: '15px',
-                  marginTop: '16px',
-                }}
+                className={cardStyles}
               >
                 <Typography variant="h6">
                   Service dependency synchronization strategy
                 </Typography>
                 <RadioGroup
-                  style={{
-                    color: 'white',
-                  }}
                   label="Select the main source of truth for your service dependencies"
                   value={selectedServiceDependencyStrategy}
                   onChange={value => handleChange(value as StoreSettings)}
@@ -113,13 +124,13 @@ export const PagerDutyPage = () => {
                   <Radio value={StoreSettings.disabled}>Disabled</Radio>
                 </RadioGroup>
 
-                <div style={{ marginTop: '16px' }}>
+                <div className={textContainerStyles}>
                   <Typography>
                     <b>Warning: </b>Changing this setting will affect how your
                     service dependencies are synchronized and may cause data
                     loss. Check the{' '}
                     <a
-                      style={{ color: 'cadetblue' }}
+                      className={linkStyles}
                       href="https://pagerduty.github.io/backstage-plugin-docs/index.html"
                     >
                       documentation

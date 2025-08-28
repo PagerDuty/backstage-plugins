@@ -39,9 +39,12 @@ export function OpenServiceButton({
       alignItems: 'center',
       textAlign: 'center',
     },
+    textStyle: {
+      fontSize: '12px',
+    },
   }));
 
-  const { containerStyle } = useStyles();
+  const { containerStyle, textStyle } = useStyles();
 
   function navigateToService() {
     window.open(serviceUrl, '_blank');
@@ -57,7 +60,7 @@ export function OpenServiceButton({
         icon={<OpenInBrowser />}
       />
 
-      <Typography>Open service in PagerDuty</Typography>
+      <Typography className={textStyle}>Open service in PagerDuty</Typography>
     </div>
   );
 }

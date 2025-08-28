@@ -15,7 +15,7 @@
  */
 
 import { useEffect } from 'react';
-import { List } from '@material-ui/core';
+import { createStyles, List, makeStyles } from '@material-ui/core';
 import { ChangeEventListItem } from './ChangeEventListItem';
 import { ChangeEventEmptyState } from './ChangeEventEmptyState';
 import { ChangeEventForbiddenState } from './ChangeEventForbiddenState';
@@ -24,6 +24,7 @@ import { pagerDutyApiRef } from '../../api';
 import { useApi } from '@backstage/core-plugin-api';
 import { Progress } from '@backstage/core-components';
 import { Alert } from '@material-ui/lab';
+import { BackstageTheme } from '@backstage/theme';
 
 type Props = {
   serviceId: string;
@@ -31,8 +32,17 @@ type Props = {
   refreshEvents: boolean;
 };
 
+const useStyles = makeStyles<BackstageTheme>(() =>
+  createStyles({
+    loadingStyles: {
+      height: '253px',
+    },
+  }),
+);
+
 export const ChangeEvents = ({ serviceId, account, refreshEvents }: Props) => {
   const api = useApi(pagerDutyApiRef);
+  const { loadingStyles } = useStyles();
 
   const [{ value: changeEvents, loading, error }, getChangeEvents] = useAsyncFn(
     async () => {
@@ -62,7 +72,7 @@ export const ChangeEvents = ({ serviceId, account, refreshEvents }: Props) => {
 
   if (loading) {
     return (
-      <div style={{ height: '253px' }}>
+      <div className={loadingStyles}>
         <Progress />
       </div>
     );
