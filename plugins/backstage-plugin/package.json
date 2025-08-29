@@ -11,8 +11,8 @@
     "types": "dist/index.d.ts"
   },
   "backstage": {
-    "role": "frontend-plugin",
     "pluginId": "pagerduty",
+    "role": "frontend-plugin",
     "pluginPackages": [
       "@pagerduty/backstage-plugin",
       "@pagerduty/backstage-plugin-common",
