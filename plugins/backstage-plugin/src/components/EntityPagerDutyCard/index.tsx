@@ -41,7 +41,7 @@ export const EntityPagerDutyCard = (props: EntityPagerDutyCardProps) => {
 
   if (isPluginApplicableToEntity(entity)) {
     const pagerDutyEntity = getPagerDutyEntity(entity);
-    
+
     return (
       <PagerDutyCard
         {...pagerDutyEntity}

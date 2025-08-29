@@ -27,7 +27,7 @@ import NotificationsIcon from '@material-ui/icons/Notifications';
 import { BackstageTheme } from '@backstage/theme';
 import { Avatar, Button } from '@backstage/ui';
 
-const useStyles = makeStyles<BackstageTheme>(theme => ({
+const useStyles = makeStyles<BackstageTheme>(() => ({
   listItemPrimary: {
     fontWeight: 'bold',
   },
@@ -35,20 +35,16 @@ const useStyles = makeStyles<BackstageTheme>(theme => ({
     fontWeight: 'normal',
     textDecoration: 'underline',
     marginTop: '-5px',
+    paddingLeft: '5px',
   },
   buttonStyle: {
-    marginLeft: '-5px',
     fontSize: '15px',
     '&:hover': {
       textDecoration: 'underline',
     },
   },
   userTextButtonStyle: {
-    marginLeft: '-11px',
-    marginTop: '-10px',
-    marginBottom: '-10px',
     fontSize: '15px',
-    color: theme.palette.text.primary,
     '&:hover': {
       backgroundColor: 'transparent',
       textDecoration: 'underline',
@@ -58,18 +54,13 @@ const useStyles = makeStyles<BackstageTheme>(theme => ({
     display: 'flex',
     alignItems: 'center',
     fontWeight: 'bold',
-    color: theme.palette.text.primary,
   },
   iconStyle: {
     fontSize: '25px',
     marginLeft: '-4px',
-    color: theme.palette.text.primary,
-  },
-  smallIconStyle: {
-    color: theme.palette.text.primary,
   },
   avatarStyle: {
-    marginTop: '-20px',
+    marginTop: '-30px',
   },
 }));
 

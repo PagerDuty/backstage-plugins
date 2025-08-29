@@ -28,7 +28,7 @@ import OpenInBrowserIcon from '@material-ui/icons/OpenInBrowser';
 import LinkIcon from '@material-ui/icons/Link';
 import { BackstageTheme } from '@backstage/theme';
 
-const useStyles = makeStyles<BackstageTheme>(theme => ({
+const useStyles = makeStyles<BackstageTheme>(() => ({
   denseListIcon: {
     marginRight: 0,
     display: 'flex',
@@ -38,9 +38,6 @@ const useStyles = makeStyles<BackstageTheme>(theme => ({
   },
   listItemPrimary: {
     fontWeight: 'bold',
-  },
-  smallIconStyle: {
-    color: theme.palette.text.primary,
   },
 }));
 
@@ -73,7 +70,7 @@ export const ChangeEventListItem = ({ changeEvent }: Props) => {
     externalLinkElem = (
       <TooltipTrigger>
         <ButtonIcon
-          icon={<LinkIcon className={classes.smallIconStyle} />}
+          icon={<LinkIcon />}
           variant="tertiary"
           onClick={() => handleExternalLinkClick(linkHref)}
         />

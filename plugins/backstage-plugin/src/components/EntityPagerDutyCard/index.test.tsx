@@ -192,7 +192,9 @@ describe('EntityPagerDutyCard', () => {
     await waitFor(() => !queryByTestId('progress'));
     expect(getByText('Open service in PagerDuty')).toBeInTheDocument();
     expect(getByText('Create new incident')).toBeInTheDocument();
-    expect(getByText('Nice! No incidents found!')).toBeInTheDocument();
+    await waitFor(() =>
+      expect(getByText('Nice! No incidents found!')).toBeInTheDocument(),
+    );
 
     await waitFor(() => !queryByTestId('escalation-progress'));
 
@@ -304,7 +306,9 @@ describe('EntityPagerDutyCard', () => {
 
       expect(getByText('Open service in PagerDuty')).toBeInTheDocument();
       expect(queryByTestId('trigger-incident-button')).not.toBeInTheDocument();
-      expect(getByText('Nice! No incidents found!')).toBeInTheDocument();
+      await waitFor(() =>
+        expect(getByText('Nice! No incidents found!')).toBeInTheDocument(),
+      );
 
       await waitFor(() => !queryByTestId('escalation-progress'));
 
@@ -413,7 +417,9 @@ describe('EntityPagerDutyCard', () => {
 
       expect(getByText('Open service in PagerDuty')).toBeInTheDocument();
       expect(getByText('Create new incident')).toBeInTheDocument();
-      expect(getByText('Nice! No incidents found!')).toBeInTheDocument();
+      await waitFor(() =>
+        expect(getByText('Nice! No incidents found!')).toBeInTheDocument(),
+      );
 
       await waitFor(() => !queryByTestId('escalation-progress'));
 
@@ -444,7 +450,9 @@ describe('EntityPagerDutyCard', () => {
 
       expect(getByText('Open service in PagerDuty')).toBeInTheDocument();
       expect(queryByTestId('change-events')).not.toBeInTheDocument();
-      expect(getByText('Nice! No incidents found!')).toBeInTheDocument();
+      await waitFor(() =>
+        expect(getByText('Nice! No incidents found!')).toBeInTheDocument(),
+      );
 
       await waitFor(() => !queryByTestId('escalation-progress'));
 
@@ -473,8 +481,12 @@ describe('EntityPagerDutyCard', () => {
       );
       await waitFor(() => !queryByTestId('progress'));
       expect(getByText('Open service in PagerDuty')).toBeInTheDocument();
-      expect(getByText('Change Events')).toBeInTheDocument();
-      expect(getByText('Nice! No incidents found!')).toBeInTheDocument();
+      await waitFor(() =>
+        expect(getByText('Change Events')).toBeInTheDocument(),
+      );
+      await waitFor(() =>
+        expect(getByText('Nice! No incidents found!')).toBeInTheDocument(),
+      );
       expect(queryByTestId('oncall-card')).not.toBeInTheDocument();
     });
   });
@@ -497,7 +509,9 @@ describe('EntityPagerDutyCard', () => {
       await waitFor(() => !queryByTestId('progress'));
 
       expect(getByText('Open service in PagerDuty')).toBeInTheDocument();
-      expect(getByText('Nice! No incidents found!')).toBeInTheDocument();
+      await waitFor(() =>
+        expect(getByText('Nice! No incidents found!')).toBeInTheDocument(),
+      );
 
       await waitFor(() => !queryByTestId('escalation-progress'));
 

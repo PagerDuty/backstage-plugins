@@ -30,9 +30,8 @@ export function OpenServiceButton({
   serviceUrl,
   compact,
 }: OpenServiceButtonProps) {
-  const useStyles = makeStyles<BackstageTheme>(theme => ({
+  const useStyles = makeStyles<BackstageTheme>(() => ({
     containerStyle: {
-      color: theme.palette.text.primary,
       fontSize: compact !== true ? '12px' : '10px',
       width: compact !== true ? '85px' : '70px',
       display: 'flex',
@@ -40,12 +39,12 @@ export function OpenServiceButton({
       alignItems: 'center',
       textAlign: 'center',
     },
-    iconStyle: {
-      color: theme.palette.text.primary,
+    textStyle: {
+      fontSize: '12px',
     },
   }));
 
-  const { containerStyle, iconStyle } = useStyles();
+  const { containerStyle, textStyle } = useStyles();
 
   function navigateToService() {
     window.open(serviceUrl, '_blank');
@@ -58,10 +57,10 @@ export function OpenServiceButton({
         size="medium"
         onClick={navigateToService}
         variant="tertiary"
-        icon={<OpenInBrowser className={iconStyle} />}
+        icon={<OpenInBrowser />}
       />
 
-      <Typography>Open service in PagerDuty</Typography>
+      <Typography className={textStyle}>Open service in PagerDuty</Typography>
     </div>
   );
 }
