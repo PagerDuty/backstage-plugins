@@ -46,7 +46,7 @@
   "sideEffects": false,
   "scripts": {
     "build": "backstage-cli package build && copyfiles -u 1 src/assets/*.svg ./",
-    "start": "backstage-cli package start",
+    "start": "backstage-cli package start --config ./dev/app-config.yaml",
     "lint": "backstage-cli package lint",
     "test": "backstage-cli package test",
     "prepare": "husky install",

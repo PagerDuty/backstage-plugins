@@ -40,6 +40,7 @@ export const pagerDutyEntityCard = EntityCardBlueprint.makeWithOverrides({
 /** @alpha */
 export const pagerDutyEntitySmallCard = EntityCardBlueprint.makeWithOverrides({
   name: 'small',
+  disabled: true,
   config: {
     schema: {
       readOnly: z => z.boolean().optional(),
