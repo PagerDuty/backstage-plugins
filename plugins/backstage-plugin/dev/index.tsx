@@ -14,44 +14,61 @@
  * limitations under the License.
  */
 
-// eslint-disable-next-line @backstage/no-undeclared-imports
-import { EntityProvider } from '@backstage/plugin-catalog-react';
-import { createDevApp } from '@backstage/dev-utils';
-import {
-  pagerDutyPlugin,
-  EntityPagerDutyCard,
-  EntityPagerDutySmallCard,
-} from '../src/plugin';
-import { pagerDutyApiRef } from '../src/api';
-import { mockPagerDutyApi } from './mockPagerDutyApi';
-import { mockEntity } from './mockEntity';
-import { Grid } from '@material-ui/core';
+import ReactDOM from 'react-dom/client';
 
-createDevApp()
-  .registerApi({
-    api: pagerDutyApiRef,
-    deps: {},
-    factory: () => mockPagerDutyApi,
-  })
-  .registerPlugin(pagerDutyPlugin)
-  .addPage({
-    path: '/pagerduty',
-    title: 'PagerDuty',
-    element: (
-      <EntityProvider entity={mockEntity}>
-        <EntityPagerDutyCard />
-      </EntityProvider>
-    ),
-  })
-  .addPage({
-    path: '/pagerduty-small',
-    title: 'PagerDuty Small Card',
-    element: (
-      <EntityProvider entity={mockEntity}>
-        <Grid md={4}>
-          <EntityPagerDutySmallCard />
-        </Grid>
-      </EntityProvider>
-    ),
-  })
-  .render();
+import { createApp } from '@backstage/frontend-defaults';
+
+import {
+  ApiBlueprint,
+  createFrontendModule,
+} from '@backstage/frontend-plugin-api';
+import { catalogApiRef } from '@backstage/plugin-catalog-react';
+
+import catalogPlugin from '@backstage/plugin-catalog/alpha';
+
+import { pagerDutyApiRef } from '../src';
+import pagerDutyPlugin from '../src/alpha';
+
+import { mockCatalogApi } from './mockCatalogApi';
+import { mockPagerDutyApi } from './mockPagerDutyApi';
+
+const catalogPluginOverrides = createFrontendModule({
+  pluginId: 'catalog',
+  extensions: [
+    ApiBlueprint.make({
+      params: defineParams =>
+        defineParams({
+          api: catalogApiRef,
+          deps: {},
+          factory: () => mockCatalogApi,
+        }),
+    }),
+  ],
+});
+
+const pagerDutyPluginOverrides = createFrontendModule({
+  pluginId: 'pagerduty',
+  extensions: [
+    ApiBlueprint.make({
+      params: defineParams =>
+        defineParams({
+          api: pagerDutyApiRef,
+          deps: {},
+          factory: () => mockPagerDutyApi,
+        }),
+    }),
+  ],
+});
+
+const app = createApp({
+  features: [
+    catalogPlugin,
+    catalogPluginOverrides,
+    pagerDutyPlugin,
+    pagerDutyPluginOverrides,
+  ],
+});
+
+const root = app.createRoot();
+
+ReactDOM.createRoot(document.getElementById('root')!).render(root);
