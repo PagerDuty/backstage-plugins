@@ -10,9 +10,9 @@
     "types": "dist/index.d.ts"
   },
   "backstage": {
-    "role": "backend-plugin-module",
     "pluginId": "catalog",
-    "pluginPackage": "pagerduty-entity-processor"
+    "role": "backend-plugin-module",
+    "pluginPackage": "@backstage/plugin-catalog-backend"
   },
   "homepage": "https://pagerduty.github.io/backstage-plugin-docs/index.html",
   "repository": {

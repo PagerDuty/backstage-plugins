@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-// eslint-disable-next-line @backstage/no-undeclared-imports
+
 import { Entity } from '@backstage/catalog-model';
 import { PAGERDUTY_INTEGRATION_KEY, PAGERDUTY_SERVICE_ID } from '../constants';
 import { useEntity } from '@backstage/plugin-catalog-react';
@@ -40,13 +40,19 @@ export const EntityPagerDutySmallCard = (
 ) => {
   const { readOnly, disableInsights, disableOnCall } = props;
   const { entity } = useEntity();
-  const pagerDutyEntity = getPagerDutyEntity(entity);
-  return (
-    <PagerDutySmallCard
-      {...pagerDutyEntity}
-      readOnly={readOnly}
-      disableInsights={disableInsights}
-      disableOnCall={disableOnCall}
-    />
-  );
+
+  if (isPluginApplicableToEntity(entity)) {
+    const pagerDutyEntity = getPagerDutyEntity(entity);
+
+    return (
+      <PagerDutySmallCard
+        {...pagerDutyEntity}
+        readOnly={readOnly}
+        disableInsights={disableInsights}
+        disableOnCall={disableOnCall}
+      />
+    );
+  }
+
+  return null;
 };

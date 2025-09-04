@@ -133,6 +133,22 @@ const apis = TestApiRegistry.from(
 );
 
 describe('isPluginApplicableToEntity', () => {
+  beforeAll(() => {
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      value: jest.fn().mockImplementation(query => ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addListener: jest.fn(),
+        removeListener: jest.fn(),
+        addEventListener: jest.fn(),
+        removeEventListener: jest.fn(),
+        dispatchEvent: jest.fn(),
+      })),
+    });
+  });
+
   describe('when entity has no annotations', () => {
     it('returns false', () => {
       expect(isPluginApplicableToEntity(entityWithoutAnnotations)).toBe(false);
@@ -176,13 +192,17 @@ describe('EntityPagerDutyCard', () => {
     await waitFor(() => !queryByTestId('progress'));
     expect(getByText('Open service in PagerDuty')).toBeInTheDocument();
     expect(getByText('Create new incident')).toBeInTheDocument();
-    expect(getByText('Nice! No incidents found!')).toBeInTheDocument();
+    await waitFor(() =>
+      expect(getByText('Nice! No incidents found!')).toBeInTheDocument(),
+    );
 
     await waitFor(() => !queryByTestId('escalation-progress'));
 
-    expect(
-      getByText('No one is on-call. Update the escalation policy.'),
-    ).toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        getByText('No one is on-call. Update the escalation policy.'),
+      ).toBeInTheDocument(),
+    );
   });
 
   it('Handles custom error for missing token', async () => {
@@ -248,7 +268,7 @@ describe('EntityPagerDutyCard', () => {
       .fn()
       .mockImplementationOnce(async () => ({ service }));
 
-    const { getByText, queryByTestId, getByRole } = render(
+    const { getByText, queryByTestId, getByRole, getByLabelText } = render(
       wrapInTestApp(
         <ApiProvider apis={apis}>
           <EntityProvider entity={entity}>
@@ -260,7 +280,7 @@ describe('EntityPagerDutyCard', () => {
     await waitFor(() => !queryByTestId('progress'));
     expect(getByText('Open service in PagerDuty')).toBeInTheDocument();
 
-    const triggerLink = getByText('Create new incident');
+    const triggerLink = getByLabelText('create-incident');
     await act(async () => {
       fireEvent.click(triggerLink);
     });
@@ -286,13 +306,17 @@ describe('EntityPagerDutyCard', () => {
 
       expect(getByText('Open service in PagerDuty')).toBeInTheDocument();
       expect(queryByTestId('trigger-incident-button')).not.toBeInTheDocument();
-      expect(getByText('Nice! No incidents found!')).toBeInTheDocument();
+      await waitFor(() =>
+        expect(getByText('Nice! No incidents found!')).toBeInTheDocument(),
+      );
 
       await waitFor(() => !queryByTestId('escalation-progress'));
 
-      expect(
-        getByText('No one is on-call. Update the escalation policy.'),
-      ).toBeInTheDocument();
+      await waitFor(() =>
+        expect(
+          getByText('No one is on-call. Update the escalation policy.'),
+        ).toBeInTheDocument(),
+      );
     });
 
     it('Handles custom error for missing token', async () => {
@@ -393,13 +417,17 @@ describe('EntityPagerDutyCard', () => {
 
       expect(getByText('Open service in PagerDuty')).toBeInTheDocument();
       expect(getByText('Create new incident')).toBeInTheDocument();
-      expect(getByText('Nice! No incidents found!')).toBeInTheDocument();
+      await waitFor(() =>
+        expect(getByText('Nice! No incidents found!')).toBeInTheDocument(),
+      );
 
       await waitFor(() => !queryByTestId('escalation-progress'));
 
-      expect(
-        getByText('No one is on-call. Update the escalation policy.'),
-      ).toBeInTheDocument();
+      await waitFor(() =>
+        expect(
+          getByText('No one is on-call. Update the escalation policy.'),
+        ).toBeInTheDocument(),
+      );
     });
   });
 
@@ -422,13 +450,17 @@ describe('EntityPagerDutyCard', () => {
 
       expect(getByText('Open service in PagerDuty')).toBeInTheDocument();
       expect(queryByTestId('change-events')).not.toBeInTheDocument();
-      expect(getByText('Nice! No incidents found!')).toBeInTheDocument();
+      await waitFor(() =>
+        expect(getByText('Nice! No incidents found!')).toBeInTheDocument(),
+      );
 
       await waitFor(() => !queryByTestId('escalation-progress'));
 
-      expect(
-        getByText('No one is on-call. Update the escalation policy.'),
-      ).toBeInTheDocument();
+      await waitFor(() =>
+        expect(
+          getByText('No one is on-call. Update the escalation policy.'),
+        ).toBeInTheDocument(),
+      );
     });
   });
 
@@ -449,8 +481,12 @@ describe('EntityPagerDutyCard', () => {
       );
       await waitFor(() => !queryByTestId('progress'));
       expect(getByText('Open service in PagerDuty')).toBeInTheDocument();
-      expect(getByText('Change Events')).toBeInTheDocument();
-      expect(getByText('Nice! No incidents found!')).toBeInTheDocument();
+      await waitFor(() =>
+        expect(getByText('Change Events')).toBeInTheDocument(),
+      );
+      await waitFor(() =>
+        expect(getByText('Nice! No incidents found!')).toBeInTheDocument(),
+      );
       expect(queryByTestId('oncall-card')).not.toBeInTheDocument();
     });
   });
@@ -473,13 +509,17 @@ describe('EntityPagerDutyCard', () => {
       await waitFor(() => !queryByTestId('progress'));
 
       expect(getByText('Open service in PagerDuty')).toBeInTheDocument();
-      expect(getByText('Nice! No incidents found!')).toBeInTheDocument();
+      await waitFor(() =>
+        expect(getByText('Nice! No incidents found!')).toBeInTheDocument(),
+      );
 
       await waitFor(() => !queryByTestId('escalation-progress'));
 
-      expect(
-        getByText('No one is on-call. Update the escalation policy.'),
-      ).toBeInTheDocument();
+      await waitFor(() =>
+        expect(
+          getByText('No one is on-call. Update the escalation policy.'),
+        ).toBeInTheDocument(),
+      );
       expect(() => getByText('Create new incident')).toThrow();
     });
   });

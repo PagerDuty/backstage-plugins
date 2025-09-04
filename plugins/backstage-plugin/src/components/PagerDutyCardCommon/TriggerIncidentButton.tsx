@@ -16,11 +16,12 @@
 
 // eslint-disable-next-line @backstage/no-undeclared-imports
 import { useCallback, useState } from 'react';
-import { makeStyles, IconButton, Typography } from '@material-ui/core';
+import { makeStyles, Typography } from '@material-ui/core';
 import { BackstageTheme } from '@backstage/theme';
 
 import { TriggerDialog } from '../TriggerDialog';
 import AddAlert from '@material-ui/icons/AddAlert';
+import { ButtonIcon } from '@backstage/ui';
 
 /** @public */
 export type TriggerIncidentButtonProps = {
@@ -37,29 +38,22 @@ export function TriggerIncidentButton({
   compact,
   handleRefresh,
 }: TriggerIncidentButtonProps) {
-  const useStyles = makeStyles<BackstageTheme>(theme => ({
-    buttonStyle: {
-      color: theme.palette.text.primary,
-      '&:hover': {
-        backgroundColor: 'transparent',
-        textDecoration: 'underline',
-      },
-    },
+  const useStyles = makeStyles<BackstageTheme>(() => ({
     containerStyle: {
       fontSize: compact !== true ? '12px' : '10px',
       width: compact !== true ? '80px' : '60px',
-      marginRight: '-10px',
-    },
-    iconStyle: {
-      fontSize: '30px',
-      marginBottom: '-10px',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
     },
     textStyle: {
-      marginBottom: '-10px',
+      textAlign: 'center',
+      fontSize: '12px',
+      minWidth: '30px',
     },
   }));
 
-  const { buttonStyle, containerStyle, iconStyle, textStyle } = useStyles();
+  const { containerStyle, textStyle } = useStyles();
   const [dialogShown, setDialogShown] = useState<boolean>(false);
 
   const showDialog = useCallback(() => {
@@ -73,17 +67,18 @@ export function TriggerIncidentButton({
 
   return (
     <>
-      <IconButton
-        aria-label="create-incident"
-        onClick={showDialog}
-        className={disabled ? '' : buttonStyle}
-        disabled={disabled}
-      >
-        <div className={containerStyle}>
-          <AddAlert className={iconStyle} />
-          <Typography className={textStyle}>Create new incident</Typography>
-        </div>
-      </IconButton>
+      <div className={containerStyle}>
+        <ButtonIcon
+          variant="tertiary"
+          size="medium"
+          aria-label="create-incident"
+          onClick={showDialog}
+          isDisabled={disabled}
+          icon={<AddAlert />}
+        />
+
+        <Typography className={textStyle}>Create new incident</Typography>
+      </div>
       {integrationKey && (
         <TriggerDialog
           showDialog={dialogShown}

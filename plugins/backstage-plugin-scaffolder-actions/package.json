@@ -10,9 +10,9 @@
     "types": "dist/index.d.ts"
   },
   "backstage": {
+    "pluginId": "scaffolder",
     "role": "backend-plugin-module",
-    "pluginPackage": "scaffolder",
-    "pluginId": "pagerduty-actions"
+    "pluginPackage": "@backstage/plugin-scaffolder-backend"
   },
   "homepage": "https://pagerduty.github.io/backstage-plugin-docs/index.html",
   "repository": {

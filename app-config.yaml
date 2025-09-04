@@ -122,3 +122,4 @@ pagerDuty:
     clientId: ${PAGERDUTY_CLIENT_ID}
     clientSecret: ${PAGERDUTY_CLIENT_SECRET}
     subDomain: ${PAGERDUTY_SUBDOMAIN}
+    region: ${PAGERDUTY_OAUTH_REGION}

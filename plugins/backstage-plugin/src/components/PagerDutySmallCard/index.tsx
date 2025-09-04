@@ -19,11 +19,10 @@ import {
   Accordion,
   AccordionDetails,
   AccordionSummary,
-  Card,
   CardHeader,
-  Grid,
   Typography,
 } from '@material-ui/core';
+import { Card, Flex, Grid } from '@backstage/ui';
 import useAsync from 'react-use/lib/useAsync';
 import { pagerDutyApiRef, UnauthorizedError } from '../../api';
 import { MissingTokenError, ServiceNotFoundError } from '../Errors';
@@ -58,42 +57,20 @@ const useStyles = makeStyles<BackstageTheme>(theme =>
           ? 'rgba(0, 0, 0, 0.54)'
           : 'rgba(255, 255, 255, 0.7)',
     },
-    headerStyle: {
-      marginBottom: '0px',
-      fontSize: '0px',
-    },
-    overviewHeaderContainerStyle: {
-      display: 'flex',
-      margin: '0px',
-      padding: '15px',
-      marginBottom: '5px',
-    },
-    headerWithSubheaderContainerStyle: {
-      display: 'flex',
-      alignItems: 'center',
-    },
     subheaderTextStyle: {
       fontSize: '10px',
-      marginLeft: '5px',
+      paddingLeft: '5px',
+      paddingTop: '3px',
     },
-    overviewCardsContainerStyle: {
-      display: 'flex',
-      margin: '15px',
-      marginTop: '-15px',
+    accordionStyle: {
+      background: 'transparent',
     },
-    onCallAccordionDetails: {
-      display: 'flex',
+    gridRootStyle: {
       width: '100%',
-      marginTop: '-25px',
-      marginBottom: '-15px',
     },
-    incidentMetricsContainerStyle: {
-      display: 'flex',
-      height: '100%',
-      justifyContent: 'center',
-      columnSpan: 'all',
-      margin: '15px',
-      marginTop: '-15px',
+    cardStyles: {
+      paddingLeft: '10px',
+      paddingRight: '10px',
     },
   }),
 );
@@ -185,9 +162,8 @@ export const PagerDutySmallCard = (props: PagerDutyCardProps) => {
   }
 
   return (
-    <Card data-testid="pagerduty-card">
+    <Card data-testid="pagerduty-card" className={classes.cardStyles}>
       <CardHeader
-        className={classes.headerStyle}
         title={
           theme.palette.type === 'dark' ? (
             <img src={PDWhiteImage} alt="PagerDuty" height="25" />
@@ -197,7 +173,7 @@ export const PagerDutySmallCard = (props: PagerDutyCardProps) => {
         }
         action={
           !readOnly && props.integrationKey ? (
-            <div>
+            <Flex>
               <TriggerIncidentButton
                 compact
                 data-testid="trigger-incident-button"
@@ -206,35 +182,36 @@ export const PagerDutySmallCard = (props: PagerDutyCardProps) => {
                 handleRefresh={handleRefresh}
               />
               <OpenServiceButton compact serviceUrl={service!.url} />
-            </div>
+            </Flex>
           ) : (
             <OpenServiceButton compact serviceUrl={service!.url} />
           )
         }
       />
-      <Grid item md={12} className={classes.overviewHeaderContainerStyle}>
-        <Grid item md={6}>
+
+      <Grid.Root columns="2" gap="1" pl="1" pr="1">
+        <Grid.Item>
           <Typography className={classes.overviewHeaderTextStyle}>
             STATUS
           </Typography>
-        </Grid>
-        <Grid item md={6}>
+        </Grid.Item>
+        <Grid.Item>
           <Typography className={classes.overviewHeaderTextStyle}>
             STANDARDS
           </Typography>
-        </Grid>
-      </Grid>
+        </Grid.Item>
+      </Grid.Root>
 
-      <Grid item md={12} className={classes.overviewCardsContainerStyle}>
-        <Grid item md={6}>
+      <Grid.Root columns="2" gap="1" pl="1" pr="1">
+        <Grid.Item>
           <StatusCard
             compact
             serviceId={service!.id}
             refreshStatus={refreshStatus}
             account={service!.account}
           />
-        </Grid>
-        <Grid item md={6}>
+        </Grid.Item>
+        <Grid.Item>
           <ServiceStandardsCard
             compact
             total={
@@ -253,31 +230,32 @@ export const PagerDutySmallCard = (props: PagerDutyCardProps) => {
                 : undefined
             }
           />
-        </Grid>
-      </Grid>
+        </Grid.Item>
+      </Grid.Root>
+
       {disableInsights !== true ? (
-        <Accordion>
+        <Accordion className={classes.accordionStyle}>
           <AccordionSummary
             expandIcon={<ExpandMoreIcon />}
             aria-controls="panel1a-content"
             id="panel1a-header"
           >
-            <Typography className={classes.headerWithSubheaderContainerStyle}>
-              <Typography className={classes.overviewHeaderTextStyle}>
-                INSIGHTS
-              </Typography>
-              <Typography className={classes.subheaderTextStyle}>
-                (last 30 days)
-              </Typography>
+            <Typography className={classes.overviewHeaderTextStyle}>
+              INSIGHTS
+            </Typography>
+            <Typography className={classes.subheaderTextStyle}>
+              (last 30 days)
             </Typography>
           </AccordionSummary>
           <AccordionDetails>
-            <Grid
-              item
-              md={12}
-              className={classes.incidentMetricsContainerStyle}
+            <Grid.Root
+              columns="3"
+              gap="1"
+              pl="1"
+              pr="1"
+              className={classes.gridRootStyle}
             >
-              <Grid item md={4}>
+              <Grid.Item>
                 <InsightsCard
                   compact
                   count={
@@ -288,8 +266,8 @@ export const PagerDutySmallCard = (props: PagerDutyCardProps) => {
                   label="interruptions"
                   color={theme.palette.textSubtle}
                 />
-              </Grid>
-              <Grid item md={4}>
+              </Grid.Item>
+              <Grid.Item>
                 <InsightsCard
                   compact
                   count={
@@ -300,8 +278,8 @@ export const PagerDutySmallCard = (props: PagerDutyCardProps) => {
                   label="high urgency"
                   color={theme.palette.warning.main}
                 />
-              </Grid>
-              <Grid item md={4}>
+              </Grid.Item>
+              <Grid.Item>
                 <InsightsCard
                   compact
                   count={
@@ -313,8 +291,8 @@ export const PagerDutySmallCard = (props: PagerDutyCardProps) => {
                   label="incidents"
                   color={theme.palette.error.main}
                 />
-              </Grid>
-            </Grid>
+              </Grid.Item>
+            </Grid.Root>
           </AccordionDetails>
         </Accordion>
       ) : (
@@ -322,7 +300,7 @@ export const PagerDutySmallCard = (props: PagerDutyCardProps) => {
       )}
 
       {disableOnCall !== true ? (
-        <Accordion>
+        <Accordion className={classes.accordionStyle}>
           <AccordionSummary
             expandIcon={<ExpandMoreIcon />}
             aria-controls="panel1a-content"
@@ -332,7 +310,7 @@ export const PagerDutySmallCard = (props: PagerDutyCardProps) => {
               ON CALL
             </Typography>
           </AccordionSummary>
-          <AccordionDetails className={classes.onCallAccordionDetails}>
+          <AccordionDetails>
             <EscalationPolicy
               data-testid="oncall-card"
               policyId={service!.policyId}

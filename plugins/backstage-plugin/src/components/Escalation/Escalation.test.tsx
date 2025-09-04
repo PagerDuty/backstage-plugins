@@ -27,6 +27,21 @@ const mockPagerDutyApi = {
 const apis = TestApiRegistry.from([pagerDutyApiRef, mockPagerDutyApi]);
 
 describe('Escalation', () => {
+  beforeAll(() => {
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      value: jest.fn().mockImplementation(query => ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addListener: jest.fn(),
+        removeListener: jest.fn(),
+        addEventListener: jest.fn(),
+        removeEventListener: jest.fn(),
+        dispatchEvent: jest.fn(),
+      })),
+    });
+  });
   it('Handles an empty response', async () => {
     mockPagerDutyApi.getOnCallByPolicyId = jest
       .fn()
@@ -47,9 +62,11 @@ describe('Escalation', () => {
 
     await waitFor(() => !queryByTestId('escalation-progress'));
 
-    expect(
-      getByText('No one is on-call. Update the escalation policy.'),
-    ).toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        getByText('No one is on-call. Update the escalation policy.'),
+      ).toBeInTheDocument(),
+    );
     expect(mockPagerDutyApi.getOnCallByPolicyId).toHaveBeenCalledWith(
       '456',
       undefined,
@@ -135,7 +152,7 @@ describe('Escalation', () => {
         ] as PagerDutyUser[],
     );
 
-    const { getByText, queryByTestId, getByAltText } = render(
+    const { getByText, queryByTestId } = render(
       wrapInTestApp(
         <ApiProvider apis={apis}>
           <EscalationPolicy
@@ -150,10 +167,11 @@ describe('Escalation', () => {
 
     expect(getByText('person1')).toBeInTheDocument();
     expect(getByText('person1@example.com')).toBeInTheDocument();
-    expect(getByAltText('person1')).toHaveAttribute(
-      'src',
-      'https://gravatar.com/avatar/205e460b479e2e5b48aec07710c08d50?f=y',
-    );
+    // TODO: once Backstage UI avatar supports ALT tags uncomment this
+    // expect(getByAltText('person1')).toHaveAttribute(
+    //   'src',
+    //   'https://gravatar.com/avatar/205e460b479e2e5b48aec07710c08d50?f=y',
+    // );
     expect(mockPagerDutyApi.getOnCallByPolicyId).toHaveBeenCalledWith(
       'abc',
       undefined,

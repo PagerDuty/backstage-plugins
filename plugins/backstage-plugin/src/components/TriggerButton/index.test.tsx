@@ -25,6 +25,21 @@ import { ApiProvider } from '@backstage/core-app-api';
 import { alertApiRef } from '@backstage/core-plugin-api';
 
 describe('TriggerButton', () => {
+  beforeAll(() => {
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      value: jest.fn().mockImplementation(query => ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addListener: jest.fn(),
+        removeListener: jest.fn(),
+        addEventListener: jest.fn(),
+        removeEventListener: jest.fn(),
+        dispatchEvent: jest.fn(),
+      })),
+    });
+  });
   const mockTriggerAlarmFn = jest.fn();
   const mockPagerDutyApi = {
     triggerAlarm: mockTriggerAlarmFn,
@@ -65,7 +80,7 @@ describe('TriggerButton', () => {
       expect(screen.getByRole('dialog')).toBeInTheDocument();
     });
 
-    const closeButton = screen.getByText('Close');
+    const closeButton = screen.getByText('CLOSE');
     await act(async () => {
       fireEvent.click(closeButton);
     });

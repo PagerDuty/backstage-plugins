@@ -21,10 +21,10 @@ import {
   DialogTitle,
   TextField,
   DialogActions,
-  Button,
   DialogContent,
   Typography,
   CircularProgress,
+  useTheme,
 } from '@material-ui/core';
 import useAsyncFn from 'react-use/lib/useAsyncFn';
 import { pagerDutyApiRef } from '../../api';
@@ -35,6 +35,7 @@ import {
   identityApiRef,
 } from '@backstage/core-plugin-api';
 import { DEFAULT_NAMESPACE, parseEntityRef } from '@backstage/catalog-model';
+import { Button } from '@backstage/ui';
 
 type Props = {
   showDialog: boolean;
@@ -55,6 +56,7 @@ export const TriggerDialog = ({
   const identityApi = useApi(identityApiRef);
   const api = useApi(pagerDutyApiRef);
   const [description, setDescription] = useState<string>('');
+  const theme = useTheme();
 
   const [{ value, loading, error }, handleTriggerAlarm] = useAsyncFn(
     async (descriptions: string) => {
@@ -147,16 +149,21 @@ export const TriggerDialog = ({
         <Button
           data-testid="trigger-button"
           id="trigger"
-          color="secondary"
-          disabled={!description || loading}
-          variant="contained"
+          style={{
+            background:
+              !description || loading
+                ? theme.palette.action.disabled
+                : theme.palette.secondary.main,
+          }}
+          isDisabled={!description || loading}
+          variant="primary"
           onClick={() => handleTriggerAlarm(description)}
-          endIcon={loading && <CircularProgress size={16} />}
+          iconEnd={loading ? <CircularProgress size={16} /> : <></>}
         >
-          Trigger Incident
+          TRIGGER INCIDENT
         </Button>
-        <Button id="close" color="primary" onClick={handleDialog}>
-          Close
+        <Button id="close" onClick={handleDialog}>
+          CLOSE
         </Button>
       </DialogActions>
     </Dialog>

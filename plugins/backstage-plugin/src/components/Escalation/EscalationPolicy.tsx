@@ -13,13 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-// eslint-disable-next-line @backstage/no-undeclared-imports
-import {
-  List,
-  ListSubheader,
-  createStyles,
-  makeStyles,
-} from '@material-ui/core';
+import { List, ListSubheader } from '@material-ui/core';
 import { EscalationUsersEmptyState } from './EscalationUsersEmptyState';
 import { EscalationUsersForbiddenState } from './EscalationUsersForbiddenState';
 import { EscalationUser } from './EscalationUser';
@@ -29,7 +23,6 @@ import { Alert } from '@material-ui/lab';
 
 import { useApi } from '@backstage/core-plugin-api';
 import { Progress } from '@backstage/core-components';
-import { BackstageTheme } from '@backstage/theme';
 
 type Props = {
   policyId: string;
@@ -37,13 +30,6 @@ type Props = {
   policyName: string;
   account?: string;
 };
-const useStyles = makeStyles<BackstageTheme>(() =>
-  createStyles({
-    listStyle: {
-      marginLeft: '-15px',
-    },
-  }),
-);
 
 export const EscalationPolicy = ({
   policyId,
@@ -52,7 +38,6 @@ export const EscalationPolicy = ({
   account,
 }: Props) => {
   const api = useApi(pagerDutyApiRef);
-  const classes = useStyles();
 
   const {
     value: users,
@@ -87,7 +72,7 @@ export const EscalationPolicy = ({
   }
 
   return (
-    <List dense className={classes.listStyle}>
+    <List dense>
       {users!.map((user, index) => (
         <EscalationUser
           key={index}

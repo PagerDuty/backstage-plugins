@@ -17,13 +17,12 @@
 import {
   ListItem,
   ListItemSecondaryAction,
-  Tooltip,
   ListItemText,
   makeStyles,
-  IconButton,
   Typography,
   Chip,
 } from '@material-ui/core';
+import { ButtonIcon, Tooltip, TooltipTrigger } from '@backstage/ui';
 import { DateTime, Duration } from 'luxon';
 import { PagerDutyIncident } from '@pagerduty/backstage-plugin-common';
 import OpenInBrowserIcon from '@material-ui/icons/OpenInBrowser';
@@ -85,10 +84,6 @@ const useStyles = makeStyles<BackstageTheme>(theme => ({
     display: 'flex',
     alignItems: 'baseline',
   },
-  smallIconStyle: {
-    color: theme.palette.text.primary,
-    marginRight: '-20px',
-  },
 }));
 
 type Props = {
@@ -103,6 +98,10 @@ export const IncidentListItem = ({ incident }: Props) => {
     .minus(Duration.fromMillis(duration))
     .toRelative({ locale: 'en' });
   const user = incident.assignments[0]?.assignee;
+
+  const handleIncidentClick = () => {
+    window.open(incident.html_url, '_blank', 'noopener,noreferrer');
+  };
 
   return (
     <ListItem dense key={incident.id}>
@@ -146,16 +145,15 @@ export const IncidentListItem = ({ incident }: Props) => {
         }
       />
       <ListItemSecondaryAction>
-        <Tooltip title="View in PagerDuty" placement="top">
-          <IconButton
-            href={incident.html_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={classes.smallIconStyle}
-          >
-            <OpenInBrowserIcon />
-          </IconButton>
-        </Tooltip>
+        <TooltipTrigger>
+          <ButtonIcon
+            aria-label="view-in-pd-button"
+            icon={<OpenInBrowserIcon />}
+            variant="tertiary"
+            onClick={handleIncidentClick}
+          />
+          <Tooltip>View in PagerDuty</Tooltip>
+        </TooltipTrigger>
       </ListItemSecondaryAction>
     </ListItem>
   );

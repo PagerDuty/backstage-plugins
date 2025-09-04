@@ -27,6 +27,21 @@ const mockPagerDutyApi = {
 const apis = TestApiRegistry.from([pagerDutyApiRef, mockPagerDutyApi]);
 
 describe('Incidents', () => {
+  beforeAll(() => {
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      value: jest.fn().mockImplementation(query => ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addListener: jest.fn(),
+        removeListener: jest.fn(),
+        addEventListener: jest.fn(),
+        removeEventListener: jest.fn(),
+        dispatchEvent: jest.fn(),
+      })),
+    });
+  });
   it('Renders an empty state when there are no change events', async () => {
     mockPagerDutyApi.getChangeEventsByServiceId = jest
       .fn()
@@ -98,7 +113,7 @@ describe('Incidents', () => {
           },
         ] as PagerDutyChangeEvent[],
       }));
-    const { getByText, getAllByTitle, queryByTestId } = render(
+    const { getByText, getAllByLabelText, queryByTestId } = render(
       wrapInTestApp(
         <ApiProvider apis={apis}>
           <ChangeEvents serviceId="abc" refreshEvents={false} />
@@ -110,7 +125,7 @@ describe('Incidents', () => {
     expect(getByText('sum of EVENT')).toBeInTheDocument();
 
     // assert links, mailto and hrefs, date calculation
-    expect(getAllByTitle('View in PagerDuty').length).toEqual(2);
+    expect(getAllByLabelText('view-in-pd-button').length).toEqual(2);
   });
 
   it('Does not render a pagerduty link when html_url is not present in response', async () => {
@@ -145,7 +160,7 @@ describe('Incidents', () => {
           },
         ] as PagerDutyChangeEvent[],
       }));
-    const { getByText, getAllByTitle, queryByTestId } = render(
+    const { getByText, getAllByLabelText, queryByTestId } = render(
       wrapInTestApp(
         <ApiProvider apis={apis}>
           <ChangeEvents serviceId="abc" refreshEvents={false} />
@@ -157,7 +172,7 @@ describe('Incidents', () => {
     expect(getByText('sum of EVENT')).toBeInTheDocument();
 
     // assert links, mailto and hrefs, date calculation
-    expect(getAllByTitle('View in PagerDuty').length).toEqual(1);
+    expect(getAllByLabelText('view-in-pd-button').length).toEqual(1);
   });
 
   it('Handle errors', async () => {
