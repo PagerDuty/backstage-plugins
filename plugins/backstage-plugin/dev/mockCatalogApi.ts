@@ -13,23 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { Entity } from '@backstage/catalog-model';
 
-export const mockEntity: Entity = {
-  apiVersion: 'backstage.io/v1alpha1',
-  kind: 'Component',
-  metadata: {
-    name: 'backstage',
-    description: 'backstage.io',
-    annotations: {
-      'github.com/project-slug': 'backstage/backstage',
-      'pagerduty.com/service-id': 'foo',
-      'pagerduty.com/integration-key': 'foo',
+import { catalogApiMock } from '@backstage/plugin-catalog-react/testUtils';
+
+export const mockCatalogApi = catalogApiMock({
+  entities: [
+    {
+      apiVersion: 'backstage.io/v1alpha1',
+      kind: 'Component',
+      metadata: {
+        name: 'backstage',
+        description: 'backstage.io',
+        annotations: {
+          'github.com/project-slug': 'backstage/backstage',
+          'pagerduty.com/service-id': 'foo',
+          'pagerduty.com/integration-key': 'foo',
+        },
+      },
+      spec: {
+        lifecycle: 'production',
+        type: 'website',
+        owner: 'user:guest',
+      },
     },
-  },
-  spec: {
-    lifecycle: 'production',
-    type: 'website',
-    owner: 'user:guest',
-  },
-};
+  ],
+});

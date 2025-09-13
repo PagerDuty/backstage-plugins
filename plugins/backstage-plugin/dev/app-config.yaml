@@ -1,0 +1,18 @@
+app:
+  title: Backstage Example App
+  baseUrl: http://localhost:3000
+  extensions:
+    # Redirect from the root to the PagerDuty page
+    - 'page:pagerduty':
+        config:
+          path: '/'
+    # Enable the small PagerDuty entity card
+    - 'entity-card:pagerduty/small': true
+    # Hide these entity cards from the catalog
+    - 'entity-card:catalog/has-subcomponents': false
+    - 'entity-card:catalog/depends-on-components': false
+    - 'entity-card:catalog/depends-on-resources': false
+backend:
+  baseUrl: http://localhost:7007
+  listen:
+    port: 7007
