@@ -17,13 +17,7 @@
 import ReactDOM from 'react-dom/client';
 
 import { createApp } from '@backstage/frontend-defaults';
-
-import {
-  ApiBlueprint,
-  createFrontendModule,
-} from '@backstage/frontend-plugin-api';
 import { catalogApiRef } from '@backstage/plugin-catalog-react';
-
 import catalogPlugin from '@backstage/plugin-catalog/alpha';
 
 import { pagerDutyApiRef } from '../src';
@@ -32,10 +26,9 @@ import pagerDutyPlugin from '../src/alpha';
 import { mockCatalogApi } from './mockCatalogApi';
 import { mockPagerDutyApi } from './mockPagerDutyApi';
 
-const catalogPluginOverrides = createFrontendModule({
-  pluginId: 'catalog',
+const catalogPluginOverrides = catalogPlugin.withOverrides({
   extensions: [
-    ApiBlueprint.make({
+    catalogPlugin.getExtension('api:catalog').override({
       params: defineParams =>
         defineParams({
           api: catalogApiRef,
@@ -46,10 +39,9 @@ const catalogPluginOverrides = createFrontendModule({
   ],
 });
 
-const pagerDutyPluginOverrides = createFrontendModule({
-  pluginId: 'pagerduty',
+const pagerDutyPluginOverrides = pagerDutyPlugin.withOverrides({
   extensions: [
-    ApiBlueprint.make({
+    pagerDutyPlugin.getExtension('api:pagerduty').override({
       params: defineParams =>
         defineParams({
           api: pagerDutyApiRef,
@@ -61,12 +53,7 @@ const pagerDutyPluginOverrides = createFrontendModule({
 });
 
 const app = createApp({
-  features: [
-    catalogPlugin,
-    catalogPluginOverrides,
-    pagerDutyPlugin,
-    pagerDutyPluginOverrides,
-  ],
+  features: [catalogPluginOverrides, pagerDutyPluginOverrides],
 });
 
 const root = app.createRoot();
