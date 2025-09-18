@@ -14,48 +14,48 @@
  * limitations under the License.
  */
 
-import { EntityProvider } from '@backstage/plugin-catalog-react';
-import { createDevApp } from '@backstage/dev-utils';
-import {
-  pagerDutyPlugin,
-  EntityPagerDutyCard,
-  EntityPagerDutySmallCard,
-} from '../src/plugin';
+import { catalogApiRef } from '@backstage/plugin-catalog-react';
 import { pagerDutyApiRef } from '../src/api';
 import { mockPagerDutyApi } from './mockPagerDutyApi';
-import { mockEntity } from './mockEntity';
-import { Grid } from '@material-ui/core';
 import '@backstage/ui/css/styles.css';
 
-createDevApp()
-  .registerApi({
-    api: pagerDutyApiRef,
-    deps: {},
-    factory: () => mockPagerDutyApi,
-  })
-  .registerPlugin(pagerDutyPlugin)
-  .addPage({
-    path: '/pagerduty',
-    title: 'PagerDuty',
-    element: (
-      <EntityProvider entity={mockEntity}>
-        <div data-theme={localStorage.getItem('theme') ?? 'light'}>
-          <EntityPagerDutyCard />
-        </div>
-      </EntityProvider>
-    ),
-  })
-  .addPage({
-    path: '/pagerduty-small',
-    title: 'PagerDuty Small Card',
-    element: (
-      <EntityProvider entity={mockEntity}>
-        <Grid md={4}>
-          <div data-theme={localStorage.getItem('theme') ?? 'light'}>
-            <EntityPagerDutySmallCard />
-          </div>
-        </Grid>
-      </EntityProvider>
-    ),
-  })
-  .render();
+import ReactDOM from 'react-dom/client';
+import { createApp } from '@backstage/frontend-defaults';
+import pagerDutyPlugin from '../src/alpha';
+import catalogPlugin from '@backstage/plugin-catalog/alpha';
+import { mockCatalogApi } from './mockCatalogApi';
+
+const catalogPluginOverrides = catalogPlugin.withOverrides({
+  extensions: [
+    catalogPlugin.getExtension('api:catalog').override({
+      params: defineParams =>
+        defineParams({
+          api: catalogApiRef,
+          deps: {},
+          factory: () => mockCatalogApi
+        })
+    })
+  ]
+})
+
+const pagerDutyPluginOverrides = pagerDutyPlugin.withOverrides({
+  extensions: [
+    pagerDutyPlugin.getExtension('api:pagerduty').override({
+      params: defineParams => 
+        defineParams({
+          api: pagerDutyApiRef,
+          deps: {},
+          factory: () => mockPagerDutyApi,
+        })
+    })
+  ]
+})
+
+
+const app = createApp({
+  features: [catalogPluginOverrides, pagerDutyPluginOverrides],
+})
+
+const root = app.createRoot();
+
+ReactDOM.createRoot(document.getElementById('root')!).render(root);

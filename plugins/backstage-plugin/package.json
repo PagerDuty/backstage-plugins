@@ -6,9 +6,7 @@
   "types": "dist/index.d.ts",
   "license": "Apache-2.0",
   "publishConfig": {
-    "access": "public",
-    "main": "dist/index.esm.js",
-    "types": "dist/index.d.ts"
+    "access": "public"
   },
   "backstage": {
     "pluginId": "pagerduty",
@@ -30,9 +28,10 @@
     "plugin",
     "pagerduty"
   ],
+  "sideEffects": false,
   "scripts": {
     "build": "backstage-cli package build && copyfiles -u 1 src/assets/*.svg ./",
-    "start": "backstage-cli package start",
+    "start": "backstage-cli package start --config ./dev/app-config.yaml",
     "lint": "backstage-cli package lint",
     "test": "backstage-cli package test",
     "prepare": "husky install",
@@ -41,17 +40,17 @@
     "clean": "backstage-cli package clean"
   },
   "dependencies": {
-    "@backstage/catalog-client": "^1.10.2",
-    "@backstage/catalog-model": "^1.5.0",
-    "@backstage/core-compat-api": "^0.4.4",
-    "@backstage/core-components": "^0.14.9",
-    "@backstage/core-plugin-api": "^1.9.3",
-    "@backstage/errors": "^1.2.4",
-    "@backstage/frontend-plugin-api": "^0.10.4",
-    "@backstage/plugin-catalog-react": "^1.19.1",
-    "@backstage/plugin-home-react": "^0.1.15",
+    "@backstage/catalog-client": "^1.12.0",
+    "@backstage/catalog-model": "^1.7.5",
+    "@backstage/core-compat-api": "^0.5.2",
+    "@backstage/core-components": "^0.18.0",
+    "@backstage/core-plugin-api": "^1.11.0",
+    "@backstage/errors": "^1.2.7",
+    "@backstage/frontend-plugin-api": "^0.12.0",
+    "@backstage/plugin-catalog": "^1.31.3",
+    "@backstage/plugin-catalog-react": "^1.21.0",
+    "@backstage/plugin-home-react": "^0.1.30",
     "@backstage/theme": "^0.5.6",
-    "@backstage/ui": "^0.6.1",
     "@emotion/react": "^11.11.4",
     "@emotion/styled": "^11.11.5",
     "@material-ui/core": "^4.12.2",
@@ -70,15 +69,17 @@
     "validate-color": "^2.2.4"
   },
   "peerDependencies": {
+    "@backstage/ui": "^0.6.1",
     "react": "^18.0.0 || ^20.0.0",
     "react-dom": "^18.0.0 || ^20.0.0",
     "react-router-dom": "^6.3.0"
   },
   "devDependencies": {
-    "@backstage/cli": "^0.33.0",
-    "@backstage/core-app-api": "^1.14.0",
-    "@backstage/dev-utils": "^1.0.35",
-    "@backstage/test-utils": "^1.5.8",
+    "@backstage/cli": "^0.34.3",
+    "@backstage/core-app-api": "^1.19.0",
+    "@backstage/dev-utils": "^1.1.14",
+    "@backstage/frontend-defaults": "^0.3.1",
+    "@backstage/test-utils": "^1.7.11",
     "@testing-library/jest-dom": "^6.6.3",
     "@types/copyfiles": "^2",
     "copyfiles": "^2.4.1"
@@ -90,12 +91,13 @@
   ],
   "exports": {
     ".": "./src/index.ts",
-    "./alpha": "./src/alpha.tsx"
+    "./alpha": "./src/alpha/index.ts",
+    "./package.json": "./package.json"
   },
   "typesVersions": {
     "*": {
       "alpha": [
-        "src/alpha.tsx"
+        "src/alpha/index.ts"
       ],
       "package.json": [
         "package.json"
