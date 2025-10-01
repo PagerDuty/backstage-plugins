@@ -7,23 +7,7 @@ import OrgPlugin from '@backstage/plugin-org/alpha';
 import SearchPlugin from '@backstage/plugin-search/alpha';
 import TechDocsPlugin from '@backstage/plugin-techdocs/alpha';
 import { createApp } from '@backstage/frontend-defaults';
-import PagerDutyPlugin from '@pagerduty/backstage-plugin/alpha';
-
-// Uncomment the line below if you want to use the overridden version of PagerDuty plugin
-// import { EntityPagerDutySmallCard } from '@pagerduty/backstage-plugin';
-
-// const OverriddenPagerDutyPlugin = PagerDutyPlugin.withOverrides({
-//   extensions: [
-//     PagerDutyPlugin.getExtension('entity-card:pagerduty/EntityPagerDutyCard').override({
-//       factory: originalFactory =>
-//         originalFactory({
-//           params: {
-//             loader: async () => Promise.resolve(<EntityPagerDutySmallCard />)
-//           }
-//         })
-//     })
-//   ]
-// })
+import pagerDutyPlugin from '@pagerduty/backstage-plugin/alpha';
 
 const app = createApp({
   features: [
@@ -35,9 +19,7 @@ const app = createApp({
     SearchPlugin,
     OrgPlugin,
     TechDocsPlugin,
-    PagerDutyPlugin,
-    // Uncomment the line below if you want to use the overridden version of PagerDuty plugin
-    // OverriddenPagerDutyPlugin
+    pagerDutyPlugin,
   ],
 });
 
