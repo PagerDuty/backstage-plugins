@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import "react";
 import { createFrontendPlugin } from "@backstage/frontend-plugin-api";
 import { pagerDutyEntityCard, pagerDutyEntitySmallCard } from "../alpha/entity-cards";
 import { pagerDutyApi } from "../alpha/api";
