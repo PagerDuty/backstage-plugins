@@ -17,7 +17,6 @@ import { pagerDutyApiRef, PagerDutyClient } from './api';
 import {
   createApiFactory,
   createPlugin,
-  createRouteRef,
   discoveryApiRef,
   fetchApiRef,
   configApiRef,
@@ -26,10 +25,8 @@ import {
 } from '@backstage/core-plugin-api';
 import { createCardExtension } from '@backstage/plugin-home-react';
 import { HomePagePagerDutyCardProps } from './components/HomePagePagerDutyCard/Content';
+import { rootRouteRef } from './routes';
 
-export const rootRouteRef = createRouteRef({
-  id: 'pagerduty',
-});
 
 /** @public */
 export const pagerDutyPlugin = createPlugin({

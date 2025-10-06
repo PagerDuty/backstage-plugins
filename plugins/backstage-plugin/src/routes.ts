@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 The Backstage Authors
+ * Copyright 2023 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,25 +14,6 @@
  * limitations under the License.
  */
 
-/**
- * A Backstage plugin that integrates towards PagerDuty
- *
- * @packageDocumentation
- */
+import { createRouteRef } from '@backstage/core-plugin-api';
 
-export {
-  pagerDutyPlugin,
-  pagerDutyPlugin as plugin,
-  PagerDutyPage,
-  EntityPagerDutyCard,
-  HomePagePagerDutyCard,
-  EntityPagerDutySmallCard,
-} from './plugin';
-
-export * from './components';
-
-export * from './api';
-export * from './deprecated';
-export * from './alpha';
-
-export type { PagerDutyEntity } from './types';
+export const rootRouteRef = createRouteRef({ id: 'pagerduty' });
