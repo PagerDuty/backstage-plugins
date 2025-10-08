@@ -58,6 +58,35 @@ You can install the PagerDuty plugin in Backstage or in Portal using instruction
 - [In Backstage](#in-backstage)
 - [In Portal](#in-portal)
 
+## In Portal
+
+To make the plugin visible on your Portal instance, you will need to install it first. The way this works in Portal is that it references the name of the plugin package, and Portal will manage it for you - it will install the latest version and refer to related plugins.
+Our main plugin is `@pagerduty/backstage-plugin`. By including this one, you will have `@pagerduty/backstage-plugin-backend` presented for installation too.  
+To install in Portal:
+
+Navigate to**Plugins** :fa-arrow-right: **Install Plugin**.
+
+Add `@pagerduty/backstage-plugin` to the **Package Name** input.
+
+3. There are two other plugins (backend modules) necessary to have the full suite of features exposed by `@pagerduty/backstage-plugin`:
+   `@pagerduty/backstage-plugin-entity-processor`
+   `@pagerduty/backstage-plugin-scaffolder-actions`
+
+4. To add theseon the **Plugins** page, click **Add Another button** twice, and include the above packages.
+
+After you’ve completed installation you should now be able to see the PagerDuty plugin on the **Plugins** page.
+
+To activate the backend module plugins, you need to navigate to the plugins being extended and activate them one by one:
+**Plugins** :fa-arrow-right: **Catalog (View)** :fa-arrow-right: **Modules** :fa-arrow-right: `@pagerduty/backstage-plugin-entity-processor` (Manage Module) :fa-arrow-right: **Start Module**
+**Plugins** :fa-arrow-right: **Scaffolder (View)** :fa-arrow-right: **Modules** :fa-arrow-right: `@pagerduty/backstage-plugin-scaffolder-actions` (Manage Module) :fa-arrow-right: **Start Module**
+Now everything should be installed and ready to configure.
+
+The most important part of the configuration is the OAuth section, where you should input the information collected in the previous step:
+`clientId`: Private application client ID
+`clientSecret`: Private application client Secret
+`subDomain`: Your account’s subdomain name on `<name>.pagerduty.com`
+`region`: Your account’s [service region](https://support.pagerduty.com/main/docs/service-regions) (US and EU are the available regions). Defaults to US, if none is provided.
+
 ## In Backstage
 
 To install the PagerDuty plugin in Backstage, run the following commands from your Backstage root directory:
@@ -295,35 +324,6 @@ PD_CLIENT_ID='<ID>' PD_CLIENT_SECRET='<SECRET>' PD_ACCOUNT_SUBDOMAIN='<SUBDOMAIN
 
 `PAGERDUTY_TOKEN='<TOKEN>' yarn dev`
 This will add an Authorization header to all requests made to PagerDuty REST APIs.
-
-## In Portal
-
-To make the plugin visible on your Portal instance, you will need to install it first. The way this works in Portal is that it references the name of the plugin package, and Portal will manage it for you - it will install the latest version and refer to related plugins.
-Our main plugin is `@pagerduty/backstage-plugin`. By including this one, you will have `@pagerduty/backstage-plugin-backend` presented for installation too.  
-To install in Portal:
-
-Navigate to**Plugins** :fa-arrow-right: **Install Plugin**.
-
-Add `@pagerduty/backstage-plugin` to the **Package Name** input.
-
-3. There are two other plugins (backend modules) necessary to have the full suite of features exposed by `@pagerduty/backstage-plugin`:
-   `@pagerduty/backstage-plugin-entity-processor`
-   `@pagerduty/backstage-plugin-scaffolder-actions`
-
-4. To add theseon the **Plugins** page, click **Add Another button** twice, and include the above packages.
-
-After you’ve completed installation you should now be able to see the PagerDuty plugin on the **Plugins** page.
-
-To activate the backend module plugins, you need to navigate to the plugins being extended and activate them one by one:
-**Plugins** :fa-arrow-right: **Catalog (View)** :fa-arrow-right: **Modules** :fa-arrow-right: `@pagerduty/backstage-plugin-entity-processor` (Manage Module) :fa-arrow-right: **Start Module**
-**Plugins** :fa-arrow-right: **Scaffolder (View)** :fa-arrow-right: **Modules** :fa-arrow-right: `@pagerduty/backstage-plugin-scaffolder-actions` (Manage Module) :fa-arrow-right: **Start Module**
-Now everything should be installed and ready to configure.
-
-The most important part of the configuration is the OAuth section, where you should input the information collected in the previous step:
-`clientId`: Private application client ID
-`clientSecret`: Private application client Secret
-`subDomain`: Your account’s subdomain name on `<name>.pagerduty.com`
-`region`: Your account’s [service region](https://support.pagerduty.com/main/docs/service-regions) (US and EU are the available regions). Defaults to US, if none is provided.
 
 # Multi-Account Support
 
