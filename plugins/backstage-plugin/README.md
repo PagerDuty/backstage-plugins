@@ -340,4 +340,4 @@ To the right of the app that you’re using power the Backstage or Portal integr
 
 # Getting help
 
-PagerDuty plugin for Backstage is an open source project maintained by PagerDuty. PagerDuty employees and the Backstage community contribute based on their availability.
+PagerDuty plugin for Backstage is an open source project maintained by PagerDuty. PagerDuty employees and the Backstage community contribute based on their availability. If you encounter an issue or have a feature request, please file an issue here: https://github.com/PagerDuty/backstage-plugins/issues/new.
