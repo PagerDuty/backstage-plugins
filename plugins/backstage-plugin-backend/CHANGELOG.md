@@ -1,5 +1,12 @@
 # @pagerduty/backstage-plugin-backend
 
+## 0.9.11
+
+### Patch Changes
+
+- 7e65a56: Remove remainings of old backend system
+- 7e65a56: Fix package.json metadata to improve Portal relations
+
 ## 0.9.10
 
 ### Patch Changes
