@@ -1,5 +1,11 @@
 # @backstage/plugin-pagerduty
 
+## 0.16.1
+
+### Patch Changes
+
+- 841ea34: Update README
+
 ## 0.16.0
 
 ### Minor Changes
