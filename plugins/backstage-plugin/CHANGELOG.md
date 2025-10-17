@@ -1,5 +1,11 @@
 # @backstage/plugin-pagerduty
 
+## 0.16.2
+
+### Patch Changes
+
+- 5d9c0e7: Remove Backstage UI CSS imports from frontend plugin
+
 ## 0.16.1
 
 ### Patch Changes
