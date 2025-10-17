@@ -1,6 +1,5 @@
 import '@backstage/cli/asset-types';
 import ReactDOM from 'react-dom/client';
-import '@backstage/canon/css/styles.css';
 import '@backstage/ui/css/styles.css';
 
 // Uncomment the lines below if you want to use the old version of the app
