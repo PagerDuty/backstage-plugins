@@ -21,7 +21,6 @@ import { pagerDutyPage } from "../alpha/pages";
 import { pagerDutyNavBarItem } from "../alpha/nav-items";
 import { convertLegacyRouteRefs } from "@backstage/core-compat-api";
 import { rootRouteRef } from "../routes";
-import '@backstage/ui/css/styles.css';
 
 /** @alpha */
 export const pagerDutyPlugin = createFrontendPlugin({

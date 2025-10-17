@@ -145,6 +145,12 @@ Now the PagerDuty plugin will display in all your components that include PagerD
 >
 > The code samples provided above reflect the default configuration of the PagerDutyCard entity. You have at your disposal some parameters that allow you to [prevent users from creating incidents](https://pagerduty.github.io/backstage-plugin-docs/advanced/enable-read-only-mode), or [hide the change events tab](https://pagerduty.github.io/backstage-plugin-docs/advanced/hide-change-events) or even [hide the on-call](https://pagerduty.github.io/backstage-plugin-docs/advanced/hide-oncall) section of the card.
 
+> 🚨 Important
+>
+> From version 0.16.0 and later, you need to import the Backstage UI CSS at the root (`src/index.tsx`) of
+your backstage application (`import '@backstage/ui/css/styles.css'`), otherwise the Plugin
+widgets won't look as they should.
+
 ### Configure the Frontend plugin
 
 You’ve now added the PagerDuty frontend plugin to your application, but in order for it to show up you will need to configure your entities and the application itself.
