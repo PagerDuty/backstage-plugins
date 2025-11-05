@@ -1,5 +1,12 @@
 # @pagerduty/backstage-plugin-backend
 
+## 0.10.0
+
+### Minor Changes
+
+- b29f897: Disables unauthenticated access to plugin routes by default
+  - **breaking change**: this change sets the default access for the backend plugin to authenticated. Previous uses of the plugin made it unauthenticated which if it was your case, now you need to set `enableUnauthenticatedAccess` to true.
+
 ## 0.9.11
 
 ### Patch Changes
