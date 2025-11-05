@@ -1,5 +1,11 @@
 # @pagerduty/backstage-plugin-backend
 
+## 0.10.0
+
+### Minor Changes
+
+- b29f897: Disables unauthenticated access to plugin routes by default
+
 ## 0.9.11
 
 ### Patch Changes
