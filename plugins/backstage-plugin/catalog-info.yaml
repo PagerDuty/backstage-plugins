@@ -5,6 +5,6 @@ metadata:
   title: '@pagerduty/backstage-plugin'
   description: A Backstage plugin that integrates towards PagerDuty
 spec:
-  lifecycle: experimental
-  type: backstage-frontend-plugin
-  owner: maintainers
+  lifecycle: production
+  type: library
+  owner: dev-ecosystem-and-public-apis

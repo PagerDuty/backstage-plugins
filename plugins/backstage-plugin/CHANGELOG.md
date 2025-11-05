@@ -1,5 +1,35 @@
 # @backstage/plugin-pagerduty
 
+## 0.16.2
+
+### Patch Changes
+
+- 5d9c0e7: Remove Backstage UI CSS imports from frontend plugin
+
+## 0.16.1
+
+### Patch Changes
+
+- 841ea34: Update README
+
+## 0.16.0
+
+### Minor Changes
+
+- 7e65a56: Best practice implementation of the new frontend system
+
+  - Better separation of concerns.
+  - New use of the API for new frontend system.
+  - Made the @backstage/ui dependency a peer-dependency that needs to be imported and used by Backstage users.
+
+### Patch Changes
+
+- 7e65a56: Migrate backstage plugin's EntityPagerDutyCard to Backstage UI
+- 7e65a56: Migrated the PagerDutyCard component to backtage ui
+- 7e65a56: Fix package.json metadata to improve Portal relations
+- 7e65a56: Change module main entry for backstage-plugin (frontend)
+- 7e65a56: Implement new frontend system (alpha)
+
 ## 0.15.9
 
 ### Patch Changes

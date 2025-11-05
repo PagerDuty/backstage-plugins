@@ -1,6 +1,6 @@
 ### Description
 
-*Please include a summary of the change or which issue is fixed.*
+_Please include a summary of the change or which issue is fixed._
 
 **Issue number:** (e.g. #123)
 
@@ -21,8 +21,9 @@
 
 - [ ] I have performed a self-review of this change
 - [ ] Changes have been tested
+- [ ] Changes have been tested in dark theme
 - [ ] Changes are documented
-- [ ] Changes generate *no new warnings*
+- [ ] Changes generate _no new warnings_
 - [ ] PR title follows [conventional commit semantics](https://www.conventionalcommits.org/en/v1.0.0/)
 
 If this is a breaking change 👇

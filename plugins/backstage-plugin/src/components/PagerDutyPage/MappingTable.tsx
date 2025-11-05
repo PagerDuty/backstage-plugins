@@ -12,10 +12,9 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  IconButton,
-  Tooltip,
   Typography,
 } from '@material-ui/core';
+import { Flex, Tooltip, TooltipTrigger, ButtonIcon } from '@backstage/ui';
 import {
   QueryClient,
   QueryClientProvider,
@@ -281,25 +280,29 @@ export const MappingTable = ({
         </>
       ),
       renderRowActions: ({ row, table }) => (
-        <Box sx={{ display: 'flex' }}>
-          <Tooltip title="Edit">
-            <IconButton
+        <Flex>
+          <TooltipTrigger>
+            <ButtonIcon
+              aria-label="Edit"
+              variant="tertiary"
               onClick={() => {
                 getEntityOptions();
                 table.setEditingRow(row);
               }}
-            >
-              <Edit />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Open in PagerDuty">
-            <IconButton
+              icon={<Edit />}
+            />
+            <Tooltip>Edit</Tooltip>
+          </TooltipTrigger>
+          <TooltipTrigger>
+            <ButtonIcon
+              aria-label="Open in PagerDuty"
+              variant="tertiary"
               onClick={() => openInBrowser(row.getValue('serviceUrl'))}
-            >
-              <OpenInBrowser />
-            </IconButton>
-          </Tooltip>
-        </Box>
+              icon={<OpenInBrowser />}
+            />
+            <Tooltip> Open in PagerDuty</Tooltip>
+          </TooltipTrigger>
+        </Flex>
       ),
       state: {
         isLoading: mappings.length === 0 || catalogEntities.length === 0,

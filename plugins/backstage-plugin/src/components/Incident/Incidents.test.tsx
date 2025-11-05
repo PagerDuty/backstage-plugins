@@ -27,6 +27,21 @@ const mockPagerDutyApi = {
 const apis = TestApiRegistry.from([pagerDutyApiRef, mockPagerDutyApi]);
 
 describe('Incidents', () => {
+  beforeAll(() => {
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      value: jest.fn().mockImplementation(query => ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addListener: jest.fn(),
+        removeListener: jest.fn(),
+        addEventListener: jest.fn(),
+        removeEventListener: jest.fn(),
+        dispatchEvent: jest.fn(),
+      })),
+    });
+  });
   it('Renders an empty state when there are no incidents', async () => {
     mockPagerDutyApi.getIncidentsByServiceId = jest
       .fn()
@@ -134,7 +149,7 @@ describe('Incidents', () => {
     expect(screen.getByTestId('chip-acknowledged')).toBeInTheDocument();
 
     // assert links, mailto and hrefs, date calculation
-    expect(screen.getAllByTitle('View in PagerDuty').length).toEqual(2);
+    expect(screen.getAllByLabelText('view-in-pd-button').length).toEqual(2);
   });
 
   it('Handle errors', async () => {

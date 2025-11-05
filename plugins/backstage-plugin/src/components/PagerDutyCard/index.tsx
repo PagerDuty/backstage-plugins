@@ -13,16 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-// eslint-disable-next-line @backstage/no-undeclared-imports
 import { ReactNode, useCallback, useState } from 'react';
-import {
-  Card,
-  CardHeader,
-  Divider,
-  CardContent,
-  Grid,
-  Typography,
-} from '@material-ui/core';
+import { Typography, Divider } from '@material-ui/core';
 import { Incidents } from '../Incident';
 import { EscalationPolicy } from '../Escalation';
 import useAsync from 'react-use/lib/useAsync';
@@ -34,12 +26,7 @@ import PDWhiteImage from '../../assets/PD-White.svg';
 
 import { useApi } from '@backstage/core-plugin-api';
 import { NotFoundError } from '@backstage/errors';
-import {
-  Progress,
-  TabbedCard,
-  CardTab,
-  InfoCard,
-} from '@backstage/core-components';
+import { Progress, InfoCard } from '@backstage/core-components';
 import { PagerDutyEntity } from '../../types';
 import { ForbiddenError } from '../Errors/ForbiddenError';
 import {
@@ -52,6 +39,7 @@ import {
 import { createStyles, makeStyles, useTheme } from '@material-ui/core/styles';
 import { BackstageTheme } from '@backstage/theme';
 import { PagerDutyCardServiceResponse } from '../../api/types';
+import { Card, Flex, Grid, Tab, TabList, TabPanel, Tabs } from '@backstage/ui';
 
 const useStyles = makeStyles<BackstageTheme>(theme =>
   createStyles({
@@ -67,38 +55,24 @@ const useStyles = makeStyles<BackstageTheme>(theme =>
       fontSize: '14px',
       fontWeight: 500,
       marginTop: '10px',
+      marginLeft: '10px',
       color:
         theme.palette.type === 'light'
           ? 'rgba(0, 0, 0, 0.54)'
           : 'rgba(255, 255, 255, 0.7)',
     },
-    headerStyle: {
-      marginBottom: '0px',
-      fontSize: '0px',
-    },
-    overviewHeaderContainerStyle: {
-      display: 'flex',
-      margin: '15px',
-      marginBottom: '20px',
-    },
-    headerWithSubheaderContainerStyle: {
-      display: 'flex',
-      alignItems: 'center',
-    },
+
     subheaderTextStyle: {
       fontSize: '10px',
-      marginLeft: '5px',
+      marginLeft: '-10px',
+      paddingTop: '3px',
     },
-    overviewCardsContainerStyle: {
-      display: 'flex',
-      margin: '15px',
-      marginTop: '-15px',
-    },
-    incidentMetricsContainerStyle: {
-      display: 'flex',
+    logoContainerStyles: {
       height: '100%',
-      justifyContent: 'center',
-      columnSpan: 'all',
+    },
+    cardStyles: {
+      paddingLeft: '20px',
+      paddingRight: '20px',
     },
   }),
 );
@@ -195,98 +169,108 @@ export const PagerDutyCard = (props: PagerDutyCardProps) => {
   }
 
   return (
-    <Card data-testid="pagerduty-card">
-      <CardHeader
-        className={classes.headerStyle}
-        title={
-          theme.palette.type === 'dark' ? (
-            <img src={PDWhiteImage} alt="PagerDuty" height="35" />
-          ) : (
-            <img src={PDGreenImage} alt="PagerDuty" height="35" />
-          )
-        }
-        action={
-          !readOnly && props.integrationKey ? (
-            <div>
-              <TriggerIncidentButton
-                data-testid="trigger-incident-button"
-                integrationKey={props.integrationKey}
-                entityName={props.name}
-                handleRefresh={handleRefresh}
-              />
+    <Card data-testid="pagerduty-card" className={classes.cardStyles}>
+      <Grid.Root columns="6">
+        <Grid.Item colSpan="4">
+          <Flex
+            pl="20px"
+            align="center"
+            className={classes.logoContainerStyles}
+          >
+            {theme.palette.type === 'dark' ? (
+              <img src={PDWhiteImage} alt="PagerDuty" height="35" />
+            ) : (
+              <img src={PDGreenImage} alt="PagerDuty" height="35" />
+            )}
+          </Flex>
+        </Grid.Item>
+        <Grid.Item colSpan="2">
+          <Flex justify="end">
+            {!readOnly && props.integrationKey ? (
+              <Flex>
+                <TriggerIncidentButton
+                  data-testid="trigger-incident-button"
+                  integrationKey={props.integrationKey}
+                  entityName={props.name}
+                  handleRefresh={handleRefresh}
+                />
+                <OpenServiceButton serviceUrl={service!.url} />
+              </Flex>
+            ) : (
               <OpenServiceButton serviceUrl={service!.url} />
-            </div>
-          ) : (
-            <OpenServiceButton serviceUrl={service!.url} />
-          )
-        }
-      />
-      <Grid item md={12} className={classes.overviewHeaderContainerStyle}>
-        <Grid item md={3}>
+            )}
+          </Flex>
+        </Grid.Item>
+      </Grid.Root>
+      <Grid.Root columns="4" gap="1" pl="1" pr="1">
+        <Grid.Item colSpan="1">
           <Typography className={classes.overviewHeaderTextStyle}>
             STATUS
           </Typography>
-        </Grid>
-        <Grid item md={6}>
-          <Typography className={classes.headerWithSubheaderContainerStyle}>
+        </Grid.Item>
+        <Grid.Item colSpan="2">
+          <Flex>
             <Typography className={classes.overviewHeaderTextStyle}>
               INSIGHTS
             </Typography>
             <Typography className={classes.subheaderTextStyle}>
               (last 30 days)
             </Typography>
-          </Typography>
-        </Grid>
-        <Grid item md={3}>
+          </Flex>
+        </Grid.Item>
+        <Grid.Item colSpan="1">
           <Typography className={classes.overviewHeaderTextStyle}>
             STANDARDS
           </Typography>
-        </Grid>
-      </Grid>
-      <Grid item md={12} className={classes.overviewCardsContainerStyle}>
-        <Grid item md={3}>
+        </Grid.Item>
+      </Grid.Root>
+
+      <Grid.Root gap="1" columns="4" pl="1" pr="1">
+        <Grid.Item colSpan="1">
           <StatusCard
             serviceId={service!.id}
             account={service!.account}
             refreshStatus={refreshStatus}
           />
-        </Grid>
-        <Grid item md={6} className={classes.incidentMetricsContainerStyle}>
-          <Grid item md={4}>
-            <InsightsCard
-              count={
-                service?.metrics !== undefined && service.metrics.length > 0
-                  ? service?.metrics[0].total_interruptions
-                  : undefined
-              }
-              label="interruptions"
-              color={theme.palette.textSubtle}
-            />
-          </Grid>
-          <Grid item md={4}>
-            <InsightsCard
-              count={
-                service?.metrics !== undefined && service.metrics.length > 0
-                  ? service?.metrics[0].total_high_urgency_incidents
-                  : undefined
-              }
-              label="high urgency"
-              color={theme.palette.warning.main}
-            />
-          </Grid>
-          <Grid item md={4}>
-            <InsightsCard
-              count={
-                service?.metrics !== undefined && service?.metrics?.length > 0
-                  ? service?.metrics[0].total_incident_count
-                  : undefined
-              }
-              label="incidents"
-              color={theme.palette.error.main}
-            />
-          </Grid>
-        </Grid>
-        <Grid item md={3}>
+        </Grid.Item>
+        <Grid.Item colSpan="2">
+          <Grid.Root gap="1" columns="3" pl="1" pr="1">
+            <Grid.Item>
+              <InsightsCard
+                count={
+                  service?.metrics !== undefined && service.metrics.length > 0
+                    ? service?.metrics[0].total_interruptions
+                    : undefined
+                }
+                label="interruptions"
+                color={theme.palette.textSubtle}
+              />
+            </Grid.Item>
+            <Grid.Item>
+              <InsightsCard
+                count={
+                  service?.metrics !== undefined && service.metrics.length > 0
+                    ? service?.metrics[0].total_high_urgency_incidents
+                    : undefined
+                }
+                label="high urgency"
+                color={theme.palette.warning.main}
+              />
+            </Grid.Item>
+            <Grid.Item>
+              <InsightsCard
+                count={
+                  service?.metrics !== undefined && service?.metrics?.length > 0
+                    ? service?.metrics[0].total_incident_count
+                    : undefined
+                }
+                label="incidents"
+                color={theme.palette.error.main}
+              />
+            </Grid.Item>
+          </Grid.Root>
+        </Grid.Item>
+        <Grid.Item colSpan="1">
           <ServiceStandardsCard
             total={
               service?.standards?.score !== undefined
@@ -304,49 +288,48 @@ export const PagerDutyCard = (props: PagerDutyCardProps) => {
                 : undefined
             }
           />
-        </Grid>
-      </Grid>
+        </Grid.Item>
+      </Grid.Root>
 
       <Divider />
-      <CardContent>
-        <TabbedCard>
-          <CardTab label="Incidents">
-            <Incidents
+
+      <Tabs>
+        <TabList>
+          <Tab id="tab-1">Incidents</Tab>
+          {disableChangeEvents !== true && <Tab id="tab-2">Change Events</Tab>}
+        </TabList>
+        <TabPanel id="tab-1">
+          <Incidents
+            serviceId={service!.id}
+            refreshIncidents={refreshIncidents}
+            account={service!.account}
+          />
+        </TabPanel>
+        {disableChangeEvents !== true && (
+          <TabPanel id="tab-2">
+            <ChangeEvents
+              data-testid="change-events"
               serviceId={service!.id}
-              refreshIncidents={refreshIncidents}
+              refreshEvents={refreshChangeEvents}
               account={service!.account}
             />
-          </CardTab>
-          {disableChangeEvents !== true ? (
-            <CardTab label="Change Events">
-              <ChangeEvents
-                data-testid="change-events"
-                serviceId={service!.id}
-                refreshEvents={refreshChangeEvents}
-                account={service!.account}
-              />
-            </CardTab>
-          ) : (
-            <></>
-          )}
-        </TabbedCard>
-        {disableOnCall !== true ? (
-          <>
-            <Typography className={classes.oncallHeaderTextStyle}>
-              ON CALL
-            </Typography>
-            <EscalationPolicy
-              data-testid="oncall-card"
-              policyId={service!.policyId}
-              policyUrl={service!.policyLink}
-              policyName={service!.policyName}
-              account={service!.account}
-            />
-          </>
-        ) : (
-          <></>
+          </TabPanel>
         )}
-      </CardContent>
+      </Tabs>
+      {disableOnCall !== true && (
+        <>
+          <Typography className={classes.oncallHeaderTextStyle}>
+            ON CALL
+          </Typography>
+          <EscalationPolicy
+            data-testid="oncall-card"
+            policyId={service!.policyId}
+            policyUrl={service!.policyLink}
+            policyName={service!.policyName}
+            account={service!.account}
+          />
+        </>
+      )}
     </Card>
   );
 };

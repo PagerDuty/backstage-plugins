@@ -1,7 +1,6 @@
 {
   "extends": "@backstage/cli/config/tsconfig.json",
   "include": [
-    "libs/*/src",
     "plugins/*/src",
     "plugins/*/config.d.ts",
     "plugins/*/custom.d.ts",

@@ -6,7 +6,7 @@
 
 ### Plugins
 
-#### `backstage-plugin`
+#### [`backstage-plugin`](./plugins/backstage-plugin/README.md)
 
 The PagerDuty plugin reduces the cognitive load on developers responsible for maintaining services in production. Instead of having to go to PagerDuty's console, you can now access the necessary information directly within Backstage. This includes finding active incidents or opening a new incident, reviewing recent changes made to the service, and checking who is on-call.
 
@@ -22,7 +22,7 @@ The PagerDuty Entity Processor package allows users to map their existing PagerD
 
 The PagerDuty Scaffolder Actions package allows users to create services in PagerDuty directly from their Software Templates in a single step by leveraging the pagerduty:service:create custom action.
 
-#### `backstage-plugin-common`
+#### [`backstage-plugin-common`](./plugins/backstage-plugin-common/README.md)
 
 Provides plugin-shared TS types.
 
@@ -36,4 +36,8 @@ Check [Contributing](./docs/contributing.md) for information about how to contri
 
 ## Publishing packages
 
-Check [Publishing](./docs/publishing.md) for informations about how to publish new plugin version.
+Check [Publishing](./docs/publishing.md) for information about how to publish new plugin version.
+
+## Documentation
+
+Check [Setting Up](./docs/setting-up.md), [Contributing](./docs/contributing.md), and [Publishing](./docs/publishing.md) for more information about working with this project.
