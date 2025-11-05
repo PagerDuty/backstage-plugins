@@ -12,7 +12,7 @@ class CatalogFetchApi {
   constructor(
     private readonly logger: LoggerService,
     private readonly auth: AuthService,
-  ) {}
+  ) { }
 
   async fetch(
     input: unknown,
@@ -62,10 +62,16 @@ export const pagerDutyPlugin = createBackendPlugin({
             }),
           }),
         );
-        httpRouter.addAuthPolicy({
-          path: '/',
-          allow: 'unauthenticated',
-        });
+        // The default Backstage behaviour is to require authentication on routes.
+        // https://backstage.io/docs/backend-system/core-services/http-router/#using-the-service
+        // Setting enableUnauthenticatedAccess to true will allow unauthenticated access to the PagerDuty plugin routes.
+        const enableUnauthenticatedAccess: boolean = config.getOptionalBoolean('pagerDuty.enableUnauthenticatedAccess') ?? false;
+        if (enableUnauthenticatedAccess === true) {
+          httpRouter.addAuthPolicy({
+            path: '/',
+            allow: 'unauthenticated',
+          });
+        }
       },
     });
   },
