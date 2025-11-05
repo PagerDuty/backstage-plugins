@@ -64,10 +64,9 @@ export const pagerDutyPlugin = createBackendPlugin({
         );
         // The default Backstage behaviour is to require authentication on routes.
         // https://backstage.io/docs/backend-system/core-services/http-router/#using-the-service
-        // Setting disableUnauthenticatedAccess to true will revert this plugin's route authentication
-        // policy back to the default Backstage behaviour.
-        const disableUnauthenticatedAccess = config.getOptionalBoolean('pagerDuty.disableUnauthenticatedAccess') ?? false;
-        if (!disableUnauthenticatedAccess) {
+        // Setting enableUnauthenticatedAccess to true will allow unauthenticated access to the PagerDuty plugin routes.
+        const enableUnauthenticatedAccess: boolean = config.getOptionalBoolean('pagerDuty.enableUnauthenticatedAccess') ?? false;
+        if (enableUnauthenticatedAccess === true) {
           httpRouter.addAuthPolicy({
             path: '/',
             allow: 'unauthenticated',
