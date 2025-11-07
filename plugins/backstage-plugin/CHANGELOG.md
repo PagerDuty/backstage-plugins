@@ -1,5 +1,11 @@
 # @backstage/plugin-pagerduty
 
+## 0.16.3
+
+### Patch Changes
+
+- 8add396: Update @backstage/ui to version 0.8.2 - fixes the issue with incorrect CSS
+
 ## 0.16.2
 
 ### Patch Changes
