@@ -1,7 +1,7 @@
 {
   "name": "@pagerduty/backstage-plugin",
   "description": "A Backstage plugin that integrates towards PagerDuty",
-  "version": "0.16.2",
+  "version": "0.16.3",
   "main": "dist/index.esm.js",
   "types": "dist/index.d.ts",
   "license": "Apache-2.0",
