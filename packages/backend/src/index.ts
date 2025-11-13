@@ -54,5 +54,6 @@ backend.add(import('@backstage/plugin-kubernetes-backend'));
 
 // pageduty plugin
 backend.add(import('@pagerduty/backstage-plugin-backend'));
+backend.add(import('@pagerduty/backstage-plugin-entity-processor'));
 
 backend.start();

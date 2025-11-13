@@ -11130,7 +11130,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@pagerduty/backstage-plugin-entity-processor@workspace:plugins/backstage-plugin-entity-processor":
+"@pagerduty/backstage-plugin-entity-processor@workspace:^, @pagerduty/backstage-plugin-entity-processor@workspace:plugins/backstage-plugin-entity-processor":
   version: 0.0.0-use.local
   resolution: "@pagerduty/backstage-plugin-entity-processor@workspace:plugins/backstage-plugin-entity-processor"
   dependencies:
@@ -20572,6 +20572,7 @@ __metadata:
     "@backstage/plugin-search-backend-node": "npm:^1.3.12"
     "@backstage/plugin-techdocs-backend": "npm:^2.0.3"
     "@pagerduty/backstage-plugin-backend": "workspace:^"
+    "@pagerduty/backstage-plugin-entity-processor": "workspace:^"
     app: "npm:0.0.0"
     better-sqlite3: "npm:^9.0.0"
     node-gyp: "npm:^10.0.0"

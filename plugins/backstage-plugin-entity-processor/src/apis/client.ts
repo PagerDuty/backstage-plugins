@@ -1,7 +1,7 @@
 import fetch from 'node-fetch';
 import type { RequestInit, Response } from 'node-fetch';
 import type { EntityMapping } from '../types';
-import { DiscoveryService, LoggerService } from '@backstage/backend-plugin-api';
+import { AuthService, DiscoveryService, LoggerService } from '@backstage/backend-plugin-api';
 import {
   PagerDutyEntityMapping,
   PagerDutyEntityMappingResponse,
@@ -13,6 +13,7 @@ import {
 } from '@pagerduty/backstage-plugin-common';
 
 export interface PagerDutyClientOptions {
+  auth: AuthService;
   discovery: DiscoveryService;
   logger: LoggerService;
 }
@@ -26,9 +27,11 @@ export type BackstageEntityRef = {
 export class PagerDutyClient {
   private discovery: DiscoveryService;
   private logger: LoggerService;
+  private auth: AuthService;
   private baseUrl: string = '';
 
-  constructor({ discovery, logger }: PagerDutyClientOptions) {
+  constructor({ auth, discovery, logger }: PagerDutyClientOptions) {
+    this.auth = auth;
     this.discovery = discovery;
     this.logger = logger;
   }
@@ -48,6 +51,7 @@ export class PagerDutyClient {
       headers: {
         'Content-Type': 'application/json; charset=UTF-8',
         Accept: 'application/json, text/plain, */*',
+        Authorization: await this.generatePluginToPluginToken(),
       },
       body: JSON.stringify(relations),
     };
@@ -89,6 +93,7 @@ export class PagerDutyClient {
       headers: {
         'Content-Type': 'application/json; charset=UTF-8',
         Accept: 'application/json, text/plain, */*',
+        Authorization: await this.generatePluginToPluginToken(),
       },
       body: JSON.stringify(relations),
     };
@@ -136,6 +141,7 @@ export class PagerDutyClient {
       headers: {
         'Content-Type': 'application/json; charset=UTF-8',
         Accept: 'application/json, text/plain, */*',
+        Authorization: await this.generatePluginToPluginToken(),
       },
     };
 
@@ -189,6 +195,7 @@ export class PagerDutyClient {
       headers: {
         'Content-Type': 'application/json; charset=UTF-8',
         Accept: 'application/json, text/plain, */*',
+        Authorization: await this.generatePluginToPluginToken(),
       },
     };
 
@@ -251,6 +258,7 @@ export class PagerDutyClient {
       headers: {
         'Content-Type': 'application/json; charset=UTF-8',
         Accept: 'application/json, text/plain, */*',
+        Authorization: await this.generatePluginToPluginToken(),
       },
     };
 
@@ -311,6 +319,7 @@ export class PagerDutyClient {
       headers: {
         'Content-Type': 'application/json; charset=UTF-8',
         Accept: 'application/json, text/plain, */*',
+        Authorization: await this.generatePluginToPluginToken(),
       },
       body: JSON.stringify(mapping),
     };
@@ -356,6 +365,7 @@ export class PagerDutyClient {
       headers: {
         'Content-Type': 'application/json; charset=UTF-8',
         Accept: 'application/json, text/plain, */*',
+        Authorization: await this.generatePluginToPluginToken(),
       },
     };
 
@@ -407,6 +417,7 @@ export class PagerDutyClient {
       headers: {
         'Content-Type': 'application/json; charset=UTF-8',
         Accept: 'application/json, text/plain, */*',
+        Authorization: await this.generatePluginToPluginToken(),
       },
     };
 
@@ -462,6 +473,7 @@ export class PagerDutyClient {
       headers: {
         'Content-Type': 'application/json; charset=UTF-8',
         Accept: 'application/json, text/plain, */*',
+        Authorization: await this.generatePluginToPluginToken(),
       },
     };
 
@@ -517,6 +529,7 @@ export class PagerDutyClient {
       headers: {
         'Content-Type': 'application/json; charset=UTF-8',
         Accept: 'application/json, text/plain, */*',
+        Authorization: await this.generatePluginToPluginToken(),
       },
     };
 
@@ -579,6 +592,7 @@ export class PagerDutyClient {
       headers: {
         'Content-Type': 'application/json; charset=UTF-8',
         Accept: 'application/json, text/plain, */*',
+        Authorization: await this.generatePluginToPluginToken(),
       },
     };
 
@@ -609,6 +623,17 @@ export class PagerDutyClient {
       this.logger.error(`Error getting value for setting: ${error}`);
       throw new Error(`Error getting value for setting: ${error}`);
     }
+  }
+
+  private async generatePluginToPluginToken(): Promise<string> {
+    this.logger.debug('Generating plugin to plugin token for pagerduty')
+
+    const { token } = await this.auth.getPluginRequestToken({
+      onBehalfOf: await this.auth.getOwnServiceCredentials(),
+      targetPluginId: 'pagerduty',
+    });
+
+    return `Bearer ${token}`;
   }
 }
 
