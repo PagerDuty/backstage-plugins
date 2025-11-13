@@ -1,4 +1,4 @@
-import { DiscoveryService, LoggerService } from '@backstage/backend-plugin-api';
+import { AuthService, DiscoveryService, LoggerService } from '@backstage/backend-plugin-api';
 import {
   Entity,
   RELATION_DEPENDS_ON,
@@ -21,6 +21,7 @@ export type ShouldProcessEntity = (entity: Entity) => boolean;
 export interface PagerDutyEntityProcessorOptions {
   logger: LoggerService;
   discovery: DiscoveryService;
+  auth: AuthService,
 }
 
 let client: PagerDutyClient;
@@ -28,16 +29,19 @@ let client: PagerDutyClient;
 export class PagerDutyEntityProcessor implements CatalogProcessor {
   private logger: LoggerService;
   private discovery: DiscoveryService;
+  private auth: AuthService;
 
   private shouldProcessEntity: ShouldProcessEntity = (entity: Entity) => {
     return entity.kind === 'Component';
   };
 
-  constructor({ logger, discovery }: PagerDutyEntityProcessorOptions) {
+  constructor({ auth, logger, discovery }: PagerDutyEntityProcessorOptions) {
     this.logger = logger;
     this.discovery = discovery;
+    this.auth = auth;
 
     client = new PagerDutyClient({
+      auth: this.auth,
       discovery: this.discovery,
       logger: this.logger,
     });

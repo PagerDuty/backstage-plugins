@@ -15,10 +15,11 @@ export const pagerDutyEntityProcessor = createBackendModule({
         logger: coreServices.logger,
         catalog: catalogProcessingExtensionPoint,
         discovery: coreServices.discovery,
+        auth: coreServices.auth,
       },
-      async init({ logger, discovery, catalog }) {
+      async init({ auth, logger, discovery, catalog }) {
         catalog.addProcessor(
-          new PagerDutyEntityProcessor({ logger, discovery }),
+          new PagerDutyEntityProcessor({ auth, logger, discovery }),
         );
       },
     });
