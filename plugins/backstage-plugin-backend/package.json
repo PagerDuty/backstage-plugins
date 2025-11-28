@@ -26,10 +26,10 @@
   "homepage": "https://pagerduty.github.io/backstage-plugin-docs/index.html",
   "scripts": {
     "start": "backstage-cli package start",
-    "build": "backstage-cli package build",
+    "build": "backstage-cli package build && cp ../backstage-plugin-common/config.d.ts ./",
     "lint": "backstage-cli package lint",
     "test": "backstage-cli package test",
-    "clean": "backstage-cli package clean",
+    "clean": "backstage-cli package clean && rm -f config.d.ts",
     "prepack": "node ../../scripts/replace-versions.js backstage-plugin-backend && backstage-cli package prepack",
     "postpack": "backstage-cli package postpack"
   },

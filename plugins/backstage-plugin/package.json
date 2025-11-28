@@ -30,14 +30,14 @@
   ],
   "sideEffects": false,
   "scripts": {
-    "build": "backstage-cli package build && copyfiles -u 1 src/assets/*.svg ./",
+    "build": "backstage-cli package build && copyfiles -u 1 src/assets/*.svg ./ && cp ../backstage-plugin-common/config.d.ts ./",
     "start": "backstage-cli package start --config ./dev/app-config.yaml",
     "lint": "backstage-cli package lint",
     "test": "backstage-cli package test",
     "prepare": "husky install",
     "prepack": "node ../../scripts/replace-versions.js backstage-plugin && backstage-cli package prepack",
     "postpack": "backstage-cli package postpack",
-    "clean": "backstage-cli package clean"
+    "clean": "backstage-cli package clean && rm -f config.d.ts"
   },
   "dependencies": {
     "@backstage/catalog-client": "^1.12.0",
