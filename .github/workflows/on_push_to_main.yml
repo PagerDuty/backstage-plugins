@@ -1,10 +1,14 @@
-name: Release Drafter
+name: Create Release Pull Request or Publish to NPMJS
 
 on:
   push:
     # branches to consider in the event; optional, defaults to all
     branches:
       - main
+
+permissions:
+  id-token: write
+  contents: read
 
 jobs:
   update_release_draft:
@@ -55,16 +59,15 @@ jobs:
       - name: Install dependencies
         run: yarn install --immutable
 
-      - name: Create Release Pull Request or Publish to npm
+      - name: Create Release Pull Request
         id: changesets
         uses: changesets/action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Publish
+      - name: Publish to NPMJS
         if: steps.changesets.outputs.hasChangesets == 'false'
         # You can do something when a publish should happen.
         run: yarn release
         env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
