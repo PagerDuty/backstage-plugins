@@ -34,6 +34,8 @@ node_modules/
 dist
 dist-types
 plugins/backstage-plugin/assets/
+plugins/backstage-plugin*/config.d.ts
+!plugins/backstage-plugin-common/config.d.ts
 
 # Temporary change files created by Vim
 *.swp
