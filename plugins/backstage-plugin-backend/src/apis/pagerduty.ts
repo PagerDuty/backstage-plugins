@@ -746,6 +746,20 @@ export async function getServiceByIntegrationKey(
   return result.services[0];
 }
 
+export async function getServicesByIds(
+  ids: string[],
+): Promise<PagerDutyService[]> {
+  let services: PagerDutyService[] = [];
+  await Promise.all(
+    Object.entries(EndpointConfig).map(async ([account, _]) => {
+      services = await Promise.all(
+        ids.map(async id => await getServiceById(id, account)),
+      );
+    }),
+  );
+  return services;
+}
+
 export async function getAllServices(): Promise<PagerDutyService[]> {
   const allServices: PagerDutyService[] = [];
 

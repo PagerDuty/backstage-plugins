@@ -23,6 +23,7 @@ import {
   getServiceRelationshipsById,
   addServiceRelationsToService,
   removeServiceRelationsFromService,
+  getServicesByIds,
 } from '../apis/pagerduty';
 import {
   HttpError,
@@ -48,6 +49,7 @@ import * as express from 'express';
 import Router from 'express-promise-router';
 import type {
   CatalogApi,
+  GetEntitiesByRefsResponse,
   GetEntitiesResponse,
 } from '@backstage/catalog-client';
 
@@ -68,7 +70,7 @@ export type Annotations = {
 
 export async function createComponentEntitiesReferenceDict({
   items: componentEntities,
-}: GetEntitiesResponse): Promise<
+}: GetEntitiesResponse | GetEntitiesByRefsResponse): Promise<
   Record<string, { ref: string; name: string }>
 > {
   const componentEntitiesDict: Record<string, { ref: string; name: string }> =
@@ -77,15 +79,15 @@ export async function createComponentEntitiesReferenceDict({
   await Promise.all(
     componentEntities.map(async entity => {
       const serviceId =
-        entity.metadata.annotations?.['pagerduty.com/service-id'];
+        entity?.metadata.annotations?.['pagerduty.com/service-id'];
       const integrationKey =
-        entity.metadata.annotations?.['pagerduty.com/integration-key'];
-      const account = entity.metadata.annotations?.['pagerduty.com/account'];
+        entity?.metadata.annotations?.['pagerduty.com/integration-key'];
+      const account = entity?.metadata.annotations?.['pagerduty.com/account'];
 
       if (serviceId !== undefined && serviceId !== '') {
         componentEntitiesDict[serviceId] = {
-          ref: `${entity.kind}:${entity.metadata.namespace}/${entity.metadata.name}`.toLowerCase(),
-          name: entity.metadata.name,
+          ref: `${entity?.kind}:${entity?.metadata.namespace}/${entity?.metadata.name}`.toLowerCase(),
+          name: entity?.metadata.name ?? '',
         };
       } else if (integrationKey !== undefined && integrationKey !== '') {
         // get service id from integration key, we ignore errors here since we're focused
@@ -97,8 +99,8 @@ export async function createComponentEntitiesReferenceDict({
 
         if (service !== undefined) {
           componentEntitiesDict[service.id] = {
-            ref: `${entity.kind}:${entity.metadata.namespace}/${entity.metadata.name}`.toLowerCase(),
-            name: entity.metadata.name,
+            ref: `${entity?.kind}:${entity?.metadata.namespace}/${entity?.metadata.name}`.toLowerCase(),
+            name: entity?.metadata.name ?? '',
           };
         }
       }
@@ -117,34 +119,38 @@ export async function buildEntityMappingsResponse(
       name: string;
     }
   >,
-  componentEntities: GetEntitiesResponse,
+  componentEntities: GetEntitiesResponse | GetEntitiesByRefsResponse,
   pagerDutyServices: PagerDutyService[],
 ): Promise<PagerDutyEntityMappingsResponse> {
   const result: PagerDutyEntityMappingsResponse = {
     mappings: [],
   };
 
-  pagerDutyServices.forEach(service => {
-    // Check for service mapping annotation in any entity config file and get the entity ref
-    const entityRef = componentEntitiesDict[service.id]?.ref;
-    const entityName = componentEntitiesDict[service.id]?.name;
-
-    // Check if the service is mapped to an entity in the database
+  componentEntities.items.forEach(ent => {
     const entityMapping = entityMappings.find(
-      mapping => mapping.serviceId === service.id,
+      e =>
+        e.integrationKey ===
+        ent?.metadata.annotations?.['pagerduty.com/integration-key'],
+    );
+    // Check if the service is mapped to an entity in the database
+    const service = pagerDutyServices.find(
+      s => s.id === entityMapping?.serviceId,
     );
 
-    if (entityMapping) {
+    if (service) {
+      // Check for service mapping annotation in any entity config file and get the entity ref
+      const entityRef = componentEntitiesDict[service.id]?.ref;
+      const entityName = componentEntitiesDict[service.id]?.name;
       if (entityRef === undefined) {
         if (
-          entityMapping.entityRef === '' ||
-          entityMapping.entityRef === undefined
+          entityMapping?.entityRef === '' ||
+          entityMapping?.entityRef === undefined
         ) {
           result.mappings.push({
             entityRef: '',
             entityName: '',
-            integrationKey: entityMapping.integrationKey,
-            serviceId: entityMapping.serviceId,
+            integrationKey: entityMapping?.integrationKey,
+            serviceId: entityMapping?.serviceId ?? '',
             status: 'NotMapped',
             serviceName: service.name,
             team: service.teams?.[0]?.name ?? '',
@@ -159,15 +165,15 @@ export async function buildEntityMappingsResponse(
           const entityRefName =
             componentEntities.items.find(
               entity =>
-                `${entity.kind}:${entity.metadata.namespace}/${entity.metadata.name}`.toLowerCase() ===
-                entityMapping.entityRef,
+                `${entity?.kind}:${entity?.metadata.namespace}/${entity?.metadata.name}`.toLowerCase() ===
+                entityMapping?.entityRef,
             )?.metadata.name ?? '';
 
           result.mappings.push({
-            entityRef: entityMapping.entityRef,
+            entityRef: entityMapping?.entityRef,
             entityName: entityRefName,
-            serviceId: entityMapping.serviceId,
-            integrationKey: entityMapping.integrationKey,
+            serviceId: entityMapping?.serviceId,
+            integrationKey: entityMapping?.integrationKey,
             status: 'OutOfSync',
             serviceName: service.name,
             team: service.teams?.[0]?.name ?? '',
@@ -179,20 +185,21 @@ export async function buildEntityMappingsResponse(
             account: service.account,
           });
         }
-      } else if (entityRef !== entityMapping.entityRef) {
+      } else if (entityRef !== entityMapping?.entityRef) {
         const entityRefName =
           componentEntities.items.find(
             entity =>
-              `${entity.kind}:${entity.metadata.namespace}/${entity.metadata.name}`.toLowerCase() ===
-              entityMapping.entityRef,
+              `${entity?.kind}:${entity?.metadata.namespace}/${entity?.metadata.name}`.toLowerCase() ===
+              entityMapping?.entityRef,
           )?.metadata.name ?? '';
 
         result.mappings.push({
           entityRef:
-            entityMapping.entityRef !== '' ? entityMapping.entityRef : '',
-          entityName: entityMapping.entityRef !== '' ? entityRefName : '',
-          serviceId: entityMapping.serviceId,
-          integrationKey: entityMapping.integrationKey,
+            (entityMapping?.entityRef !== '' ? entityMapping?.entityRef : '') ??
+            '',
+          entityName: entityMapping?.entityRef !== '' ? entityRefName : '',
+          serviceId: entityMapping?.serviceId ?? '',
+          integrationKey: entityMapping?.integrationKey,
           status: 'OutOfSync',
           serviceName: service.name,
           team: service.teams?.[0]?.name ?? '',
@@ -203,13 +210,13 @@ export async function buildEntityMappingsResponse(
           serviceUrl: service.html_url,
           account: service.account,
         });
-      } else if (entityRef === entityMapping.entityRef) {
+      } else if (entityRef === entityMapping?.entityRef) {
         result.mappings.push({
           entityRef:
-            entityMapping.entityRef !== '' ? entityMapping.entityRef : '',
-          entityName: entityMapping.entityRef !== '' ? entityName : '',
-          serviceId: entityMapping.serviceId,
-          integrationKey: entityMapping.integrationKey,
+            entityMapping?.entityRef !== '' ? entityMapping?.entityRef : '',
+          entityName: entityMapping?.entityRef !== '' ? entityName : '',
+          serviceId: entityMapping?.serviceId,
+          integrationKey: entityMapping?.integrationKey,
           status: 'InSync',
           serviceName: service.name,
           team: service.teams?.[0]?.name ?? '',
@@ -222,45 +229,18 @@ export async function buildEntityMappingsResponse(
         });
       }
     } else {
-      const backstageVendorId = 'PRO19CT';
-      const backstageIntegrationKey =
-        service.integrations?.find(
-          integration => integration.vendor?.id === backstageVendorId,
-        )?.integration_key ?? '';
-
-      if (entityRef !== undefined) {
-        result.mappings.push({
-          entityRef: entityRef,
-          entityName: entityName,
-          serviceId: service.id,
-          integrationKey: backstageIntegrationKey,
-          status: 'InSync',
-          serviceName: service.name,
-          team: service.teams?.[0]?.name ?? '',
-          escalationPolicy:
-            service.escalation_policy !== undefined
-              ? service.escalation_policy.name
-              : '',
-          serviceUrl: service.html_url,
-          account: service.account,
-        });
-      } else {
-        result.mappings.push({
-          entityRef: '',
-          entityName: '',
-          serviceId: service.id,
-          integrationKey: backstageIntegrationKey,
-          status: 'NotMapped',
-          serviceName: service.name,
-          team: service.teams?.[0]?.name ?? '',
-          escalationPolicy:
-            service.escalation_policy !== undefined
-              ? service.escalation_policy.name
-              : '',
-          serviceUrl: service.html_url,
-          account: service.account,
-        });
-      }
+      result.mappings.push({
+        entityRef: '',
+        entityName: '',
+        integrationKey: entityMapping?.integrationKey,
+        serviceId: entityMapping?.serviceId ?? '',
+        status: 'NotMapped',
+        serviceName: '',
+        team: '',
+        escalationPolicy: '',
+        serviceUrl: '',
+        account: '',
+      });
     }
   });
 
@@ -643,38 +623,177 @@ export async function createRouter(
     }
   });
 
-  // GET /mapping/entity
-  router.get('/mapping/entity', async (_, response) => {
+  // POST /mapping/entities - returns mappings for paginated entities with search capability
+  router.post('/mapping/entities', async (request, response) => {
     try {
-      // Get all the entity mappings from the database
+      const {
+        offset = 0,
+        limit = 10,
+        search,
+        searchFields = ['metadata.name', 'spec.owner'],
+      } = request.body;
+
+      if (
+        typeof offset !== 'number' ||
+        typeof limit !== 'number' ||
+        offset < 0 ||
+        limit <= 0
+      ) {
+        response.status(400).json({
+          errors: ["Bad Request: 'offset' and 'limit' must be valid numbers"],
+        });
+        return;
+      }
+
+      const queryOptions: {
+        filter: { kind: string }[];
+        limit: number;
+        offset: number;
+        fullTextFilter?: { term: string; fields: string[] };
+      } = {
+        filter: [{ kind: 'Component' }],
+        limit,
+        offset,
+      };
+
+      if (search && search.trim() !== '') {
+        queryOptions.fullTextFilter = {
+          term: search,
+          fields: searchFields,
+        };
+      }
+
+      const componentEntities = await catalogApi!.queryEntities(queryOptions);
       const entityMappings = await store.getAllEntityMappings();
-
-      // Get all the entities from the catalog
-      const componentEntities = await catalogApi!.getEntities({
-        filter: {
-          kind: 'Component',
-        },
-      });
-
-      // Build reference dictionary of componentEntities with serviceId as the key and entity reference and name pair as the value
       const componentEntitiesDict: Record<
         string,
         { ref: string; name: string }
       > = await createComponentEntitiesReferenceDict(componentEntities);
 
-      // Get all services from PagerDuty
-      const pagerDutyServices = await getAllServices();
+      // Get the mappings which are visible in the table at the specific pagination
+      const relevantMappings = entityMappings.filter(mapping => {
+        return componentEntities.items.some(entity => {
+          const entityRef =
+            `${entity?.kind}:${entity?.metadata.namespace}/${entity?.metadata.name}`.toLowerCase();
+          const integrationKey =
+            entity?.metadata.annotations?.['pagerduty.com/integration-key'];
+          return (
+            mapping.entityRef === entityRef ||
+            mapping.integrationKey === integrationKey
+          );
+        });
+      });
 
-      // Build the response object
-      const result: PagerDutyEntityMappingsResponse =
-        await buildEntityMappingsResponse(
-          entityMappings,
-          componentEntitiesDict,
-          componentEntities,
-          pagerDutyServices,
-        );
+      const pagerDutyServiceIds = relevantMappings
+        .map(e => e.serviceId)
+        .filter(Boolean);
+      // Only do requests for PagerDuty services which are visible by the pagination
+      const pagerDutyServices = await getServicesByIds(pagerDutyServiceIds);
 
-      response.json(result);
+      const maps = await buildEntityMappingsResponse(
+        entityMappings,
+        componentEntitiesDict,
+        componentEntities,
+        pagerDutyServices,
+      );
+
+      const formattedEntities = await Promise.all(
+        componentEntities.items.map(async entity => {
+          const annotations = {
+            'pagerduty.com/integration-key':
+              entity?.metadata?.annotations?.[
+                'pagerduty.com/integration-key'
+              ] ?? '',
+            'pagerduty.com/service-id':
+              entity?.metadata?.annotations?.['pagerduty.com/service-id'] ?? '',
+          };
+
+          const formattedEntity = {
+            name: entity?.metadata?.name,
+            id: entity?.metadata?.uid ?? '',
+            namespace: entity?.metadata?.namespace ?? '',
+            type: entity?.kind ?? '',
+            system: entity?.spec?.system
+              ? JSON.stringify(entity?.spec?.system)
+              : '',
+            owner: entity?.spec?.owner
+              ? JSON.stringify(entity?.spec?.owner)
+              : '',
+            lifecycle: entity?.spec?.lifecycle
+              ? JSON.stringify(entity?.spec?.lifecycle)
+              : '',
+            annotations,
+            status: 'NotMapped' as 'NotMapped' | 'InSync' | 'OutOfSync',
+            serviceName: '',
+            serviceUrl: '',
+            team: '',
+            escalationPolicy: '',
+            account: '',
+          };
+
+          // Try to find a service by service ID or integration key
+          let service = null;
+          if (annotations['pagerduty.com/service-id']) {
+            const serviceId = annotations['pagerduty.com/service-id'];
+            const foundServices = pagerDutyServices.filter(
+              s => s.id === serviceId,
+            );
+            if (foundServices.length > 0) {
+              service = foundServices[0];
+            }
+          } else if (annotations['pagerduty.com/integration-key']) {
+            const integrationKey = annotations['pagerduty.com/integration-key'];
+            const account =
+              entity?.metadata?.annotations?.['pagerduty.com/account'] || '';
+            try {
+              service = await getServiceByIntegrationKey(
+                integrationKey,
+                account,
+              );
+            } catch (e) {
+              // Service might not exist, just continue
+            }
+          }
+          const entityRef =
+            `${entity?.kind}:${entity?.metadata.namespace}/${entity?.metadata.name}`.toLowerCase();
+          const entityMapping = maps.mappings.find(
+            e =>
+              e.entityRef === entityRef ||
+              (e.integrationKey &&
+                e.integrationKey ===
+                  annotations['pagerduty.com/integration-key']) ||
+              (e.serviceId &&
+                e.serviceId === annotations['pagerduty.com/service-id']),
+          );
+
+          if (service) {
+            formattedEntity.serviceName = service.name;
+            formattedEntity.serviceUrl = service.html_url;
+            formattedEntity.team = service.teams?.[0]?.name ?? '';
+            formattedEntity.escalationPolicy =
+              service.escalation_policy?.name ?? '';
+            formattedEntity.account = service.account || '';
+            if (entityMapping) {
+              const expectedEntityRef = componentEntitiesDict[service.id]?.ref;
+              if (
+                expectedEntityRef &&
+                expectedEntityRef === entityMapping.entityRef
+              ) {
+                formattedEntity.status = entityMapping.status || 'NotMapped';
+              } else {
+                formattedEntity.status = 'NotMapped';
+              }
+            }
+          }
+
+          return formattedEntity;
+        }),
+      );
+
+      response.json({
+        entities: formattedEntities,
+        totalCount: componentEntities.totalItems,
+      });
     } catch (error) {
       if (error instanceof HttpError) {
         response.status(error.status).json({
@@ -852,6 +971,22 @@ export async function createRouter(
       const serviceResponse: PagerDutyServiceResponse = {
         service: service,
       };
+
+      response.json(serviceResponse);
+    } catch (error) {
+      if (error instanceof HttpError) {
+        response.status(error.status).json({
+          errors: [`${error.message}`],
+        });
+      }
+    }
+  });
+
+  // GET /services
+  router.get('/services', async (_, response) => {
+    try {
+      const services = await getAllServices();
+      const serviceResponse: PagerDutyService[] = services;
 
       response.json(serviceResponse);
     } catch (error) {
