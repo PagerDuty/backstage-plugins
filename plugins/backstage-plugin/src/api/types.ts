@@ -23,8 +23,9 @@ import {
   PagerDutyServiceMetricsResponse,
   PagerDutyServiceStandards,
   PagerDutyServiceMetrics,
-  PagerDutyEntityMappingsResponse,
   PagerDutySetting,
+  PagerDutyService,
+  PagerDutyEnhancedEntityMappingsResponse,
 } from '@pagerduty/backstage-plugin-common';
 import { DiscoveryApi, FetchApi } from '@backstage/core-plugin-api';
 import { Entity } from '@backstage/catalog-model';
@@ -65,10 +66,15 @@ export interface PagerDutyApi {
    */
   storeSettings(settings: PagerDutySetting[]): Promise<Response>;
   /**
-   * Fetches all entity mappings.
+   * Fetches entity mappings with pagination and search support.
    *
    */
-  getEntityMappings(): Promise<PagerDutyEntityMappingsResponse>;
+  getEntityMappingsWithPagination(options: {
+    offset: number;
+    limit: number;
+    search?: string;
+    searchFields?: string[];
+  }): Promise<PagerDutyEnhancedEntityMappingsResponse>;
 
   /**
    * Stores the service mapping in the database.
@@ -121,6 +127,12 @@ export interface PagerDutyApi {
     serviceId: string,
     account?: string,
   ): Promise<PagerDutyChangeEventsResponse>;
+
+  /**
+   * Fetches a list of PagerDuty services.
+   *
+   */
+  getAllServices(): Promise<PagerDutyService[]>;
 
   /**
    * Fetches a list of standards for a provided service.

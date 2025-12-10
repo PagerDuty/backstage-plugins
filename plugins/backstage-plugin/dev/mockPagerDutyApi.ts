@@ -22,6 +22,8 @@ import {
   PagerDutyChangeEvent,
   PagerDutyIncident,
   PagerDutyUser,
+  FormattedBackstageEntity,
+  PagerDutyEnhancedEntityMappingsResponse,
 } from '@pagerduty/backstage-plugin-common';
 import { Entity } from '@backstage/catalog-model';
 import { v4 as uuidv4 } from 'uuid';
@@ -36,32 +38,85 @@ export const mockPagerDutyApi: PagerDutyApi = {
   async storeSettings(settings) {
     return new Response(JSON.stringify(settings));
   },
-  async getEntityMappings() {
+
+  async getEntityMappingsWithPagination(options: {
+    offset: number;
+    limit: number;
+    search?: string;
+    searchFields?: string[];
+  }): Promise<PagerDutyEnhancedEntityMappingsResponse> {
+    const mockEntities: FormattedBackstageEntity[] = [
+      {
+        name: 'Entity1',
+        id: 'entity-id-1',
+        namespace: 'default',
+        type: 'component',
+        system: 'system-a',
+        owner: 'team-a',
+        lifecycle: 'production',
+        annotations: {
+          'pagerduty.com/integration-key': 'INTEGRAT1ONKEY1',
+          'pagerduty.com/service-id': 'SERV1CE1D',
+        },
+        serviceName: 'Service1',
+        serviceUrl: 'http://service1',
+        team: 'Team1',
+        escalationPolicy: 'Escalation Policy 1',
+        status: 'InSync',
+        account: 'default',
+      },
+      {
+        name: 'Entity2',
+        id: 'entity-id-2',
+        namespace: 'default',
+        type: 'component',
+        system: 'system-b',
+        owner: 'team-b',
+        lifecycle: 'production',
+        annotations: {
+          'pagerduty.com/integration-key': 'INTEGRAT1ONKEY2',
+          'pagerduty.com/service-id': 'SERV1CE2D',
+        },
+        serviceName: 'Service2',
+        serviceUrl: 'http://service2',
+        team: 'Team1',
+        escalationPolicy: 'Escalation Policy 1',
+        status: 'InSync',
+        account: 'default',
+      },
+      {
+        name: 'Entity3',
+        id: 'entity-id-3',
+        namespace: 'default',
+        type: 'component',
+        system: 'system-c',
+        owner: 'team-c',
+        lifecycle: 'staging',
+        annotations: {
+          'pagerduty.com/integration-key': '',
+          'pagerduty.com/service-id': '',
+        },
+        status: 'NotMapped',
+      },
+    ];
+
+    let filteredEntities = [...mockEntities];
+    if (options.search && options.search.trim() !== '') {
+      const searchTerm = options.search.toLowerCase();
+      filteredEntities = mockEntities.filter(
+        entity =>
+          entity.name.toLowerCase().includes(searchTerm) ||
+          entity.owner.toLowerCase().includes(searchTerm),
+      );
+    }
+
+    const startIndex = options.offset;
+    const endIndex = options.offset + options.limit;
+    const paginatedEntities = filteredEntities.slice(startIndex, endIndex);
+
     return {
-      mappings: [
-        {
-          serviceId: 'SERV1CE1D',
-          entityRef: 'ENTITY1D',
-          entityName: 'Entity1',
-          integrationKey: 'INTEGRAT1ONKEY1',
-          team: 'Team1',
-          serviceName: 'Service1',
-          serviceUrl: 'http://service1',
-          escalationPolicy: 'Escalation Policy 1',
-          status: 'InSync',
-        },
-        {
-          serviceId: 'SERV1CE1D',
-          entityRef: '',
-          entityName: 'Entity2',
-          integrationKey: 'INTEGRAT1ONKEY2',
-          status: 'NotMapped',
-          team: 'Team1',
-          serviceName: 'Service2',
-          serviceUrl: 'http://service2',
-          escalationPolicy: 'Escalation Policy 1',
-        },
-      ],
+      entities: paginatedEntities,
+      totalCount: filteredEntities.length,
     };
   },
   async storeServiceMapping(serviceId, entityId) {
@@ -107,6 +162,23 @@ export const mockPagerDutyApi: PagerDutyApi = {
         status: 'warning',
       },
     };
+  },
+
+  async getAllServices() {
+    return [
+      {
+        name: 'SERV1CENAME',
+        id: 'random_id',
+        html_url: 'https://www.example.com',
+        escalation_policy: {
+          id: 'ESCALAT1ONP01ICY1D',
+          name: 'ep-one',
+          html_url:
+            'http://www.example.com/escalation-policy/ESCALAT1ONP01ICY1D',
+        },
+        status: 'warning',
+      },
+    ];
   },
 
   async getServiceById(serviceId: string) {
