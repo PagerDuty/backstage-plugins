@@ -4200,7 +4200,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@backstage/core-plugin-api@npm:^1.10.8, @backstage/core-plugin-api@npm:^1.9.3":
+"@backstage/core-plugin-api@npm:^1.10.8":
   version: 1.10.8
   resolution: "@backstage/core-plugin-api@npm:1.10.8"
   dependencies:
@@ -6079,7 +6079,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@backstage/plugin-scaffolder-node@npm:^0.4.7, @backstage/plugin-scaffolder-node@npm:^0.4.8":
+"@backstage/plugin-scaffolder-node@npm:^0.4.7":
   version: 0.4.12
   resolution: "@backstage/plugin-scaffolder-node@npm:0.4.12"
   dependencies:
@@ -11092,19 +11092,11 @@ __metadata:
     "@backstage/backend-common": "npm:^0.23.3"
     "@backstage/backend-defaults": "npm:^0.4.1"
     "@backstage/backend-plugin-api": "npm:^0.7.0"
-    "@backstage/backend-tasks": "npm:^0.5.27"
     "@backstage/backend-test-utils": "npm:^0.4.4"
     "@backstage/catalog-client": "npm:^1.6.5"
-    "@backstage/catalog-model": "npm:^1.5.0"
     "@backstage/cli": "npm:^0.33.0"
     "@backstage/config": "npm:^1.2.0"
-    "@backstage/core-plugin-api": "npm:^1.9.3"
-    "@backstage/plugin-catalog-common": "npm:^1.0.25"
-    "@backstage/plugin-catalog-node": "npm:^1.12.4"
-    "@backstage/plugin-scaffolder-node": "npm:^0.4.8"
-    "@material-ui/core": "npm:^4.12.4"
     "@pagerduty/backstage-plugin-common": "workspace:~"
-    "@rjsf/core": "npm:^5.14.3"
     "@types/express": "npm:^4.17.6"
     express: "npm:^4.20.0"
     express-promise-router: "npm:^4.1.0"
@@ -11114,8 +11106,6 @@ __metadata:
     node-fetch: "npm:^2.6.7"
     supertest: "npm:^7.1.3"
     uuid: "npm:^9.0.1"
-    winston: "npm:^3.2.1"
-    yn: "npm:^4.0.0"
   languageName: unknown
   linkType: soft
 
@@ -11143,7 +11133,6 @@ __metadata:
     "@backstage/plugin-catalog-common": "npm:^1.0.25"
     "@backstage/plugin-catalog-node": "npm:^1.12.4"
     "@pagerduty/backstage-plugin-common": "workspace:~"
-    "@rjsf/core": "npm:^5.14.3"
     node-fetch: "npm:^2.6.7"
     winston: "npm:^3.2.1"
     yn: "npm:^4.0.0"
@@ -11163,12 +11152,9 @@ __metadata:
     "@backstage/config": "npm:^1.2.0"
     "@backstage/plugin-scaffolder-node": "npm:^0.4.7"
     "@pagerduty/backstage-plugin-common": "workspace:~"
-    "@rjsf/core": "npm:^5.14.3"
-    "@rjsf/utils": "npm:^5.19.3"
     "@spotify/prettier-config": "npm:^15.0.0"
     jest-mock: "npm:^30.0.2"
     node-fetch: "npm:^2.6.7"
-    react: "npm:18.3.1"
     winston: "npm:^3.2.1"
     yn: "npm:^4.0.0"
     zod: "npm:^3.22.4"
@@ -15340,22 +15326,6 @@ __metadata:
     "@rjsf/utils": ^5.23.x
     react: ^16.14.0 || >=17
   checksum: 10c0/e738dfc4b02d0c020df46c0281b7a98d3c9c4520e986fdc0c7e531ab6e0d1167a0f286849c08b77fb6a03c0196afe0957afe95ed5c020839e5e30fe042956b88
-  languageName: node
-  linkType: hard
-
-"@rjsf/core@npm:^5.14.3":
-  version: 5.24.12
-  resolution: "@rjsf/core@npm:5.24.12"
-  dependencies:
-    lodash: "npm:^4.17.21"
-    lodash-es: "npm:^4.17.21"
-    markdown-to-jsx: "npm:^7.4.1"
-    nanoid: "npm:^3.3.7"
-    prop-types: "npm:^15.8.1"
-  peerDependencies:
-    "@rjsf/utils": ^5.24.x
-    react: ^16.14.0 || >=17
-  checksum: 10c0/882fa8c4a27ac0fbd2ca598b6472953f0f496b29da3e24dd6281ecdb56ea074fb841455a8b7141590fcd96670db62dba0bb594ddf50718027c32d8fcd40b8b0a
   languageName: node
   linkType: hard
 

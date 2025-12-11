@@ -34,20 +34,19 @@
   },
   "dependencies": {
     "@backstage/backend-common": "^0.23.3",
-    "@backstage/backend-defaults": "^0.4.1",
     "@backstage/backend-plugin-api": "^0.7.0",
     "@backstage/catalog-model": "^1.5.0",
     "@backstage/config": "^1.2.0",
     "@backstage/plugin-catalog-common": "^1.0.25",
     "@backstage/plugin-catalog-node": "^1.12.4",
     "@pagerduty/backstage-plugin-common": "workspace:~",
-    "@rjsf/core": "^5.14.3",
     "node-fetch": "^2.6.7",
     "winston": "^3.2.1",
     "yn": "^4.0.0",
     "zod": "^3.22.4"
   },
   "devDependencies": {
+    "@backstage/backend-defaults": "^0.4.1",
     "@backstage/cli": "^0.33.0"
   },
   "files": [
