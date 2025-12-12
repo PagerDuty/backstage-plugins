@@ -1,5 +1,11 @@
 # @pagerduty/backstage-plugin-entity-processor
 
+## 0.3.6
+
+### Patch Changes
+
+- 444e9b3: Update NPM releases to use Trusted Publisher
+
 ## 0.3.5
 
 ### Patch Changes
