@@ -1,5 +1,11 @@
 # @pagerduty/backstage-plugin-scaffolder-actions
 
+## 0.2.5
+
+### Patch Changes
+
+- 444e9b3: Update NPM releases to use Trusted Publisher
+
 ## 0.2.4
 
 ### Patch Changes

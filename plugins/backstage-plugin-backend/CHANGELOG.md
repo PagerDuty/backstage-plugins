@@ -1,5 +1,11 @@
 # @pagerduty/backstage-plugin-backend
 
+## 0.10.1
+
+### Patch Changes
+
+- 444e9b3: Update NPM releases to use Trusted Publisher
+
 ## 0.10.0
 
 ### Minor Changes
