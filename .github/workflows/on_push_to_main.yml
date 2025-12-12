@@ -68,6 +68,6 @@ jobs:
 
       - name: Publish to NPMJS
         if: steps.changesets.outputs.hasChangesets == 'false'
-        run: yarn release
+        run: cd ./plugins/backstage-plugin && npm publish --provenance --access public
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
