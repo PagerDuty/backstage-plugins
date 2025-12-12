@@ -17,8 +17,8 @@
   "homepage": "https://pagerduty.github.io/backstage-plugin-docs/index.html",
   "repository": {
     "type": "git",
-    "url": "https://github.com/PagerDuty/backstage-plugin-scaffolder-actions.git",
-    "directory": "."
+    "url": "https://github.com/PagerDuty/backstage-plugins",
+    "directory": "plugins/backstage-plugin-scaffolder-actions"
   },
   "scripts": {
     "start": "backstage-cli package start",

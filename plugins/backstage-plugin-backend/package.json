@@ -20,8 +20,8 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/pagerduty/backstage-plugin-backend",
-    "directory": "."
+    "url": "https://github.com/PagerDuty/backstage-plugins",
+    "directory": "plugins/backstage-plugin-backend"
   },
   "homepage": "https://pagerduty.github.io/backstage-plugin-docs/index.html",
   "scripts": {
