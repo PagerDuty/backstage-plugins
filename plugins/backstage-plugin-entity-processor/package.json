@@ -17,7 +17,8 @@
   "homepage": "https://pagerduty.github.io/backstage-plugin-docs/index.html",
   "repository": {
     "type": "git",
-    "url": "https://github.com/PagerDuty/backstage-plugin-entity-processor.git"
+    "url": "https://github.com/PagerDuty/backstage-plugins",
+    "directory": "plugins/backstage-plugin-entity-processor"
   },
   "keywords": [
     "backstage",
