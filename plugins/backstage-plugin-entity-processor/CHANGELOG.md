@@ -1,5 +1,11 @@
 # @pagerduty/backstage-plugin-entity-processor
 
+## 0.3.5
+
+### Patch Changes
+
+- cc2857a: Fix: use plugin to plugin tokens to authenticate between entity processor and pagerduty plugin backend
+
 ## 0.3.4
 
 ### Patch Changes
