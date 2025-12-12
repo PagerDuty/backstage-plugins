@@ -40,7 +40,6 @@
     "clean": "backstage-cli package clean"
   },
   "dependencies": {
-    "@backstage/catalog-client": "backstage:^",
     "@backstage/catalog-model": "backstage:^",
     "@backstage/core-compat-api": "backstage:^",
     "@backstage/core-components": "backstage:^",
@@ -62,11 +61,9 @@
     "@mui/x-date-pickers": "^7.6.1",
     "@pagerduty/backstage-plugin-common": "workspace:~",
     "@tanstack/react-query": "^5.40.1",
-    "classnames": "^2.2.6",
     "luxon": "^3.4.1",
     "material-react-table": "^2.13.0",
     "react-use": "^17.2.4",
-    "uuid": "^10.0.0",
     "validate-color": "^2.2.4"
   },
   "peerDependencies": {
@@ -77,12 +74,12 @@
   "devDependencies": {
     "@backstage/cli": "backstage:^",
     "@backstage/core-app-api": "backstage:^",
-    "@backstage/dev-utils": "backstage:^",
     "@backstage/frontend-defaults": "backstage:^",
     "@backstage/test-utils": "backstage:^",
     "@testing-library/jest-dom": "^6.6.3",
     "@types/copyfiles": "^2",
-    "copyfiles": "^2.4.1"
+    "copyfiles": "^2.4.1",
+    "uuid": "^10.0.0"
   },
   "files": [
     "dist/**/*",
