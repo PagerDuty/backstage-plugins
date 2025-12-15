@@ -43,7 +43,7 @@
     "@pagerduty/backstage-plugin-backend": "workspace:^",
     "@pagerduty/backstage-plugin-entity-processor": "workspace:^",
     "app": "0.0.0",
-    "better-sqlite3": "^9.0.0",
+    "better-sqlite3": "^12.5.0",
     "node-gyp": "^10.0.0",
     "pg": "^8.11.3"
   },

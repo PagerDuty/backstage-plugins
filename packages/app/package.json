@@ -39,7 +39,7 @@
     "@backstage/plugin-techdocs-react": "backstage:^",
     "@backstage/plugin-user-settings": "backstage:^",
     "@backstage/theme": "backstage:^",
-    "@backstage/ui": "^0.6.0",
+    "@backstage/ui": "backstage:^",
     "@material-ui/core": "^4.12.2",
     "@material-ui/icons": "^4.9.1",
     "@pagerduty/backstage-plugin": "workspace:^",
