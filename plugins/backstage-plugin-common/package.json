@@ -39,10 +39,10 @@
     "clean": "backstage-cli package clean"
   },
   "devDependencies": {
-    "@backstage/cli": "^0.25.1",
+    "@backstage/cli": "backstage:^",
     "@commitlint/cli": "^17.7.1",
     "@commitlint/config-conventional": "^17.7.0",
-    "typescript": "^5.3.3"
+    "typescript": "^5.8.0"
   },
   "files": [
     "dist"
