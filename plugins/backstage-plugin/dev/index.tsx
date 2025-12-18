@@ -17,6 +17,7 @@
 import { catalogApiRef } from '@backstage/plugin-catalog-react';
 import { pagerDutyApiRef } from '../src/api';
 import { mockPagerDutyApi } from './mockPagerDutyApi';
+/*  eslint-disable-next-line @backstage/no-ui-css-imports-in-non-frontend */
 import '@backstage/ui/css/styles.css';
 
 import ReactDOM from 'react-dom/client';
