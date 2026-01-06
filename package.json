@@ -26,7 +26,8 @@
     "new": "backstage-cli new",
     "install:quiet": "yarn install --silent",
     "version-packages": "changeset version",
-    "release": "yarn build && changeset publish"
+    "release": "yarn build && changeset publish",
+    "studio:start": "yarn portal-cli studio start --instance pagerdutyplugindemo"
   },
   "workspaces": {
     "packages": [
@@ -47,6 +48,7 @@
     "@rjsf/utils": "^5.19.3",
     "@spotify/eslint-config-typescript": "^15.0.0",
     "@spotify/eslint-plugin": "^15.0.0",
+    "@spotify/portal-cli": "^0.1.3",
     "@testing-library/dom": "^10.0.0",
     "@testing-library/jest-dom": "^6.0.0",
     "@testing-library/react": "^16.0.0",
