@@ -37,3 +37,11 @@ yarn --cwd plugins/<name-of-the-plugin> start
 ```
 
 This will provide you hot reload, which makes developing more comfortable.
+
+## Portal Studio
+
+Sometimes we may want to test our changes in a Portal environment, which is not feasable locally due to lack of a Portal image. Nonetheless, the Spotify developed the Portal Studio which allows us to test directly in a real Portal instance. Running the following command mirrors your local development into your real instance:
+
+```
+yarn studio:start --instance <the-subdomain-of-your-instance>
+```

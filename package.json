@@ -27,7 +27,7 @@
     "install:quiet": "yarn install --silent",
     "version-packages": "changeset version",
     "release": "yarn build && changeset publish",
-    "studio:start": "yarn portal-cli studio start --instance pagerdutyplugindemo"
+    "studio:start": "yarn portal-cli studio start"
   },
   "workspaces": {
     "packages": [
