@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import { ReactNode, useCallback, useState } from 'react';
-import { Typography, Divider } from '@material-ui/core';
+import { Divider } from '@material-ui/core';
 import { Incidents } from '../Incident';
 import { EscalationPolicy } from '../Escalation';
 import useAsync from 'react-use/lib/useAsync';
@@ -37,29 +37,16 @@ import {
   TriggerIncidentButton,
 } from '../PagerDutyCardCommon';
 import { createStyles, makeStyles, useTheme } from '@material-ui/core/styles';
-import { BackstageTheme } from '@backstage/theme';
 import { PagerDutyCardServiceResponse } from '../../api/types';
 import { Card, Flex, Grid, Tab, TabList, TabPanel, Tabs, Text } from '@backstage/ui';
 
-const useStyles = makeStyles<BackstageTheme>(theme =>
+const useStyles = makeStyles(_ =>
   createStyles({
-    overviewHeaderTextStyle: {
-      fontSize: '14px',
-      fontWeight: 500,
-      color:
-        theme.palette.type === 'light'
-          ? 'rgba(0, 0, 0, 0.54)'
-          : 'rgba(255, 255, 255, 0.7)',
-    },
     oncallHeaderTextStyle: {
       fontSize: '14px',
       fontWeight: 500,
       marginTop: '10px',
-      marginLeft: '10px',
-      color:
-        theme.palette.type === 'light'
-          ? 'rgba(0, 0, 0, 0.54)'
-          : 'rgba(255, 255, 255, 0.7)',
+      marginLeft: '10px'
     },
 
     subheaderTextStyle: {
@@ -67,9 +54,11 @@ const useStyles = makeStyles<BackstageTheme>(theme =>
       marginLeft: '-10px',
       paddingTop: '3px',
     },
+    
     logoContainerStyles: {
       height: '100%',
     },
+    
     cardStyles: {
       paddingLeft: '20px',
       paddingRight: '20px',
@@ -204,24 +193,18 @@ export const PagerDutyCard = (props: PagerDutyCardProps) => {
       </Grid.Root>
       <Grid.Root columns="4" gap="1" pl="1" pr="1">
         <Grid.Item colSpan="1">
-          <Typography className={classes.overviewHeaderTextStyle}>
-            STATUS
-          </Typography>
+          <Text color="secondary" weight="bold">STATUS</Text>
         </Grid.Item>
+
         <Grid.Item colSpan="2">
           <Flex>
-            <Typography className={classes.overviewHeaderTextStyle}>
-              INSIGHTS
-            </Typography>
-            <Typography className={classes.subheaderTextStyle}>
-              (last 30 days)
-            </Typography>
+            <Text color="secondary" weight="bold">INSIGHTS</Text>
+            <Text color="secondary" className={classes.subheaderTextStyle}>(last 30 days)</Text>
           </Flex>
         </Grid.Item>
+
         <Grid.Item colSpan="1">
-          <Typography className={classes.overviewHeaderTextStyle}>
-            STANDARDS
-          </Typography>
+          <Text color="secondary" weight="bold">STANDARDS</Text>
         </Grid.Item>
       </Grid.Root>
 
@@ -322,10 +305,9 @@ export const PagerDutyCard = (props: PagerDutyCardProps) => {
         )}
       </Tabs>
       {disableOnCall !== true && (
-        <>
-          <Typography className={classes.oncallHeaderTextStyle}>
-            ON CALL
-          </Typography>
+        <Flex mt="10px" ml="10px" direction="column" gap="0">
+          <Text weight="bold" color="secondary">ON CALL</Text>
+
           <EscalationPolicy
             data-testid="oncall-card"
             policyId={service!.policyId}
@@ -333,7 +315,7 @@ export const PagerDutyCard = (props: PagerDutyCardProps) => {
             policyName={service!.policyName}
             account={service!.account}
           />
-        </>
+        </Flex>
       )}
     </Card>
   );
