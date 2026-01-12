@@ -39,7 +39,7 @@ import {
 import { createStyles, makeStyles, useTheme } from '@material-ui/core/styles';
 import { BackstageTheme } from '@backstage/theme';
 import { PagerDutyCardServiceResponse } from '../../api/types';
-import { Card, Flex, Grid, Tab, TabList, TabPanel, Tabs } from '@backstage/ui';
+import { Card, Flex, Grid, Tab, TabList, TabPanel, Tabs, Text } from '@backstage/ui';
 
 const useStyles = makeStyles<BackstageTheme>(theme =>
   createStyles({
@@ -295,7 +295,11 @@ export const PagerDutyCard = (props: PagerDutyCardProps) => {
 
       <Tabs>
         <TabList>
-          <Tab id="tab-1">Incidents</Tab>
+          <Tab id="tab-1">
+            Incidents
+            &nbsp;
+            <Text variant="body-x-small">(last 30 days)</Text>
+          </Tab>
           {disableChangeEvents !== true && <Tab id="tab-2">Change Events</Tab>}
         </TabList>
         <TabPanel id="tab-1">
@@ -303,6 +307,7 @@ export const PagerDutyCard = (props: PagerDutyCardProps) => {
             serviceId={service!.id}
             refreshIncidents={refreshIncidents}
             account={service!.account}
+            serviceURL={service!.url}
           />
         </TabPanel>
         {disableChangeEvents !== true && (
