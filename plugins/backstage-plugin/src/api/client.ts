@@ -171,7 +171,7 @@ export class PagerDutyClient implements PagerDutyApi {
   async getAllServices(): Promise<PagerDutyService[]> {
     const url = `${await this.config.discoveryApi.getBaseUrl(
       'pagerduty',
-    )}/services`;
+    )}/all-pd-services`;
 
     return await this.findByUrl<PagerDutyService[]>(url);
   }
