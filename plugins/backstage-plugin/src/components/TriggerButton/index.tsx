@@ -19,7 +19,7 @@ import { useCallback, ReactNode, useState } from 'react';
 import { makeStyles, Button } from '@material-ui/core';
 import { BackstageTheme } from '@backstage/theme';
 
-import { usePagerdutyEntity } from '../../hooks';
+import { usePagerdutyEntity } from '../../hooks/usePagerDutyEntity';
 import { TriggerDialog } from '../TriggerDialog';
 
 const useStyles = makeStyles<BackstageTheme>(theme => ({

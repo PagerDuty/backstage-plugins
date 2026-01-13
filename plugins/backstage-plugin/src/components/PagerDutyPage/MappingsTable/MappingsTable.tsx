@@ -17,8 +17,8 @@ import { ServiceCell } from './ServiceCell';
 import { useQuery } from '@tanstack/react-query';
 import { useApi } from '@backstage/core-plugin-api';
 import { pagerDutyApiRef } from '../../../api';
-import { useDebounce } from 'react-use';
 import { BackstageEntity } from '../../types';
+import useDebounce from '../../../hooks/useDebounce';
 
 export default function MappingsTable() {
   const [isOpen, setIsOpen] = useState(false);
@@ -28,10 +28,9 @@ export default function MappingsTable() {
   const [offset, setOffset] = useState(0);
   const [pageSize, setPageSize] = useState(10);
   const [searchQuery, setSearchQuery] = useState('');
-  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
-  useDebounce(() => setDebouncedSearchQuery(searchQuery), 500, [searchQuery]);
+  const debouncedSearchQuery = useDebounce(searchQuery);
   const pagerDutyApi = useApi(pagerDutyApiRef);
-  const { data: enhancedMappingsResponse, refetch } = useQuery({
+  const { data: mappings, refetch } = useQuery({
     queryKey: [
       'pagerduty',
       'enhancedEntityMappings',
@@ -48,7 +47,6 @@ export default function MappingsTable() {
         search: debouncedSearchQuery,
         searchFields: ['metadata.name', 'spec.owner'],
       }),
-    staleTime: 5 * 60 * 1000,
   });
 
   return (
@@ -77,7 +75,7 @@ export default function MappingsTable() {
           <Column isRowHeader>Actions</Column>
         </TableHeader>
         <TableBody>
-          {enhancedMappingsResponse?.entities.map((entity: BackstageEntity) => (
+          {mappings?.entities.map((entity: BackstageEntity) => (
             <Row key={entity.id}>
               <Cell title={entity.name} />
               <Cell title={entity.owner} />
@@ -102,7 +100,7 @@ export default function MappingsTable() {
         pageSize={pageSize}
         setPageSize={setPageSize}
         setOffset={setOffset}
-        rowCount={enhancedMappingsResponse?.totalCount || 0}
+        rowCount={mappings?.totalCount || 0}
         onNextPage={() => setOffset(offset + pageSize)}
         onPreviousPage={() => setOffset(Math.max(0, offset - pageSize))}
         onPageSizeChange={newPageSize => {

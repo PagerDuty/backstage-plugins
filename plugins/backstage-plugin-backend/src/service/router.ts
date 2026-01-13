@@ -129,8 +129,7 @@ export async function buildEntityMappingsResponse(
   componentEntities.items.forEach(ent => {
     const entityMapping = entityMappings.find(
       e =>
-        e.integrationKey ===
-        ent?.metadata.annotations?.['pagerduty.com/integration-key'],
+        e.serviceId === ent?.metadata.annotations?.['pagerduty.com/service-id'],
     );
     // Check if the service is mapped to an entity in the database
     const service = pagerDutyServices.find(
@@ -228,19 +227,6 @@ export async function buildEntityMappingsResponse(
           account: service.account,
         });
       }
-    } else {
-      result.mappings.push({
-        entityRef: '',
-        entityName: '',
-        integrationKey: entityMapping?.integrationKey,
-        serviceId: entityMapping?.serviceId ?? '',
-        status: 'NotMapped',
-        serviceName: '',
-        team: '',
-        escalationPolicy: '',
-        serviceUrl: '',
-        account: '',
-      });
     }
   });
 
@@ -616,6 +602,50 @@ export async function createRouter(
         logger.error(
           `Error occurred while processing request: ${error.message}`,
         );
+        response.status(error.status).json({
+          errors: [`${error.message}`],
+        });
+      }
+    }
+  });
+
+  // DEPRECATED: GET /mapping/entity
+  router.get('/mapping/entity', async (_, response) => {
+    try {
+      // Get all the entity mappings from the database
+      const entityMappings = await store.getAllEntityMappings();
+
+      // Get all the entities from the catalog
+      const componentEntities = await catalogApi!.getEntities({
+        filter: {
+          kind: 'Component',
+        },
+      });
+
+      // Build reference dictionary of componentEntities with serviceId as the key and entity reference and name pair as the value
+      const componentEntitiesDict: Record<
+        string,
+        { ref: string; name: string }
+      > = await createComponentEntitiesReferenceDict(componentEntities);
+
+      // Get all services from PagerDuty
+      const pagerDutyServices = await getAllServices();
+
+      logger.info(JSON.stringify(entityMappings, null, 2));
+      logger.info(JSON.stringify(componentEntities, null, 2));
+
+      // Build the response object
+      const result: PagerDutyEntityMappingsResponse =
+        await buildEntityMappingsResponse(
+          entityMappings,
+          componentEntitiesDict,
+          componentEntities,
+          pagerDutyServices,
+        );
+
+      response.json(result);
+    } catch (error) {
+      if (error instanceof HttpError) {
         response.status(error.status).json({
           errors: [`${error.message}`],
         });
