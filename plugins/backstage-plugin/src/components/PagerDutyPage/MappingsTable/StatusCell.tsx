@@ -2,30 +2,24 @@ import { Cell } from '@backstage/ui';
 import { makeStyles } from '@material-ui/core';
 import { BackstageEntity } from '../../types';
 
-function getStatusName(status?: string) {
-  switch (status) {
-    case 'InSync':
-      return 'In Sync';
-    case 'OutOfSync':
-      return 'Out of Sync';
-    case 'NotMapped':
-      return 'Not Mapped';
-    default:
-      return 'Refresh to Update';
-  }
-}
+const statusDictionary = {
+  InSync: 'In Sync',
+  OutOfSync: 'Out of Sync',
+  NotMapped: 'Not Mapped',
+} as const;
+const colourDictionary = {
+  InSync: 'green',
+  OutOfSync: 'red',
+  NotMapped: 'orange',
+} as const;
 
-function getColorFromStatus(status?: string) {
-  switch (status) {
-    case 'InSync':
-      return 'green';
-    case 'OutOfSync':
-      return 'red';
-    case 'NotMapped':
-      return 'orange';
-    default:
-      return 'gray';
-  }
+type StatusKey = keyof typeof statusDictionary;
+
+function getStatusName(status: string) {
+  return statusDictionary[status as StatusKey] || 'Refresh to Update';
+}
+function getColorFromStatus(status: string) {
+  return colourDictionary[status as StatusKey] || 'gray';
 }
 
 const useStyles = makeStyles(() => {
@@ -41,11 +35,7 @@ const useStyles = makeStyles(() => {
   };
 });
 
-export default function StatusCell({
-  entity,
-}: {
-  entity: BackstageEntity;
-}) {
+export default function StatusCell({ entity }: { entity: BackstageEntity }) {
   const statusValue = entity.status || 'NotMapped';
   const backgroundColor = getColorFromStatus(statusValue);
   const classes = useStyles({ backgroundColor });
