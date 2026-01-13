@@ -24,6 +24,12 @@ import {
   addServiceRelationsToService,
   removeServiceRelationsFromService,
 } from '../apis/pagerduty';
+import { loadBothSources } from '../services/dataLoader';
+import {
+  findMatches,
+  filterToBestMatchPerService,
+  type MatchingConfig,
+} from '../services/matchingEngine';
 import {
   HttpError,
   PagerDutyChangeEventsResponse,
@@ -764,6 +770,117 @@ export async function createRouter(
       }
     },
   );
+
+  // POST /mapping/entity/auto-match
+  router.post('/mapping/entity/auto-match', async (request, response) => {
+    try {
+      // Validate catalog API is available
+      if (!catalogApi) {
+        response.status(500).json({
+          error: 'CatalogApi not available',
+        });
+        return;
+      }
+
+      // Get threshold from request body (default to 80)
+      const threshold: number = request.body.threshold ?? 80;
+
+      // Validate threshold
+      if (
+        typeof threshold !== 'number' ||
+        threshold < 0 ||
+        threshold > 100
+      ) {
+        response.status(400).json({
+          error: 'Invalid threshold. Must be a number between 0 and 100.',
+        });
+        return;
+      }
+
+      // Get optional flag to return only best match per service
+      const bestOnly: boolean = request.body.bestOnly ?? false;
+
+      // Load data from both sources
+      const loadStartTime = Date.now();
+      const { pdServices, bsComponents } = await loadBothSources({
+        catalogApi,
+      });
+      const loadTime = Date.now() - loadStartTime;
+
+      // Run matching algorithm
+      const matchStartTime = Date.now();
+      const matchingConfig: MatchingConfig = { threshold };
+      let matches = findMatches(pdServices, bsComponents, matchingConfig);
+
+      // Filter to best match per service if requested
+      if (bestOnly) {
+        matches = filterToBestMatchPerService(matches);
+      }
+
+      const matchTime = Date.now() - matchStartTime;
+
+      // Build response with match statistics
+      const totalComparisons = pdServices.length * bsComponents.length;
+      const exactMatches = matches.filter(m => m.score === 100).length;
+      const highConfidence = matches.filter(
+        m => m.score >= 90 && m.score < 100,
+      ).length;
+      const mediumConfidence = matches.filter(
+        m => m.score >= 80 && m.score < 90,
+      ).length;
+
+      // Helper function to determine confidence level from score
+      const getConfidenceLevel = (score: number): 'exact' | 'high' | 'medium' | 'low' => {
+        if (score === 100) return 'exact';
+        if (score >= 90) return 'high';
+        if (score >= 80) return 'medium';
+        return 'low';
+      };
+
+      response.json({
+        matches: matches.map(m => ({
+          pagerDutyService: {
+            serviceId: m.pagerDutyService.sourceId,
+            name: m.pagerDutyService.rawName,
+            team: m.pagerDutyService.teamName,
+          },
+          backstageComponent: {
+            entityRef: m.backstageComponent.sourceId,
+            name: m.backstageComponent.rawName,
+            owner: m.backstageComponent.teamName,
+          },
+          score: m.score,
+          confidence: getConfidenceLevel(m.score),
+          scoreBreakdown: m.scoreBreakdown,
+        })),
+        statistics: {
+          totalPagerDutyServices: pdServices.length,
+          totalBackstageComponents: bsComponents.length,
+          totalPossibleComparisons: totalComparisons,
+          matchesFound: matches.length,
+          exactMatches,
+          highConfidenceMatches: highConfidence,
+          mediumConfidenceMatches: mediumConfidence,
+          threshold,
+          loadTimeMs: loadTime,
+          matchTimeMs: matchTime,
+          totalTimeMs: loadTime + matchTime,
+        },
+      });
+    } catch (error) {
+      logger.error(`❌ Auto-match failed: ${error}`);
+      if (error instanceof HttpError) {
+        response.status(error.status).json({
+          errors: [`${error.message}`],
+        });
+      } else {
+        response.status(500).json({
+          error: 'Auto-match failed',
+          message: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+  });
 
   // GET /escalation_policies
   router.get('/escalation_policies', async (_, response) => {
