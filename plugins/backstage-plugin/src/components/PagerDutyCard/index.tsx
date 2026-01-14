@@ -29,6 +29,7 @@ import { NotFoundError } from '@backstage/errors';
 import { Progress, InfoCard } from '@backstage/core-components';
 import { PagerDutyEntity } from '../../types';
 import { ForbiddenError } from '../Errors/ForbiddenError';
+import { Entity } from '@backstage/catalog-model';
 import {
   InsightsCard,
   OpenServiceButton,
@@ -83,6 +84,7 @@ const BasicCard = ({ children }: { children: ReactNode }) => (
 
 /** @public */
 export type PagerDutyCardProps = PagerDutyEntity & {
+  entity?: Entity;
   readOnly?: boolean;
   disableChangeEvents?: boolean;
   disableOnCall?: boolean;
@@ -93,7 +95,7 @@ export const PagerDutyCard = (props: PagerDutyCardProps) => {
   const classes = useStyles();
 
   const theme = useTheme();
-  const { readOnly, disableChangeEvents, disableOnCall } = props;
+  const { entity, readOnly, disableChangeEvents, disableOnCall } = props;
   const api = useApi(pagerDutyApiRef);
   const [refreshIncidents, setRefreshIncidents] = useState<boolean>(false);
   const [refreshChangeEvents, setRefreshChangeEvents] =
@@ -105,6 +107,16 @@ export const PagerDutyCard = (props: PagerDutyCardProps) => {
     setRefreshChangeEvents(x => !x);
     setRefreshStatus(x => !x);
   }, []);
+
+  const handleUnmapService = useCallback(async () => {
+    if (!entity) return;
+
+    const { namespace, name } = entity.metadata;
+    const kind = entity.kind;
+    const entityRef = `${kind}:${namespace || 'default'}/${name}`;
+
+    return await api.removeServiceMapping(entityRef);
+  }, [entity, api]);
 
   const {
     value: service,
@@ -151,7 +163,14 @@ export const PagerDutyCard = (props: PagerDutyCardProps) => {
         errorNode = <MissingTokenError />;
         break;
       case NotFoundError:
-        errorNode = <ServiceNotFoundError />;
+        errorNode = (
+          <ServiceNotFoundError
+            entity={entity}
+            serviceId={props.serviceId}
+            integrationKey={props.integrationKey}
+            onUnmap={entity ? handleUnmapService : undefined}
+          />
+        );
         break;
       default:
         errorNode = <ForbiddenError />;

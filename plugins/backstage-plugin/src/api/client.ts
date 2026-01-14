@@ -174,6 +174,45 @@ export class PagerDutyClient implements PagerDutyApi {
     return this.request(url, options);
   }
 
+  async getEntityMapping(entityRef: string): Promise<{
+    mapping: {
+      serviceId: string;
+      integrationKey: string;
+      entityRef: string;
+      account: string;
+    };
+  }> {
+    // Parse entity reference
+    const match = entityRef.match(/^([^:]+):([^/]+)\/(.+)$/);
+    if (!match) {
+      throw new Error(`Invalid entity reference: ${entityRef}`);
+    }
+
+    const [, kind, namespace, name] = match;
+
+    // Call GET endpoint
+    const url = `${await this.config.discoveryApi.getBaseUrl(
+      'pagerduty',
+    )}/mapping/entity/${kind}/${namespace}/${name}`;
+
+    return await this.findByUrl(url);
+  }
+
+  async removeServiceMapping(entityRef: string): Promise<boolean> {
+    // First, get the current mapping to retrieve serviceId and integrationKey
+    const { mapping } = await this.getEntityMapping(entityRef);
+
+    // Then call storeServiceMapping with empty entityRef to unmap
+    // This is the SAME approach used in MappingTable.tsx line 200-204
+    await this.storeServiceMapping(
+      mapping.serviceId,
+      mapping.integrationKey,
+      '', // Empty string = unmap (same as "None" option in admin page)
+      mapping.account,
+    );
+    return true;
+  }
+
   async getServiceByEntity(entity: Entity): Promise<PagerDutyServiceResponse> {
     return await this.getServiceByPagerDutyEntity(getPagerDutyEntity(entity));
   }

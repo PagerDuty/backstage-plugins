@@ -82,6 +82,26 @@ export interface PagerDutyApi {
   ): Promise<Response>;
 
   /**
+   * Fetches the service mapping for a specific entity.
+   *
+   */
+  getEntityMapping(entityRef: string): Promise<{
+    mapping: {
+      serviceId: string;
+      integrationKey: string;
+      entityRef: string;
+      account: string;
+    };
+  }>;
+
+  /**
+   * Removes the service mapping for an entity by setting entityRef to empty string.
+   * Uses the same approach as the admin page "None" option.
+   *
+   */
+  removeServiceMapping(entityRef: string): Promise<boolean>;
+
+  /**
    * Fetches the service for the provided pager duty Entity.
    *
    */
