@@ -1,12 +1,8 @@
 import { createTemplateAction } from '@backstage/plugin-scaffolder-node';
-import { z } from 'zod';
 import * as api from '../apis/pagerduty';
 import { CreateServiceResponse } from '../types';
 import { loadAuthConfig } from '../auth/auth';
-import {
-  LoggerService,
-  RootConfigService,
-} from '@backstage/backend-plugin-api';
+import { LoggerService, RootConfigService } from '@backstage/backend-plugin-api';
 import { Config } from '@backstage/config';
 import { loadBackendConfig } from '@backstage/backend-common';
 import {
@@ -19,42 +15,31 @@ export type CreatePagerDutyServiceActionProps = {
   logger: LoggerService;
 };
 
-export const createPagerDutyServiceAction = (
-  props?: CreatePagerDutyServiceActionProps,
-) => {
+export const createPagerDutyServiceAction = (props?: CreatePagerDutyServiceActionProps) => {
   let loggerService: LoggerService;
 
-  return createTemplateAction<{
-    name: string;
-    description: string;
-    escalationPolicyId: string;
-    alertGrouping?: string;
-  }>({
+  return createTemplateAction({
     id: 'pagerduty:service:create',
+    description: 'Creates a new PagerDuty service with Backstage integration',
     schema: {
-      input: z.object({
-        name: z
-          .string()
-          .min(1, 'name is required')
-          .describe('Name of the service'),
-        description: z
+      input: {
+        name: z => z.string().min(1, 'name is required').describe('Name of the service'),
+        description: z => z
           .string()
           .min(1, 'description is required')
           .describe('Description of the service'),
-        escalationPolicyId: z
+        escalationPolicyId: z => z
           .string()
           .min(1, 'Escalation policy is required')
           .describe('Escalation policy ID'),
-        alertGrouping: z
-          .string()
-          .optional()
-          .describe('Alert grouping parameters'),
-      }),
-      output: z.object({
-        serviceUrl: z.string().describe('PagerDuty Service URL'),
-        serviceId: z.string().describe('PagerDuty Service ID'),
-        integrationKey: z.string().describe('Backstage Integration Key'),
-      }),
+        alertGrouping: z => z.string().optional().describe('Alert grouping parameters'),
+      },
+      output: {
+        account: z => z.string().describe('PagerDuty Account'),
+        serviceUrl: z => z.string().describe('PagerDuty Service URL'),
+        serviceId: z => z.string().describe('PagerDuty Service ID'),
+        integrationKey: z => z.string().describe('Backstage Integration Key'),
+      },
     },
 
     async handler(ctx) {
