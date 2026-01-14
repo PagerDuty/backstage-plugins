@@ -1,29 +1,18 @@
-name: Publish to NPMJS
+name: Create Versioning Pull Request
 
 on:
   push:
     branches:
-      - main
+      - next
 
 jobs:
-  update_release_draft:
+  versioning:
+    name: Versioning
     permissions:
       contents: write
       pull-requests: write
-    runs-on: ubuntu-latest
-    steps:
-      - uses: release-drafter/release-drafter@v5
-        with:
-          config-name: release-drafter.yml
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  release:
-    name: Release
-    permissions:
       id-token: write
     runs-on: ubuntu-latest
-    needs: update_release_draft
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -48,7 +37,8 @@ jobs:
       - name: Update and log npm version
         run: npm install -g npm@11.7.0 && npm --version
 
-      - name: Publish to NPMJS
-        run: yarn release
+      - name: Create Versioning Pull Request
+        id: changesets
+        uses: changesets/action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

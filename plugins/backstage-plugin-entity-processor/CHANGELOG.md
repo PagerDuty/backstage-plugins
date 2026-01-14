@@ -1,5 +1,25 @@
 # @pagerduty/backstage-plugin-entity-processor
 
+## 0.3.7
+
+### Patch Changes
+
+- 2947469: Remove unnecessary dependencies
+- Updated dependencies [2947469]
+  - @pagerduty/backstage-plugin-common@0.2.4
+
+## 0.3.6
+
+### Patch Changes
+
+- 444e9b3: Update NPM releases to use Trusted Publisher
+
+## 0.3.5
+
+### Patch Changes
+
+- cc2857a: Fix: use plugin to plugin tokens to authenticate between entity processor and pagerduty plugin backend
+
 ## 0.3.4
 
 ### Patch Changes

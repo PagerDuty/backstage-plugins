@@ -61,6 +61,7 @@ e2e-test-report/
 
 # Local Backstage database
 packages/backend/db/*
+db
 
 # Claude code
 .claude

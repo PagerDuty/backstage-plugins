@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 // eslint-disable-next-line @backstage/no-undeclared-imports
-import { render, waitFor, fireEvent, act } from '@testing-library/react';
+import { render, waitFor, fireEvent, act, screen } from '@testing-library/react';
 import { PagerDutyCard } from '../PagerDutyCard';
 import { NotFoundError } from '@backstage/errors';
 import { TestApiRegistry, wrapInTestApp } from '@backstage/test-utils';
@@ -96,29 +96,43 @@ describe('PagerDutyCard', () => {
       })),
     });
   });
+
   it('Render pagerduty', async () => {
     mockPagerDutyApi.getServiceByPagerDutyEntity = jest
       .fn()
       .mockImplementationOnce(async () => ({ service }));
 
-    const { getByText, queryByTestId } = render(
-      wrapInTestApp(
-        <ApiProvider apis={apis}>
-          <PagerDutyCard name="blah" integrationKey="abc123" />
-        </ApiProvider>,
-      ),
-    );
-    await waitFor(() => !queryByTestId('progress'));
-    expect(getByText('Open service in PagerDuty')).toBeInTheDocument();
-    expect(getByText('Create new incident')).toBeInTheDocument();
-    await waitFor(() =>
-      expect(getByText('Nice! No incidents found!')).toBeInTheDocument(),
-    );
-    await waitFor(() => !queryByTestId('escalation-progress'));
+    render(wrapInTestApp(
+      <ApiProvider apis={apis}>
+        <PagerDutyCard name="blah" integrationKey="abc123" />
+      </ApiProvider>,
+    ));
+
+    await waitFor(() => !screen.queryByTestId('progress'));
+
+    // Assess buttons are rendered
+    expect(screen.getByText('Open service in PagerDuty')).toBeInTheDocument();
+    expect(screen.getByText('Create new incident')).toBeInTheDocument();
+
+    await waitFor(() => {
+      // Assess the tabs are rendered
+      const tabs = screen.getAllByRole('tab');
+      expect(tabs).toHaveLength(2);
+      expect(tabs[0]).toHaveTextContent('Incidents (last 30 days)');
+      expect(tabs[1]).toHaveTextContent('Change Events');
+      // Assess the incidents are rendered (empty state)
+      expect(screen.getByText('Nice! No incidents have been found in the last 30 days!')).toBeInTheDocument();
+      // Assess the view older incidents link
+      const viewOlderIncidentsLink = screen.getByText('View older open incidents');
+      expect(viewOlderIncidentsLink).toBeInTheDocument();
+      expect(viewOlderIncidentsLink).toHaveAttribute('href', 'www.example.com');
+    });
+
+    await waitFor(() => !screen.queryByTestId('escalation-progress'));
 
     await waitFor(() =>
       expect(
-        getByText('No one is on-call. Update the escalation policy.'),
+        screen.getByText('No one is on-call. Update the escalation policy.'),
       ).toBeInTheDocument(),
     );
   });
@@ -214,7 +228,7 @@ describe('PagerDutyCard', () => {
       expect(getByText('Open service in PagerDuty')).toBeInTheDocument();
       expect(getByText('Create new incident')).toBeInTheDocument();
       await waitFor(() =>
-        expect(getByText('Nice! No incidents found!')).toBeInTheDocument(),
+        expect(getByText('Nice! No incidents have been found in the last 30 days!')).toBeInTheDocument(),
       );
 
       await waitFor(() => !queryByTestId('escalation-progress'));
@@ -330,7 +344,7 @@ describe('PagerDutyCard', () => {
       expect(getByText('Open service in PagerDuty')).toBeInTheDocument();
       expect(getByText('Create new incident')).toBeInTheDocument();
       await waitFor(() =>
-        expect(getByText('Nice! No incidents found!')).toBeInTheDocument(),
+        expect(getByText('Nice! No incidents have been found in the last 30 days!')).toBeInTheDocument(),
       );
       await waitFor(() => !queryByTestId('escalation-progress'));
 
@@ -362,7 +376,7 @@ describe('PagerDutyCard', () => {
       );
       await waitFor(() => !queryByTestId('progress'));
       getByText('Open service in PagerDuty');
-      await waitFor(() => getByText('Nice! No incidents found!'));
+      await waitFor(() => getByText('Nice! No incidents have been found in the last 30 days!'));
       await waitFor(() => !queryByTestId('escalation-progress'));
 
       await waitFor(() =>

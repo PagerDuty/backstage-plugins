@@ -31,6 +31,7 @@ type Props = {
   serviceId: string;
   account?: string;
   refreshIncidents: boolean;
+  serviceURL: string;
 };
 
 const useStyles = makeStyles<BackstageTheme>(() =>
@@ -41,7 +42,7 @@ const useStyles = makeStyles<BackstageTheme>(() =>
   }),
 );
 
-export const Incidents = ({ serviceId, account, refreshIncidents }: Props) => {
+export const Incidents = ({ serviceId, account, refreshIncidents, serviceURL }: Props) => {
   const api = useApi(pagerDutyApiRef);
   const { loadingStyles } = useStyles();
 
@@ -80,7 +81,7 @@ export const Incidents = ({ serviceId, account, refreshIncidents }: Props) => {
   }
 
   if (!incidents?.length) {
-    return <IncidentsEmptyState />;
+    return <IncidentsEmptyState serviceURL={serviceURL} />;
   }
 
   return (

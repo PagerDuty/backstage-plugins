@@ -19,10 +19,9 @@ import {
   Accordion,
   AccordionDetails,
   AccordionSummary,
-  CardHeader,
-  Typography,
+  CardHeader
 } from '@material-ui/core';
-import { Card, Flex, Grid } from '@backstage/ui';
+import { Card, Flex, Grid, Text } from '@backstage/ui';
 import useAsync from 'react-use/lib/useAsync';
 import { pagerDutyApiRef, UnauthorizedError } from '../../api';
 import { MissingTokenError, ServiceNotFoundError } from '../Errors';
@@ -47,27 +46,22 @@ import { PagerDutyCardServiceResponse } from '../../api/types';
 import { EscalationPolicy } from '../Escalation';
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 
-const useStyles = makeStyles<BackstageTheme>(theme =>
+const useStyles = makeStyles<BackstageTheme>(_ =>
   createStyles({
-    overviewHeaderTextStyle: {
-      fontSize: '14px',
-      fontWeight: 500,
-      color:
-        theme.palette.type === 'light'
-          ? 'rgba(0, 0, 0, 0.54)'
-          : 'rgba(255, 255, 255, 0.7)',
-    },
     subheaderTextStyle: {
       fontSize: '10px',
       paddingLeft: '5px',
       paddingTop: '3px',
     },
+
     accordionStyle: {
       background: 'transparent',
     },
+
     gridRootStyle: {
       width: '100%',
     },
+
     cardStyles: {
       paddingLeft: '10px',
       paddingRight: '10px',
@@ -191,14 +185,11 @@ export const PagerDutySmallCard = (props: PagerDutyCardProps) => {
 
       <Grid.Root columns="2" gap="1" pl="1" pr="1">
         <Grid.Item>
-          <Typography className={classes.overviewHeaderTextStyle}>
-            STATUS
-          </Typography>
+          <Text weight="bold" color="secondary">STATUS</Text>
         </Grid.Item>
+
         <Grid.Item>
-          <Typography className={classes.overviewHeaderTextStyle}>
-            STANDARDS
-          </Typography>
+          <Text weight="bold" color="secondary">STANDARDS</Text>
         </Grid.Item>
       </Grid.Root>
 
@@ -240,13 +231,10 @@ export const PagerDutySmallCard = (props: PagerDutyCardProps) => {
             aria-controls="panel1a-content"
             id="panel1a-header"
           >
-            <Typography className={classes.overviewHeaderTextStyle}>
-              INSIGHTS
-            </Typography>
-            <Typography className={classes.subheaderTextStyle}>
-              (last 30 days)
-            </Typography>
+            <Text weight="bold" color="secondary">INSIGHTS</Text>
+            <Text weight="bold" color="secondary" className={classes.subheaderTextStyle}>(last 30 days)</Text>
           </AccordionSummary>
+
           <AccordionDetails>
             <Grid.Root
               columns="3"
@@ -306,10 +294,9 @@ export const PagerDutySmallCard = (props: PagerDutyCardProps) => {
             aria-controls="panel1a-content"
             id="panel1a-header"
           >
-            <Typography className={classes.overviewHeaderTextStyle}>
-              ON CALL
-            </Typography>
+            <Text weight="bold" color="secondary">ON CALL</Text>
           </AccordionSummary>
+
           <AccordionDetails>
             <EscalationPolicy
               data-testid="oncall-card"

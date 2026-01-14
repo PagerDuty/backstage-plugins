@@ -1,5 +1,19 @@
 # @pagerduty/backstage-plugin-backend
 
+## 0.10.2
+
+### Patch Changes
+
+- 2947469: Remove unnecessary dependencies
+- Updated dependencies [2947469]
+  - @pagerduty/backstage-plugin-common@0.2.4
+
+## 0.10.1
+
+### Patch Changes
+
+- 444e9b3: Update NPM releases to use Trusted Publisher
+
 ## 0.10.0
 
 ### Minor Changes

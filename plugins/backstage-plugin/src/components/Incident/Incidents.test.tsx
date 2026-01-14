@@ -50,12 +50,12 @@ describe('Incidents', () => {
     render(
       wrapInTestApp(
         <ApiProvider apis={apis}>
-          <Incidents serviceId="abc" refreshIncidents={false} />
+          <Incidents serviceURL="https://example.com" serviceId="abc" refreshIncidents={false} />
         </ApiProvider>,
       ),
     );
     await waitFor(() => !screen.queryByTestId('progress'));
-    expect(screen.getByText('Nice! No incidents found!')).toBeInTheDocument();
+    expect(screen.getByText('Nice! No incidents have been found in the last 30 days!')).toBeInTheDocument();
   });
 
   it('Renders a forbidden state when incidents is undefined', async () => {
@@ -70,7 +70,7 @@ describe('Incidents', () => {
     const { getByText, queryByTestId } = render(
       wrapInTestApp(
         <ApiProvider apis={apis}>
-          <Incidents serviceId="abc" refreshIncidents={false} />
+          <Incidents serviceURL="https://example.com" serviceId="abc" refreshIncidents={false} />
         </ApiProvider>,
       ),
     );
@@ -134,7 +134,7 @@ describe('Incidents', () => {
     render(
       wrapInTestApp(
         <ApiProvider apis={apis}>
-          <Incidents serviceId="abc" refreshIncidents={false} />
+          <Incidents serviceURL="https://example.com" serviceId="abc" refreshIncidents={false} />
         </ApiProvider>,
       ),
     );
@@ -160,7 +160,7 @@ describe('Incidents', () => {
     render(
       wrapInTestApp(
         <ApiProvider apis={apis}>
-          <Incidents serviceId="abc" refreshIncidents={false} />
+          <Incidents serviceURL="https://example.com" serviceId="abc" refreshIncidents={false} />
         </ApiProvider>,
       ),
     );

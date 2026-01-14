@@ -20,14 +20,12 @@ import {
   Tooltip,
   ListItemText,
   makeStyles,
-  Typography,
 } from '@material-ui/core';
 import { PagerDutyUser } from '@pagerduty/backstage-plugin-common';
 import NotificationsIcon from '@material-ui/icons/Notifications';
-import { BackstageTheme } from '@backstage/theme';
-import { Avatar, Button } from '@backstage/ui';
+import { Avatar, Button, Flex, Text } from '@backstage/ui';
 
-const useStyles = makeStyles<BackstageTheme>(() => ({
+const useStyles = makeStyles(_ => ({
   listItemPrimary: {
     fontWeight: 'bold',
   },
@@ -37,28 +35,25 @@ const useStyles = makeStyles<BackstageTheme>(() => ({
     marginTop: '-5px',
     paddingLeft: '5px',
   },
+  
   buttonStyle: {
     fontSize: '15px',
     '&:hover': {
       textDecoration: 'underline',
     },
   },
-  userTextButtonStyle: {
-    fontSize: '15px',
-    '&:hover': {
-      backgroundColor: 'transparent',
-      textDecoration: 'underline',
-    },
-  },
+  
   containerStyle: {
     display: 'flex',
     alignItems: 'center',
     fontWeight: 'bold',
   },
+
   iconStyle: {
     fontSize: '25px',
     marginLeft: '-4px',
   },
+
   avatarStyle: {
     marginTop: '-30px',
   },
@@ -89,27 +84,21 @@ export const EscalationUser = ({ user, policyUrl, policyName }: Props) => {
       </ListItemIcon>
       <ListItemText
         primary={
-          <>
+          <Flex direction="column" align="start" gap="0">
             <Tooltip title="Open user in PagerDuty" placement="top">
               <Button
                 variant="tertiary"
                 aria-label="open-user-in-browser"
+                size="small"
+                className={classes.buttonStyle}
                 onClick={() => navigateToUrl(user.html_url)}
-                className={classes.userTextButtonStyle}
               >
-                <Typography className={classes.containerStyle}>
-                  {user.name}
-                </Typography>
+                <Text className={classes.containerStyle}>{user.name}</Text>
               </Button>
             </Tooltip>
 
-            <Typography
-              className={classes.listItemSecondary}
-              color="textSecondary"
-            >
-              {user.email}
-            </Typography>
-          </>
+            <Text color="secondary" className={classes.listItemSecondary}>{user.email}</Text>
+          </Flex>
         }
         secondary={
           <Button
@@ -120,9 +109,7 @@ export const EscalationUser = ({ user, policyUrl, policyName }: Props) => {
             className={classes.buttonStyle}
             iconStart={<NotificationsIcon className={classes.iconStyle} />}
           >
-            <Typography className={classes.containerStyle}>
-              {policyName}
-            </Typography>
+            <Text className={classes.containerStyle}>{policyName}</Text>
           </Button>
         }
       />

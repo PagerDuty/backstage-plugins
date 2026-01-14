@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 // eslint-disable-next-line @backstage/no-undeclared-imports
-import { Grid, Typography } from '@material-ui/core';
+import { Grid } from '@material-ui/core';
+import { Flex, Text } from '@backstage/ui';
 import EmptyStateImage from '../../assets/emptystate.svg';
 
-export const IncidentsEmptyState = () => {
+export const IncidentsEmptyState = ({ serviceURL }: { serviceURL: string }) => {
   return (
     <Grid
       container
@@ -26,7 +27,14 @@ export const IncidentsEmptyState = () => {
       alignItems="center"
     >
       <Grid item xs={12}>
-        <Typography variant="h5">Nice! No incidents found!</Typography>
+        <Flex direction="column" align="center">
+          <Text as='h5' variant="title-x-small">
+            Nice! No incidents have been found in the last 30 days!
+          </Text>
+          <a href={serviceURL} target='_blank' rel='noopener noreferrer'>
+            View older open incidents
+          </a>
+        </Flex>
       </Grid>
       <Grid item xs={12}>
         <img
