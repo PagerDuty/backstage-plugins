@@ -26,7 +26,7 @@
     "lint": "backstage-cli package lint",
     "test": "backstage-cli package test",
     "clean": "backstage-cli package clean",
-    "prepack": "node ../../scripts/replace-versions.js backstage-plugin-scaffolder-actions && backstage-cli package prepack",
+    "prepack": "backstage-cli package prepack",
     "postpack": "backstage-cli package postpack",
     "prettier:check": "prettier --check ."
   },
