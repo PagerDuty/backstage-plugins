@@ -1,4 +1,4 @@
-import { Cell } from '@backstage/ui';
+import { CellText } from '@backstage/ui';
 import { makeStyles } from '@material-ui/core';
 import { BackstageEntity } from '../../types';
 
@@ -18,7 +18,7 @@ export function ServiceCell({ entity }: ServiceCellProps) {
   const classes = useStyles();
 
   return (
-    <Cell
+    <CellText
       color="secondary"
       className={classes.underlinedCell}
       title={entity.serviceName ?? ''}

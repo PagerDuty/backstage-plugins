@@ -1,4 +1,4 @@
-import { Cell } from '@backstage/ui';
+import { CellText } from '@backstage/ui';
 import { makeStyles } from '@material-ui/core';
 import { BackstageEntity } from '../../types';
 
@@ -41,5 +41,5 @@ export default function StatusCell({ entity }: { entity: BackstageEntity }) {
   const classes = useStyles({ backgroundColor });
 
   const statusName = getStatusName(statusValue);
-  return <Cell title={statusName} className={classes.pill} />;
+  return <CellText title={statusName} className={classes.pill} />;
 }
