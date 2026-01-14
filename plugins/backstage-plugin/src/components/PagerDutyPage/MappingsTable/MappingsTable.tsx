@@ -5,7 +5,7 @@ import {
   TableBody,
   TableHeader,
   TablePagination,
-  Cell,
+  CellText,
   SearchField,
   Flex,
 } from '@backstage/ui';
@@ -77,11 +77,11 @@ export default function MappingsTable() {
         <TableBody>
           {mappings?.entities.map((entity: BackstageEntity) => (
             <Row key={entity.id}>
-              <Cell title={entity.name} />
-              <Cell title={entity.owner} />
+              <CellText title={entity.name} />
+              <CellText title={entity.owner} />
               <ServiceCell entity={entity} />
               <StatusCell entity={entity} />
-              <Cell
+              <CellText
                 leadingIcon={<Edit fontSize="small" />}
                 color="secondary"
                 style={{ paddingLeft: '25px' }}
