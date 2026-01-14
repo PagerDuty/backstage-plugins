@@ -1,5 +1,17 @@
 # @backstage/plugin-pagerduty
 
+## 0.17.0
+
+### Minor Changes
+
+- eef33b7: Make it explicit that the PagerDuty widget only shows 30 days of incidents.
+
+### Patch Changes
+
+- 2947469: Remove unnecessary dependencies
+- Updated dependencies [2947469]
+  - @pagerduty/backstage-plugin-common@0.2.4
+
 ## 0.16.4
 
 ### Patch Changes
