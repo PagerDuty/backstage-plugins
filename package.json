@@ -26,7 +26,7 @@
     "new": "backstage-cli new",
     "install:quiet": "yarn install --silent",
     "version-packages": "changeset version",
-    "release": "yarn build && yarn workspaces foreach --all --parallel --include '{plugins/backstage-plugin,plugins/backstage-plugin-backend,plugins/backstage-plugin-entity-processor,plugins/backstage-plugin-scaffolder-actions,plugins/backstage-plugin-common}' npm publish --access public --provenance --tolerate-republish",
+    "release": "yarn build && yarn workspaces foreach --all --parallel --include '{plugins/backstage-plugin,plugins/backstage-plugin-backend,plugins/backstage-plugin-entity-processor,plugins/backstage-plugin-scaffolder-actions,plugins/backstage-plugin-common}' npm publish --access public --tolerate-republish",
     "studio:start": "yarn portal-cli studio start"
   },
   "workspaces": {
