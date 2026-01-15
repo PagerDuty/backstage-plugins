@@ -1,10 +1,10 @@
-import { 
-  ApiBlueprint, 
-  configApiRef, 
-  discoveryApiRef, 
-  fetchApiRef 
-} from "@backstage/frontend-plugin-api";
-import { pagerDutyApiRef, PagerDutyClient } from "../api";
+import {
+  ApiBlueprint,
+  configApiRef,
+  discoveryApiRef,
+  fetchApiRef,
+} from '@backstage/frontend-plugin-api';
+import { pagerDutyApiRef, PagerDutyClient } from '../api';
 
 /** @alpha */
 export const pagerDutyApi = ApiBlueprint.make({
