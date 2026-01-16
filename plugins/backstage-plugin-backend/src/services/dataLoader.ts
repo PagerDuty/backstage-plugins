@@ -1,0 +1,104 @@
+import { getAllServices } from '../apis/pagerduty';
+import {
+  normalizeService,
+  type NormalizedService,
+} from '../utils/normalization';
+import type { CatalogApi } from '@backstage/catalog-client';
+import type { PagerDutyService } from '@pagerduty/backstage-plugin-common';
+import type { Entity } from '@backstage/catalog-model';
+
+export interface DataLoaderContext {
+  catalogApi: CatalogApi;
+}
+
+export interface LoadedSources {
+  pdServices: NormalizedService[];
+  bsComponents: NormalizedService[];
+}
+
+export async function loadPagerDutyServices(): Promise<NormalizedService[]> {
+  try {
+    const services: PagerDutyService[] = await getAllServices();
+
+    const normalizedServices: NormalizedService[] = services.map(service => {
+      const teamName = service.teams?.[0]?.summary ?? '';
+
+      return normalizeService(
+        service.name,
+        teamName,
+        service.id,
+        'pagerduty',
+        false,
+      );
+    });
+
+    return normalizedServices;
+  } catch (error) {
+    throw new Error(
+      `Failed to load PagerDuty services: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+    );
+  }
+}
+
+export async function loadBackstageComponents(
+  context: DataLoaderContext,
+): Promise<NormalizedService[]> {
+  try {
+    const { catalogApi } = context;
+
+    const response = await catalogApi.getEntities({
+      filter: {
+        kind: 'Component',
+      },
+    });
+
+    const normalizedComponents: NormalizedService[] = response.items.map(
+      (entity: Entity) => {
+        const entityRef =
+          `${entity.kind}:${entity.metadata.namespace}/${entity.metadata.name}`.toLowerCase();
+
+        const owner = (entity.spec?.owner as string | undefined) ?? '';
+
+        return normalizeService(
+          entity.metadata.name,
+          owner,
+          entityRef,
+          'backstage',
+          false,
+        );
+      },
+    );
+
+    return normalizedComponents;
+  } catch (error) {
+    throw new Error(
+      `Failed to load Backstage components: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+    );
+  }
+}
+
+export async function loadBothSources(
+  context: DataLoaderContext,
+): Promise<LoadedSources> {
+  try {
+    const [pdServices, bsComponents] = await Promise.all([
+      loadPagerDutyServices(),
+      loadBackstageComponents(context),
+    ]);
+
+    return {
+      pdServices,
+      bsComponents,
+    };
+  } catch (error) {
+    throw new Error(
+      `Failed to load sources: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+    );
+  }
+}

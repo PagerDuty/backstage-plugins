@@ -38,6 +38,7 @@
     "@backstage/backend-plugin-api": "backstage:^",
     "@backstage/catalog-client": "backstage:^",
     "@pagerduty/backstage-plugin-common": "workspace:~",
+    "@skyra/jaro-winkler": "^1.1.1",
     "@types/express": "^4.17.6",
     "express": "^4.20.0",
     "express-promise-router": "^4.1.0",

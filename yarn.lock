@@ -10562,6 +10562,7 @@ __metadata:
     "@backstage/catalog-client": "backstage:^"
     "@backstage/cli": "backstage:^"
     "@pagerduty/backstage-plugin-common": "workspace:~"
+    "@skyra/jaro-winkler": "npm:^1.1.1"
     "@types/express": "npm:^4.17.6"
     express: "npm:^4.20.0"
     express-promise-router: "npm:^4.1.0"
@@ -13657,6 +13658,13 @@ __metadata:
   dependencies:
     "@sinonjs/commons": "npm:^3.0.0"
   checksum: 10c0/2e2fb6cc57f227912814085b7b01fede050cd4746ea8d49a1e44d5a0e56a804663b0340ae2f11af7559ea9bf4d087a11f2f646197a660ea3cb04e19efc04aa63
+  languageName: node
+  linkType: hard
+
+"@skyra/jaro-winkler@npm:^1.1.1":
+  version: 1.1.1
+  resolution: "@skyra/jaro-winkler@npm:1.1.1"
+  checksum: 10c0/34ae4b4d92859abb9380c837a0012dee849a0f4cfe2394d61b428dfaa36d7dff5103b8b3092926d8e1d23aac124891ddf99b7adc90ffa5be4aa930ae1944cea4
   languageName: node
   linkType: hard
 
