@@ -774,7 +774,6 @@ export async function createRouter(
   // POST /mapping/entity/auto-match
   router.post('/mapping/entity/auto-match', async (request, response) => {
     try {
-      // Validate catalog API is available
       if (!catalogApi) {
         response.status(500).json({
           error: 'CatalogApi not available',
@@ -782,10 +781,9 @@ export async function createRouter(
         return;
       }
 
-      // Get threshold from request body (default to 80)
+      // Default 80% threshold provides good balance of precision vs coverage
       const threshold: number = request.body.threshold ?? 80;
 
-      // Validate threshold
       if (
         typeof threshold !== 'number' ||
         threshold < 0 ||
@@ -797,29 +795,24 @@ export async function createRouter(
         return;
       }
 
-      // Get optional flag to return only best match per service
       const bestOnly: boolean = request.body.bestOnly ?? false;
 
-      // Load data from both sources
       const loadStartTime = Date.now();
       const { pdServices, bsComponents } = await loadBothSources({
         catalogApi,
       });
       const loadTime = Date.now() - loadStartTime;
 
-      // Run matching algorithm
       const matchStartTime = Date.now();
       const matchingConfig: MatchingConfig = { threshold };
       let matches = findMatches(pdServices, bsComponents, matchingConfig);
 
-      // Filter to best match per service if requested
       if (bestOnly) {
         matches = filterToBestMatchPerService(matches);
       }
 
       const matchTime = Date.now() - matchStartTime;
 
-      // Build response with match statistics
       const totalComparisons = pdServices.length * bsComponents.length;
       const exactMatches = matches.filter(m => m.score === 100).length;
       const highConfidence = matches.filter(
@@ -829,7 +822,6 @@ export async function createRouter(
         m => m.score >= 80 && m.score < 90,
       ).length;
 
-      // Helper function to determine confidence level from score
       const getConfidenceLevel = (score: number): 'exact' | 'high' | 'medium' | 'low' => {
         if (score === 100) return 'exact';
         if (score >= 90) return 'high';
