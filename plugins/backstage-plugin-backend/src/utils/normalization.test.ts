@@ -182,6 +182,24 @@ describe('extractAcronym', () => {
       expect(extractAcronym('HTTPS_PROXY')).toBe('HP'); // HTTPS all caps,  treat as one word
     });
   });
+
+  describe('capitals extraction fallback', () => {
+    it('extracts all capitals from long all-caps strings', () => {
+      expect(extractAcronym('POSTGRESQL')).toBe('POSTGRESQL');
+      expect(extractAcronym('DATABASE')).toBe('DATABASE');
+      expect(extractAcronym('ELASTICSEARCH')).toBe('ELASTICSEARCH');
+    });
+
+    it('extracts multiple capitals from mixed case without word boundaries', () => {
+      expect(extractAcronym('aBcDeF')).toBe('ABDF');
+      expect(extractAcronym('aUtHeNtIcAtIoN')).toBe('AUHNIAIN');
+    });
+
+    it('falls back to single character when only one capital', () => {
+      expect(extractAcronym('Service')).toBe('S');
+      expect(extractAcronym('authentication')).toBe('A');
+    });
+  });
 });
 
 describe('normalizeService', () => {
