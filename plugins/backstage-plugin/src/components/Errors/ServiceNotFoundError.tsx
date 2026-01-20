@@ -25,6 +25,7 @@ import {
   Link,
   CircularProgress,
   useTheme,
+  Box,
 } from '@material-ui/core';
 import { Alert } from '@material-ui/lab';
 import { EmptyState } from '@backstage/core-components';
@@ -89,13 +90,7 @@ export const ServiceNotFoundError = ({
         title="PagerDuty Service Not Found"
         description="A service could not be found within PagerDuty based on the provided service id. Please verify your configuration."
         action={
-          <div
-            style={{
-              display: 'flex',
-              gap: '12px',
-              flexWrap: 'wrap',
-            }}
-          >
+          <Box display="flex" flexWrap="wrap" style={{ gap: 12 }}>
             {onUnmap && (
               <MuiButton
                 color="secondary"
@@ -112,7 +107,7 @@ export const ServiceNotFoundError = ({
             >
               Read More
             </MuiButton>
-          </div>
+          </Box>
         }
       />
 
