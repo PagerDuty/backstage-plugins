@@ -774,13 +774,6 @@ export async function createRouter(
   // POST /mapping/entity/auto-match
   router.post('/mapping/entity/auto-match', async (request, response) => {
     try {
-      if (!catalogApi) {
-        response.status(500).json({
-          error: 'CatalogApi not available',
-        });
-        return;
-      }
-
       // Default 80% threshold provides good balance of precision vs coverage
       const threshold: number = request.body.threshold ?? 80;
 
