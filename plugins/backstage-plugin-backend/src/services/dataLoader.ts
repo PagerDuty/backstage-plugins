@@ -41,11 +41,10 @@ export async function loadPagerDutyServices(): Promise<NormalizedService[]> {
   }
 }
 
-export async function loadBackstageComponents(
-  context: DataLoaderContext,
-): Promise<NormalizedService[]> {
+export async function loadBackstageComponents({
+  catalogApi,
+}: DataLoaderContext): Promise<NormalizedService[]> {
   try {
-    const { catalogApi } = context;
 
     const response = await catalogApi.getEntities({
       filter: {
