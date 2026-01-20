@@ -7,6 +7,13 @@ import type { CatalogApi } from '@backstage/catalog-client';
 import type { PagerDutyService } from '@pagerduty/backstage-plugin-common';
 import type { Entity } from '@backstage/catalog-model';
 
+export class ServiceLoadError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ServiceLoadError';
+  }
+}
+
 export interface DataLoaderContext {
   catalogApi: CatalogApi;
 }
@@ -33,7 +40,7 @@ export async function loadPagerDutyServices(): Promise<NormalizedService[]> {
 
     return normalizedServices;
   } catch (error) {
-    throw new Error(
+    throw new ServiceLoadError(
       `Failed to load PagerDuty services: ${
         error instanceof Error ? error.message : String(error)
       }`,
@@ -71,7 +78,7 @@ export async function loadBackstageComponents({
 
     return normalizedComponents;
   } catch (error) {
-    throw new Error(
+    throw new ServiceLoadError(
       `Failed to load Backstage components: ${
         error instanceof Error ? error.message : String(error)
       }`,

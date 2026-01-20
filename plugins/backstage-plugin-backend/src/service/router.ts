@@ -24,7 +24,7 @@ import {
   addServiceRelationsToService,
   removeServiceRelationsFromService,
 } from '../apis/pagerduty';
-import { loadBothSources } from '../services/dataLoader';
+import { loadBothSources, ServiceLoadError } from '../services/dataLoader';
 import {
   findMatches,
   filterToBestMatchPerService,
@@ -858,21 +858,16 @@ export async function createRouter(
         response.status(error.status).json({
           errors: [`${error.message}`],
         });
+      } else if (error instanceof ServiceLoadError) {
+        response.status(503).json({
+          error: 'Service temporarily unavailable',
+          message: error.message,
+        });
       } else {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-
-        if (errorMessage.includes('Failed to load PagerDuty services') ||
-            errorMessage.includes('Failed to load Backstage components')) {
-          response.status(503).json({
-            error: 'Service temporarily unavailable',
-            message: errorMessage,
-          });
-        } else {
-          response.status(500).json({
-            error: 'Auto-match failed',
-            message: errorMessage,
-          });
-        }
+        response.status(500).json({
+          error: 'Auto-match failed',
+          message: error instanceof Error ? error.message : String(error),
+        });
       }
     }
   });
