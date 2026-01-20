@@ -859,10 +859,20 @@ export async function createRouter(
           errors: [`${error.message}`],
         });
       } else {
-        response.status(500).json({
-          error: 'Auto-match failed',
-          message: error instanceof Error ? error.message : String(error),
-        });
+        const errorMessage = error instanceof Error ? error.message : String(error);
+
+        if (errorMessage.includes('Failed to load PagerDuty services') ||
+            errorMessage.includes('Failed to load Backstage components')) {
+          response.status(503).json({
+            error: 'Service temporarily unavailable',
+            message: errorMessage,
+          });
+        } else {
+          response.status(500).json({
+            error: 'Auto-match failed',
+            message: errorMessage,
+          });
+        }
       }
     }
   });
