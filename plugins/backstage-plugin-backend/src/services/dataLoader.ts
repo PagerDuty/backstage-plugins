@@ -59,7 +59,7 @@ export async function loadBackstageComponents(
         const entityRef =
           `${entity.kind}:${entity.metadata.namespace}/${entity.metadata.name}`.toLowerCase();
 
-        const owner = (entity.spec?.owner as string | undefined) ?? '';
+        const owner = entity.spec?.owner ?? '';
 
         return normalizeService(
           entity.metadata.name,
