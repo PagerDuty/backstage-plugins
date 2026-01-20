@@ -117,27 +117,6 @@ export function calculateMatchScore(
   };
 }
 
-export function findBestMatch(
-  pdService: NormalizedService,
-  bsComponents: NormalizedService[],
-  config: MatchingConfig,
-): MatchResult | undefined {
-  let bestMatch: MatchResult | undefined;
-
-  for (const bsComponent of bsComponents) {
-    const matchResult = calculateMatchScore(pdService, bsComponent);
-
-    if (
-      matchResult.score >= config.threshold &&
-      (!bestMatch || matchResult.score > bestMatch.score)
-    ) {
-      bestMatch = matchResult;
-    }
-  }
-
-  return bestMatch;
-}
-
 export function groupMatchesByService(
   matches: MatchResult[],
 ): Map<string, MatchResult[]> {

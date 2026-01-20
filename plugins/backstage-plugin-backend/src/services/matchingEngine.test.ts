@@ -10,7 +10,6 @@
 import {
   findMatches,
   calculateMatchScore,
-  findBestMatch,
   groupMatchesByService,
   filterToBestMatchPerService,
   type MatchResult,
@@ -450,79 +449,6 @@ describe('findMatches', () => {
       expect(match.score).toBe(100);
       expect(match.scoreBreakdown.exactMatch).toBe(true);
     });
-  });
-});
-
-describe('findBestMatch', () => {
-  const bsComponents: NormalizedService[] = [
-    {
-      rawName: 'auth-service',
-      normalizedName: 'auth service',
-      teamName: 'platform team',
-      acronym: 'AS',
-      sourceId: 'component:default/auth-service',
-      source: 'backstage',
-    },
-    {
-      rawName: 'authentication-svc',
-      normalizedName: 'authentication svc',
-      teamName: 'platform team',
-      acronym: 'AS',
-      sourceId: 'component:default/authentication-svc',
-      source: 'backstage',
-    },
-  ];
-
-  it('returns the highest scoring match', () => {
-    const pdService: NormalizedService = {
-      rawName: 'Auth Service',
-      normalizedName: 'auth service',
-      teamName: 'platform team',
-      acronym: 'AS',
-      sourceId: 'P001',
-      source: 'pagerduty',
-    };
-
-    const config: MatchingConfig = { threshold: 80 };
-    const bestMatch = findBestMatch(pdService, bsComponents, config);
-
-    expect(bestMatch).toBeDefined();
-    expect(bestMatch!.backstageComponent.sourceId).toBe(
-      'component:default/auth-service',
-    );
-    expect(bestMatch!.score).toBe(100); // Exact match
-  });
-
-  it('returns undefined if no match meets threshold', () => {
-    const pdService: NormalizedService = {
-      rawName: 'Completely Different Service',
-      normalizedName: 'completely different service',
-      teamName: '',
-      acronym: '',
-      sourceId: 'P999',
-      source: 'pagerduty',
-    };
-
-    const config: MatchingConfig = { threshold: 90 };
-    const bestMatch = findBestMatch(pdService, bsComponents, config);
-
-    expect(bestMatch).toBeUndefined();
-  });
-
-  it('returns undefined for empty component list', () => {
-    const pdService: NormalizedService = {
-      rawName: 'Service',
-      normalizedName: 'service',
-      teamName: '',
-      acronym: '',
-      sourceId: 'P001',
-      source: 'pagerduty',
-    };
-
-    const config: MatchingConfig = { threshold: 80 };
-    const bestMatch = findBestMatch(pdService, [], config);
-
-    expect(bestMatch).toBeUndefined();
   });
 });
 
