@@ -58,7 +58,8 @@ export async function loadBackstageComponents(
         const entityRef =
           `${entity.kind}:${entity.metadata.namespace}/${entity.metadata.name}`.toLowerCase();
 
-        const owner = entity.spec?.owner ?? '';
+        const owner =
+          typeof entity.spec?.owner === 'string' ? entity.spec.owner : '';
 
         return normalizeService(
           entity.metadata.name,
