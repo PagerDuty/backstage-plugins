@@ -7,7 +7,8 @@
 import {
   normalizeName,
   extractAcronym,
-  normalizeService,
+  normalizePagerDutyService,
+  normalizeBackstageComponent,
   type NormalizedService,
 } from './normalization';
 
@@ -202,13 +203,12 @@ describe('extractAcronym', () => {
   });
 });
 
-describe('normalizeService', () => {
+describe('normalizePagerDutyService', () => {
   it('creates NormalizedService with normalization', () => {
-    const result = normalizeService(
+    const result = normalizePagerDutyService(
       'My_Service-Name',
       'Platform Team',
       'P123',
-      'pagerduty',
     );
 
     expect(result).toEqual({
@@ -222,103 +222,110 @@ describe('normalizeService', () => {
   });
 
   it('preserves original name', () => {
-    const result = normalizeService(
+    const result = normalizePagerDutyService(
       '[Team] Special_Service',
-      'Team A',
-      'B456',
-      'backstage',
+      'Integration Team',
+      'P456',
     );
 
     expect(result.rawName).toBe('[Team] Special_Service');
     expect(result.normalizedName).toBe('[team] special service');
   });
 
-  describe('source tracking', () => {
-    it('tracks PagerDuty source', () => {
-      const result = normalizeService(
-        'Service',
-        'Team',
-        'PD123',
-        'pagerduty',
-      );
+  it('tracks PagerDuty source', () => {
+    const result = normalizePagerDutyService(
+      'Service',
+      'Team',
+      'PD123',
+    );
 
-      expect(result.source).toBe('pagerduty');
-      expect(result.sourceId).toBe('PD123');
-    });
+    expect(result.source).toBe('pagerduty');
+    expect(result.sourceId).toBe('PD123');
+  });
 
-    it('tracks Backstage source', () => {
-      const result = normalizeService(
-        'Service',
-        'Team',
-        'component:default/service',
-        'backstage',
-      );
+  it('handles empty strings', () => {
+    const result = normalizePagerDutyService('', '', '');
 
-      expect(result.source).toBe('backstage');
-      expect(result.sourceId).toBe('component:default/service');
+    expect(result).toEqual({
+      rawName: '',
+      normalizedName: '',
+      teamName: '',
+      acronym: '',
+      sourceId: '',
+      source: 'pagerduty',
     });
   });
 
-  describe('edge cases', () => {
-    it('handles empty strings', () => {
-      const result = normalizeService('', '', '', 'pagerduty');
+  it('handles service with no team', () => {
+    const result = normalizePagerDutyService(
+      'Orphan Service',
+      '',
+      'P999',
+    );
 
-      expect(result).toEqual({
-        rawName: '',
-        normalizedName: '',
-        teamName: '',
-        acronym: '',
-        sourceId: '',
-        source: 'pagerduty',
-      });
+    expect(result.teamName).toBe('');
+    expect(result.normalizedName).toBe('orphan service');
+  });
+
+  it('normalizes actual PagerDuty service', () => {
+    const result = normalizePagerDutyService(
+      '#2 Jira Cloud',
+      'Integration Team',
+      'P4H6SXP',
+    );
+
+    expect(result).toMatchObject({
+      rawName: '#2 Jira Cloud',
+      normalizedName: '#2 jira cloud',
+      teamName: 'integration team',
+      sourceId: 'P4H6SXP',
+      source: 'pagerduty',
     });
+  });
+});
 
-    it('handles service with no team', () => {
-      const result = normalizeService(
-        'Orphan Service',
-        '',
-        'P999',
-        'pagerduty',
-      );
+describe('normalizeBackstageComponent', () => {
+  it('creates NormalizedService with normalization', () => {
+    const result = normalizeBackstageComponent(
+      'my-component',
+      'platform-team',
+      'component:default/my-component',
+    );
 
-      expect(result.teamName).toBe('');
-      expect(result.normalizedName).toBe('orphan service');
+    expect(result).toEqual({
+      rawName: 'my-component',
+      normalizedName: 'my component',
+      teamName: 'platform team',
+      acronym: 'MC',
+      sourceId: 'component:default/my-component',
+      source: 'backstage',
     });
   });
 
-  describe('real-world examples', () => {
-    it('normalizes actual PagerDuty service', () => {
-      const result = normalizeService(
-        '#2 Jira Cloud',
-        'Integration Team',
-        'P4H6SXP',
-        'pagerduty',
-      );
+  it('tracks Backstage source', () => {
+    const result = normalizeBackstageComponent(
+      'Service',
+      'Team',
+      'component:default/service',
+    );
 
-      expect(result).toMatchObject({
-        rawName: '#2 Jira Cloud',
-        normalizedName: '#2 jira cloud',
-        teamName: 'integration team',
-        sourceId: 'P4H6SXP',
-        source: 'pagerduty',
-      });
-    });
+    expect(result.source).toBe('backstage');
+    expect(result.sourceId).toBe('component:default/service');
+  });
 
-    it('normalizes actual Backstage entity', () => {
-      const result = normalizeService(
-        'jira-cloud-service',
-        'platform-team',
-        'component:default/jira-cloud-service',
-        'backstage',
-      );
+  it('normalizes actual Backstage entity', () => {
+    const result = normalizeBackstageComponent(
+      'jira-cloud-service',
+      'platform-team',
+      'component:default/jira-cloud-service',
+    );
 
-      expect(result).toMatchObject({
-        rawName: 'jira-cloud-service',
-        normalizedName: 'jira cloud service',
-        teamName: 'platform team',
-        sourceId: 'component:default/jira-cloud-service',
-        source: 'backstage',
-      });
+    expect(result).toMatchObject({
+      rawName: 'jira-cloud-service',
+      normalizedName: 'jira cloud service',
+      teamName: 'platform team',
+      sourceId: 'component:default/jira-cloud-service',
+      source: 'backstage',
     });
   });
 });
@@ -338,19 +345,17 @@ describe('type safety', () => {
   });
 
   it('source field only accepts valid values', () => {
-    const pdService: NormalizedService = normalizeService(
+    const pdService: NormalizedService = normalizePagerDutyService(
       'Test',
       'Team',
       '1',
-      'pagerduty',
     );
     expect(pdService.source).toBe('pagerduty');
 
-    const bsService: NormalizedService = normalizeService(
+    const bsService: NormalizedService = normalizeBackstageComponent(
       'Test',
       'Team',
       '2',
-      'backstage',
     );
     expect(bsService.source).toBe('backstage');
   });

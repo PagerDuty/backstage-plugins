@@ -1,6 +1,7 @@
 import { getAllServices } from '../apis/pagerduty';
 import {
-  normalizeService,
+  normalizePagerDutyService,
+  normalizeBackstageComponent,
   type NormalizedService,
 } from '../utils/normalization';
 import type { CatalogApi } from '@backstage/catalog-client';
@@ -30,11 +31,10 @@ export async function loadPagerDutyServices(): Promise<NormalizedService[]> {
     const normalizedServices: NormalizedService[] = services.map(service => {
       const teamName = service.teams?.[0]?.summary ?? '';
 
-      return normalizeService(
+      return normalizePagerDutyService(
         service.name,
         teamName,
         service.id,
-        'pagerduty',
       );
     });
 
@@ -67,11 +67,10 @@ export async function loadBackstageComponents({
         const owner =
           typeof entity.spec?.owner === 'string' ? entity.spec.owner : '';
 
-        return normalizeService(
+        return normalizeBackstageComponent(
           entity.metadata.name,
           owner,
           entityRef,
-          'backstage',
         );
       },
     );

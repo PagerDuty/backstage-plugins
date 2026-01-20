@@ -66,18 +66,32 @@ export interface NormalizedService {
   source: 'pagerduty' | 'backstage';
 }
 
-export function normalizeService(
-  rawName: string,
+export function normalizePagerDutyService(
+  name: string,
   teamName: string,
-  sourceId: string,
-  source: 'pagerduty' | 'backstage',
+  serviceId: string,
 ): NormalizedService {
   return {
-    rawName,
-    normalizedName: normalizeName(rawName),
+    rawName: name,
+    normalizedName: normalizeName(name),
     teamName: normalizeName(teamName),
-    acronym: extractAcronym(rawName),
-    sourceId,
-    source,
+    acronym: extractAcronym(name),
+    sourceId: serviceId,
+    source: 'pagerduty',
+  };
+}
+
+export function normalizeBackstageComponent(
+  name: string,
+  owner: string,
+  entityRef: string,
+): NormalizedService {
+  return {
+    rawName: name,
+    normalizedName: normalizeName(name),
+    teamName: normalizeName(owner),
+    acronym: extractAcronym(name),
+    sourceId: entityRef,
+    source: 'backstage',
   };
 }
