@@ -860,7 +860,7 @@ export async function createRouter(
         },
       });
     } catch (error) {
-      logger.error(`❌ Auto-match failed: ${error}`);
+      logger.error(`Auto-match failed: ${error}`);
       if (error instanceof HttpError) {
         response.status(error.status).json({
           errors: [`${error.message}`],
