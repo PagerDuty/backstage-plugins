@@ -119,7 +119,7 @@ export function calculateMatchScore(
   };
 }
 
-export function groupMatchesByService(
+function groupMatchesByService(
   matches: MatchResult[],
 ): Map<string, MatchResult[]> {
   const grouped = new Map<string, MatchResult[]>();

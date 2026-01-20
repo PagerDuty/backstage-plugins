@@ -792,7 +792,7 @@ export async function createRouter(
 
       const loadStartTime = Date.now();
       const { pdServices, bsComponents } = await loadBothSources({
-        catalogApi,
+        catalogApi: catalogApi!,
       });
       const loadTime = Date.now() - loadStartTime;
 

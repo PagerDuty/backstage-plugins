@@ -10,7 +10,6 @@
 import {
   findMatches,
   calculateMatchScore,
-  groupMatchesByService,
   filterToBestMatchPerService,
   type MatchResult,
   type MatchingConfig,
@@ -449,76 +448,6 @@ describe('findMatches', () => {
       expect(match.score).toBe(100);
       expect(match.scoreBreakdown.exactMatch).toBe(true);
     });
-  });
-});
-
-describe('groupMatchesByService', () => {
-  it('groups matches by PagerDuty service ID', () => {
-    const matches: MatchResult[] = [
-      {
-        pagerDutyService: {
-          rawName: 'Service A',
-          normalizedName: 'service a',
-          teamName: '',
-          acronym: '',
-          sourceId: 'P001',
-          source: 'pagerduty',
-        },
-        backstageComponent: {
-          rawName: 'component-1',
-          normalizedName: 'component 1',
-          teamName: '',
-          acronym: '',
-          sourceId: 'component:default/component-1',
-          source: 'backstage',
-        },
-        score: 90,
-        scoreBreakdown: {
-          baseScore: 90,
-          exactMatch: false,
-          teamMatch: false,
-          acronymMatch: false,
-          rawScore: 90,
-        },
-      },
-      {
-        pagerDutyService: {
-          rawName: 'Service A',
-          normalizedName: 'service a',
-          teamName: '',
-          acronym: '',
-          sourceId: 'P001', // Same service
-          source: 'pagerduty',
-        },
-        backstageComponent: {
-          rawName: 'component-2',
-          normalizedName: 'component 2',
-          teamName: '',
-          acronym: '',
-          sourceId: 'component:default/component-2',
-          source: 'backstage',
-        },
-        score: 85,
-        scoreBreakdown: {
-          baseScore: 85,
-          exactMatch: false,
-          teamMatch: false,
-          acronymMatch: false,
-          rawScore: 85,
-        },
-      },
-    ];
-
-    const grouped = groupMatchesByService(matches);
-
-    expect(grouped.size).toBe(1);
-    expect(grouped.has('P001')).toBe(true);
-    expect(grouped.get('P001')?.length).toBe(2);
-  });
-
-  it('handles empty matches array', () => {
-    const grouped = groupMatchesByService([]);
-    expect(grouped.size).toBe(0);
   });
 });
 
