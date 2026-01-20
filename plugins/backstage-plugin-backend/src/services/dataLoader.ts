@@ -28,7 +28,6 @@ export async function loadPagerDutyServices(): Promise<NormalizedService[]> {
         teamName,
         service.id,
         'pagerduty',
-        false,
       );
     });
 
@@ -66,7 +65,6 @@ export async function loadBackstageComponents(
           owner,
           entityRef,
           'backstage',
-          false,
         );
       },
     );

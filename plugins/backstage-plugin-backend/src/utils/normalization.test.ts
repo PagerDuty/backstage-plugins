@@ -6,7 +6,6 @@
 
 import {
   normalizeName,
-  preprocessForMatching,
   extractAcronym,
   normalizeService,
   type NormalizedService,
@@ -91,127 +90,6 @@ describe('normalizeName', () => {
         'postman/webhook incoming',
       );
       expect(normalizeName('Oauth Demo')).toBe('oauth demo');
-    });
-  });
-});
-
-describe('preprocessForMatching', () => {
-  describe('prefix and suffix removal', () => {
-    it('removes prefix tags', () => {
-      expect(preprocessForMatching('[Platform] Auth Service')).toBe(
-        'auth-service',
-      );
-      expect(preprocessForMatching('[Team-A] Payment API')).toBe('payment-api');
-      expect(preprocessForMatching('[SRE] Monitoring')).toBe('monitoring');
-      expect(preprocessForMatching('[Team Name] Service')).toBe('service');
-    });
-
-    it('removes suffix notes', () => {
-      expect(preprocessForMatching('Service (on-call)')).toBe('service');
-      expect(preprocessForMatching('API (deprecated)')).toBe('api');
-      expect(preprocessForMatching('Gateway (v2)')).toBe('gateway');
-      expect(preprocessForMatching('Service (production)')).toBe('service');
-    });
-
-    it('removes both prefix and suffix', () => {
-      expect(preprocessForMatching('[Team] Service (on-call)')).toBe('service');
-      expect(preprocessForMatching('[SRE] API (deprecated)')).toBe('api');
-    });
-  });
-
-  describe('word preservation', () => {
-    it('preserves all meaningful words', () => {
-      expect(preprocessForMatching('API Gateway Endpoints')).toBe(
-        'api-gateway-endpoints',
-      );
-      expect(preprocessForMatching('Auth Service Web')).toBe(
-        'auth-service-web',
-      );
-      expect(preprocessForMatching('Payment On-Call')).toBe('payment-on-call');
-      expect(preprocessForMatching('Web API Gateway')).toBe('web-api-gateway');
-    });
-
-    it('preserves repo markers', () => {
-      expect(preprocessForMatching('My Service - open source repo')).toBe(
-        'my-service-open-source-repo',
-      );
-      expect(
-        preprocessForMatching('Auth API - Open Source Repo'),
-      ).toBe('auth-api-open-source-repo');
-    });
-  });
-
-  describe('normalization', () => {
-    it('converts to hyphenated lowercase', () => {
-      expect(preprocessForMatching('My Service API')).toBe('my-service-api');
-      expect(preprocessForMatching('AuthServiceGateway')).toBe(
-        'authservicegateway',
-      );
-    });
-
-    it('replaces underscores with hyphens', () => {
-      expect(preprocessForMatching('my_service_api')).toBe('my-service-api');
-      expect(preprocessForMatching('auth_gateway')).toBe('auth-gateway');
-    });
-
-    it('replaces spaces with hyphens', () => {
-      expect(preprocessForMatching('my service api')).toBe('my-service-api');
-      expect(preprocessForMatching('auth   gateway')).toBe('auth-gateway');
-    });
-
-    it('collapses multiple hyphens', () => {
-      expect(preprocessForMatching('my---service')).toBe('my-service');
-      expect(preprocessForMatching('auth--gateway')).toBe('auth-gateway');
-    });
-
-    it('trims leading and trailing hyphens', () => {
-      expect(preprocessForMatching('-my-service-')).toBe('my-service');
-      expect(preprocessForMatching('---service---')).toBe('service');
-    });
-  });
-
-  describe('edge cases', () => {
-    it('handles empty string', () => {
-      expect(preprocessForMatching('')).toBe('');
-    });
-
-    it('handles string with only whitespace', () => {
-      expect(preprocessForMatching('   ')).toBe('');
-    });
-
-    it('handles string that becomes empty after processing', () => {
-      expect(preprocessForMatching('[Team]')).toBe('');
-      expect(preprocessForMatching('(notes)')).toBe('');
-      expect(preprocessForMatching('[Team] (notes)')).toBe('');
-    });
-
-    it('handles special characters', () => {
-      expect(preprocessForMatching('service@api')).toBe('service@api');
-      expect(preprocessForMatching('service.com')).toBe('service.com');
-    });
-  });
-
-  describe('real-world examples', () => {
-    it('handles complex PagerDuty service names', () => {
-      expect(
-        preprocessForMatching('[Platform] Auth_Service (on-call) - Endpoints'),
-      ).toBe('auth-service-endpoints'); // (on-call) removed by parentheses removal
-
-      expect(preprocessForMatching('[SRE] API Gateway Web')).toBe(
-        'api-gateway-web',
-      );
-
-      expect(
-        preprocessForMatching('Payment Service - open source repo'),
-      ).toBe('payment-service-open-source-repo');
-    });
-
-    it('handles typical Backstage entity names', () => {
-      expect(preprocessForMatching('#2 Jira Cloud')).toBe('2-jira-cloud');
-      expect(preprocessForMatching('Postman/Webhook Incoming')).toBe(
-        'postman/webhook-incoming',
-      );
-      expect(preprocessForMatching('Oauth Demo')).toBe('oauth-demo');
     });
   });
 });
@@ -307,72 +185,34 @@ describe('extractAcronym', () => {
 });
 
 describe('normalizeService', () => {
-  describe('basic normalization mode', () => {
-    it('creates NormalizedService with basic normalization', () => {
-      const result = normalizeService(
-        'My_Service-Name',
-        'Platform Team',
-        'P123',
-        'pagerduty',
-        false,
-      );
+  it('creates NormalizedService with normalization', () => {
+    const result = normalizeService(
+      'My_Service-Name',
+      'Platform Team',
+      'P123',
+      'pagerduty',
+    );
 
-      expect(result).toEqual({
-        rawName: 'My_Service-Name',
-        normalizedName: 'my service name',
-        teamName: 'platform team',
-        acronym: 'MSN',
-        sourceId: 'P123',
-        source: 'pagerduty',
-      });
-    });
-
-    it('preserves original name', () => {
-      const result = normalizeService(
-        '[Team] Special_Service',
-        'Team A',
-        'B456',
-        'backstage',
-        false,
-      );
-
-      expect(result.rawName).toBe('[Team] Special_Service');
-      expect(result.normalizedName).toBe('[team] special service');
+    expect(result).toEqual({
+      rawName: 'My_Service-Name',
+      normalizedName: 'my service name',
+      teamName: 'platform team',
+      acronym: 'MSN',
+      sourceId: 'P123',
+      source: 'pagerduty',
     });
   });
 
-  describe('advanced preprocessing mode', () => {
-    it('creates NormalizedService with advanced preprocessing', () => {
-      const result = normalizeService(
-        '[Platform] Auth Service (on-call)',
-        'Platform Team',
-        'P456',
-        'pagerduty',
-        true,
-      );
+  it('preserves original name', () => {
+    const result = normalizeService(
+      '[Team] Special_Service',
+      'Team A',
+      'B456',
+      'backstage',
+    );
 
-      expect(result).toMatchObject({
-        rawName: '[Platform] Auth Service (on-call)',
-        normalizedName: 'auth-service',
-        teamName: 'platform-team',
-        // acronym extracted from original name
-        sourceId: 'P456',
-        source: 'pagerduty',
-      });
-    });
-
-    it('preserves meaningful words while removing structural markers', () => {
-      const result = normalizeService(
-        '[SRE] API Gateway Endpoints',
-        'SRE Team (on-call)',
-        'P789',
-        'pagerduty',
-        true,
-      );
-
-      expect(result.normalizedName).toBe('api-gateway-endpoints'); // Preserves "endpoints"
-      expect(result.teamName).toBe('sre-team'); // Removes (on-call) parenthetical
-    });
+    expect(result.rawName).toBe('[Team] Special_Service');
+    expect(result.normalizedName).toBe('[team] special service');
   });
 
   describe('source tracking', () => {
@@ -382,7 +222,6 @@ describe('normalizeService', () => {
         'Team',
         'PD123',
         'pagerduty',
-        false,
       );
 
       expect(result.source).toBe('pagerduty');
@@ -395,7 +234,6 @@ describe('normalizeService', () => {
         'Team',
         'component:default/service',
         'backstage',
-        false,
       );
 
       expect(result.source).toBe('backstage');
@@ -405,7 +243,7 @@ describe('normalizeService', () => {
 
   describe('edge cases', () => {
     it('handles empty strings', () => {
-      const result = normalizeService('', '', '', 'pagerduty', false);
+      const result = normalizeService('', '', '', 'pagerduty');
 
       expect(result).toEqual({
         rawName: '',
@@ -423,7 +261,6 @@ describe('normalizeService', () => {
         '',
         'P999',
         'pagerduty',
-        false,
       );
 
       expect(result.teamName).toBe('');
@@ -438,13 +275,12 @@ describe('normalizeService', () => {
         'Integration Team',
         'P4H6SXP',
         'pagerduty',
-        true,
       );
 
       expect(result).toMatchObject({
         rawName: '#2 Jira Cloud',
-        normalizedName: '2-jira-cloud',
-        teamName: 'integration-team',
+        normalizedName: '#2 jira cloud',
+        teamName: 'integration team',
         sourceId: 'P4H6SXP',
         source: 'pagerduty',
       });
@@ -456,13 +292,12 @@ describe('normalizeService', () => {
         'platform-team',
         'component:default/jira-cloud-service',
         'backstage',
-        true,
       );
 
       expect(result).toMatchObject({
         rawName: 'jira-cloud-service',
-        normalizedName: 'jira-cloud-service',
-        teamName: 'platform-team',
+        normalizedName: 'jira cloud service',
+        teamName: 'platform team',
         sourceId: 'component:default/jira-cloud-service',
         source: 'backstage',
       });
@@ -490,7 +325,6 @@ describe('type safety', () => {
       'Team',
       '1',
       'pagerduty',
-      false,
     );
     expect(pdService.source).toBe('pagerduty');
 
@@ -499,7 +333,6 @@ describe('type safety', () => {
       'Team',
       '2',
       'backstage',
-      false,
     );
     expect(bsService.source).toBe('backstage');
   });

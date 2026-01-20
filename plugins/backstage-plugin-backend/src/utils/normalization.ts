@@ -10,24 +10,6 @@ export function normalizeName(name: string): string {
   return normalized.trim();
 }
 
-export function preprocessForMatching(name: string): string {
-  if (!name) {
-    return '';
-  }
-
-  let processed = name;
-
-  processed = processed.replace(/^\[.*?\]\s*/, '');
-  processed = processed.replace(/\s*\(.*?\)/g, '');
-  processed = processed.toLowerCase();
-  processed = processed.replace(/^[^a-z0-9\s_-]+/, '');
-  processed = processed.replace(/_/g, '-').replace(/\s+/g, '-');
-  processed = processed.replace(/-+/g, '-');
-  processed = processed.replace(/^-+|-+$/g, '');
-
-  return processed;
-}
-
 export function extractAcronym(name: string): string {
   if (!name) {
     return '';
@@ -89,16 +71,11 @@ export function normalizeService(
   teamName: string,
   sourceId: string,
   source: 'pagerduty' | 'backstage',
-  useAdvancedPreprocessing: boolean = false,
 ): NormalizedService {
   return {
     rawName,
-    normalizedName: useAdvancedPreprocessing
-      ? preprocessForMatching(rawName)
-      : normalizeName(rawName),
-    teamName: useAdvancedPreprocessing
-      ? preprocessForMatching(teamName)
-      : normalizeName(teamName),
+    normalizedName: normalizeName(rawName),
+    teamName: normalizeName(teamName),
     acronym: extractAcronym(rawName),
     sourceId,
     source,
