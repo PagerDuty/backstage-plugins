@@ -764,29 +764,30 @@ export async function createRouter(
         componentEntities.items.map(async entity => {
           const annotations = {
             'pagerduty.com/integration-key':
-              entity?.metadata?.annotations?.[
-                'pagerduty.com/integration-key'
-              ] ?? '',
+              entity.metadata?.annotations?.['pagerduty.com/integration-key'] ??
+              '',
             'pagerduty.com/service-id':
-              entity?.metadata?.annotations?.['pagerduty.com/service-id'] ?? '',
+              entity.metadata?.annotations?.['pagerduty.com/service-id'] ?? '',
           };
 
           const formattedEntity = {
-            name: entity?.metadata?.name,
-            id: entity?.metadata?.uid ?? '',
-            namespace: entity?.metadata?.namespace ?? '',
-            type: entity?.kind ?? '',
-            system: entity?.spec?.system
-              ? JSON.stringify(entity?.spec?.system)
+            name: entity.metadata?.name,
+            id: entity.metadata?.uid ?? '',
+            namespace: entity.metadata?.namespace ?? '',
+            type: entity.kind ?? '',
+            system: entity.spec?.system
+              ? JSON.stringify(entity.spec?.system)
               : '',
-            owner: entity?.spec?.owner
-              ? JSON.stringify(entity?.spec?.owner)
-              : '',
-            lifecycle: entity?.spec?.lifecycle
-              ? JSON.stringify(entity?.spec?.lifecycle)
+            owner: entity.spec?.owner ? JSON.stringify(entity.spec?.owner) : '',
+            lifecycle: entity.spec?.lifecycle
+              ? JSON.stringify(entity.spec?.lifecycle)
               : '',
             annotations,
-            status: 'NotMapped' as 'NotMapped' | 'InSync' | 'OutOfSync',
+            status: 'NotMapped' as
+              | 'NotMapped'
+              | 'InSync'
+              | 'OutOfSync'
+              | 'ErrorWhenFetchingService',
             serviceName: '',
             serviceUrl: '',
             team: '',
@@ -796,29 +797,27 @@ export async function createRouter(
 
           // Try to find a service by service ID or integration key
           let service = null;
+          let isServiceError = null;
           if (annotations['pagerduty.com/service-id']) {
             const serviceId = annotations['pagerduty.com/service-id'];
-            const foundServices = pagerDutyServices.filter(
-              s => s.id === serviceId,
-            );
-            if (foundServices.length > 0) {
-              service = foundServices[0];
-            }
+            service = pagerDutyServices.find(s => s.id === serviceId);
           } else if (annotations['pagerduty.com/integration-key']) {
             const integrationKey = annotations['pagerduty.com/integration-key'];
             const account =
-              entity?.metadata?.annotations?.['pagerduty.com/account'] || '';
+              entity.metadata?.annotations?.['pagerduty.com/account'] || '';
             try {
               service = await getServiceByIntegrationKey(
                 integrationKey,
                 account,
               );
             } catch (e) {
-              // Service might not exist, just continue
+              if (e instanceof HttpError && e.status !== 404) {
+                isServiceError = true;
+              }
             }
           }
           const entityRef =
-            `${entity?.kind}:${entity?.metadata.namespace}/${entity?.metadata.name}`.toLowerCase();
+            `${entity.kind}:${entity.metadata.namespace}/${entity.metadata.name}`.toLowerCase();
           const entityMapping = maps.mappings.find(
             e =>
               e.entityRef === entityRef ||
@@ -847,6 +846,8 @@ export async function createRouter(
                 formattedEntity.status = 'NotMapped';
               }
             }
+          } else if (isServiceError) {
+            formattedEntity.status = 'ErrorWhenFetchingService';
           }
 
           return formattedEntity;

@@ -671,7 +671,7 @@ export async function getServiceById(
   }
 }
 
-export async function getServicesByIdsServiceDirectory(
+export async function getSerivcesByIdsAndAccount(
   serviceIds: string[],
   account?: string,
 ): Promise<PagerDutyService[]> {
@@ -822,7 +822,7 @@ export async function getServicesByIds(
   let services: PagerDutyService[] = [];
   await Promise.all(
     Object.entries(EndpointConfig).map(async ([account, _]) => {
-      services = await getServicesByIdsServiceDirectory(ids, account);
+      services = await getSerivcesByIdsAndAccount(ids, account);
     }),
   );
   return services;

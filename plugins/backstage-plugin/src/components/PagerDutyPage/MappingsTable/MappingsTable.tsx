@@ -30,7 +30,7 @@ export default function MappingsTable() {
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearchQuery = useDebounce(searchQuery);
   const pagerDutyApi = useApi(pagerDutyApiRef);
-  const { data: mappings, refetch } = useQuery({
+  const { data: mappings } = useQuery({
     queryKey: [
       'pagerduty',
       'enhancedEntityMappings',
@@ -84,7 +84,11 @@ export default function MappingsTable() {
               <CellText
                 leadingIcon={<Edit fontSize="small" />}
                 color="secondary"
-                style={{ paddingLeft: '25px' }}
+                style={{
+                  paddingLeft: '25px',
+                  cursor: 'pointer',
+                  maxWidth: 'min-content',
+                }}
                 title=""
                 onClick={() => {
                   setIsOpen(true);
@@ -113,7 +117,6 @@ export default function MappingsTable() {
         isOpen={isOpen}
         setIsOpen={setIsOpen}
         entity={selectedEntity}
-        refetchMappings={refetch}
       />
     </>
   );

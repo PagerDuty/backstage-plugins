@@ -6,11 +6,13 @@ const statusDictionary = {
   InSync: 'In Sync',
   OutOfSync: 'Out of Sync',
   NotMapped: 'Not Mapped',
+  ErrorWhenFetchingService: 'Error occured while fetching service',
 } as const;
 const colourDictionary = {
   InSync: 'green',
   OutOfSync: 'red',
   NotMapped: 'orange',
+  ErrorWhenFetchingService: 'red',
 } as const;
 
 type StatusKey = keyof typeof statusDictionary;
@@ -30,6 +32,7 @@ const useStyles = makeStyles(() => {
         borderRadius: '0.25rem',
         color: 'white',
         padding: '0.15rem',
+        maxWidth: 'min-content',
       },
     }),
   };
