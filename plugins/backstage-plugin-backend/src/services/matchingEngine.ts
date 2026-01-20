@@ -50,6 +50,8 @@ export function calculateMatchScore(
   bsComponent: NormalizedService,
 ): MatchResult {
   const exactNameMatch =
+    pdService.normalizedName !== '' &&
+    bsComponent.normalizedName !== '' &&
     pdService.normalizedName === bsComponent.normalizedName;
   const exactTeamMatch =
     pdService.teamName !== '' &&
