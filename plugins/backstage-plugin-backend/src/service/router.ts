@@ -5,10 +5,6 @@ import {
   RootConfigService,
 } from '@backstage/backend-plugin-api';
 import {
-  createLegacyAuthAdapters,
-  errorHandler,
-} from '@backstage/backend-common';
-import {
   getAllEscalationPolicies,
   getChangeEvents,
   getIncidents,
@@ -55,7 +51,7 @@ import {
 import * as express from 'express';
 import Router from 'express-promise-router';
 import type { CatalogApi, GetEntitiesResponse } from '@backstage/catalog-client';
-
+import { MiddlewareFactory } from '@backstage/backend-defaults/rootHttpRouter';
 import * as MappingsController from '../controllers/mappings-controller';
 import * as CatalogEntityUtils from '../utils/catalog-entity';
 
@@ -64,7 +60,7 @@ export interface RouterOptions {
   config: RootConfigService;
   store: PagerDutyBackendStore;
   discovery: DiscoveryService;
-  auth?: AuthService;
+  auth: AuthService;
   catalogApi?: CatalogApi;
 }
 
@@ -248,14 +244,11 @@ export async function createRouter(
   options: RouterOptions,
 ): Promise<express.Router> {
   const { logger, config, store, catalogApi } = options;
-  let { auth } = options;
-
-  if (!auth) {
-    auth = createLegacyAuthAdapters(options).auth;
-  }
 
   if (!catalogApi) {
-    throw new Error('Catalog API is required to start the PagerDuty plugin backend');
+    throw new Error(
+      'Catalog API is required to start the PagerDuty plugin backend',
+    );
   }
 
   // Get authentication Config
@@ -1324,7 +1317,7 @@ export async function createRouter(
   });
 
   // Add error handler
-  router.use(errorHandler());
+  router.use(MiddlewareFactory.create({ config, logger }).error());
 
   // Return the router
   return router;

@@ -17,7 +17,6 @@ import {
   LoggerService,
   RootConfigService,
 } from '@backstage/backend-plugin-api';
-import { Config } from '@backstage/config';
 
 type JsonValue = boolean | number | string | null | JsonArray | JsonObject;
 
@@ -28,8 +27,7 @@ interface JsonObject {
 type JsonArray = JsonValue[];
 
 export type LoadEndpointConfigProps = {
-  config: RootConfigService | undefined;
-  legacyConfig: Config;
+  config: RootConfigService;
   logger: LoggerService;
 };
 
@@ -42,8 +40,7 @@ const EndpointConfig: Record<string, PagerDutyEndpointConfig> = {};
 let fallbackEndpointConfig: PagerDutyEndpointConfig;
 let isLegacyConfig = false;
 
-let _config: RootConfigService | undefined;
-let _legacyConfig: Config;
+let _config: RootConfigService;
 let _logger: LoggerService;
 
 export function setFallbackEndpointConfig(account: PagerDutyAccountConfig) {
@@ -74,12 +71,10 @@ export function insertEndpointConfig(account: PagerDutyAccountConfig) {
 
 export function loadPagerDutyEndpointsFromConfig({
   config,
-  legacyConfig,
   logger,
 }: LoadEndpointConfigProps) {
   // set config and logger
   _config = config;
-  _legacyConfig = legacyConfig;
   _logger = logger;
 
   if (readOptionalObject('pagerDuty.accounts')) {
@@ -457,26 +452,14 @@ export async function isEventNoiseReductionEnabled(
 }
 
 function readOptionalString(key: string): string | undefined {
-  if (!_config) {
-    return _legacyConfig.getOptionalString(key);
-  }
-
   return _config.getOptionalString(key);
 }
 
 function readOptionalObject(key: string): JsonValue | undefined {
-  if (!_config) {
-    return _legacyConfig.getOptional(key);
-  }
-
   return _config.getOptional(key);
 }
 
 function readString(key: string): string {
-  if (!_config) {
-    return _legacyConfig.getString(key);
-  }
-
   return _config.getString(key);
 }
 

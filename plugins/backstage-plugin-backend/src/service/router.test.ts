@@ -196,7 +196,8 @@ describe('createRouter', () => {
       config: configReader,
       store,
       discovery: mockServices.discovery(),
-      catalogApi: catalogApi,
+      catalogApi,
+      auth: mockServices.auth(),
     });
     app = express().use(router);
   });
