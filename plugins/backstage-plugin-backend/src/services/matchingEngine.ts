@@ -57,6 +57,10 @@ export function calculateMatchScore(
     pdService.teamName !== '' &&
     bsComponent.teamName !== '' &&
     pdService.teamName === bsComponent.teamName;
+  const acronymMatch =
+    pdService.acronym !== '' &&
+    bsComponent.acronym !== '' &&
+    pdService.acronym === bsComponent.acronym;
   const exactMatch = exactNameMatch && exactTeamMatch;
 
   if (exactMatch) {
@@ -68,10 +72,7 @@ export function calculateMatchScore(
         baseScore: 100,
         exactMatch: true,
         teamMatch: true,
-        acronymMatch:
-          pdService.acronym !== '' &&
-          bsComponent.acronym !== '' &&
-          pdService.acronym === bsComponent.acronym,
+        acronymMatch,
         rawScore: 100,
       },
     };
@@ -87,11 +88,6 @@ export function calculateMatchScore(
     pdService.teamName !== '' &&
     bsComponent.teamName !== '' &&
     pdService.teamName === bsComponent.teamName;
-
-  const acronymMatch =
-    pdService.acronym !== '' &&
-    bsComponent.acronym !== '' &&
-    pdService.acronym === bsComponent.acronym;
 
   let rawScore = baseScore;
 
