@@ -53,7 +53,7 @@ export function calculateMatchScore(
     pdService.normalizedName !== '' &&
     bsComponent.normalizedName !== '' &&
     pdService.normalizedName === bsComponent.normalizedName;
-  const exactTeamMatch =
+  const teamMatch =
     pdService.teamName !== '' &&
     bsComponent.teamName !== '' &&
     pdService.teamName === bsComponent.teamName;
@@ -61,7 +61,7 @@ export function calculateMatchScore(
     pdService.acronym !== '' &&
     bsComponent.acronym !== '' &&
     pdService.acronym === bsComponent.acronym;
-  const exactMatch = exactNameMatch && exactTeamMatch;
+  const exactMatch = exactNameMatch && teamMatch;
 
   if (exactMatch) {
     return {
@@ -71,7 +71,7 @@ export function calculateMatchScore(
       scoreBreakdown: {
         baseScore: 100,
         exactMatch: true,
-        teamMatch: true,
+        teamMatch,
         acronymMatch,
         rawScore: 100,
       },
@@ -83,11 +83,6 @@ export function calculateMatchScore(
     bsComponent.normalizedName,
   );
   const baseScore = jaroWinklerSimilarity * 100;
-
-  const teamMatch =
-    pdService.teamName !== '' &&
-    bsComponent.teamName !== '' &&
-    pdService.teamName === bsComponent.teamName;
 
   let rawScore = baseScore;
 
