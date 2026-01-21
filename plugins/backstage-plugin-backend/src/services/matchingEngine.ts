@@ -108,13 +108,13 @@ export function calculateMatchScore(
   return {
     pagerDutyService: pdService,
     backstageComponent: bsComponent,
-    score: Math.round(finalScore * 100) / 100,
+    score: Math.round(finalScore),
     scoreBreakdown: {
-      baseScore: Math.round(baseScore * 100) / 100,
+      baseScore: Math.round(baseScore),
       exactMatch: false,
       teamMatch,
       acronymMatch,
-      rawScore: Math.round(rawScore * 100) / 100,
+      rawScore: Math.round(rawScore),
     },
   };
 }
