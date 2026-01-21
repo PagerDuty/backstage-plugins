@@ -73,7 +73,7 @@ const BasicCard = ({ children }: { children: ReactNode }) => (
 
 /** @public */
 export type PagerDutyCardProps = PagerDutyEntity & {
-  entity: Entity;
+  entity?: Entity;
   readOnly?: boolean;
   disableChangeEvents?: boolean;
   disableOnCall?: boolean;
@@ -98,6 +98,8 @@ export const PagerDutyCard = (props: PagerDutyCardProps) => {
   }, []);
 
   const handleUnmapService = useCallback(async () => {
+    if (!entity) return false;
+
     const { namespace, name } = entity.metadata;
     const kind = entity.kind;
     const entityRef = `${kind}:${namespace || 'default'}/${name}`;
@@ -155,7 +157,7 @@ export const PagerDutyCard = (props: PagerDutyCardProps) => {
             entity={entity}
             serviceId={props.serviceId}
             integrationKey={props.integrationKey}
-            onUnmap={handleUnmapService}
+            onUnmap={entity ? handleUnmapService : undefined}
           />
         );
         break;
