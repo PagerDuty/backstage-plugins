@@ -471,21 +471,21 @@ describe('loadBothSources', () => {
     expect(result.bsComponents).toHaveLength(0);
   });
 
-  it('throws error if PagerDuty loading fails', async () => {
+  it('throws ServiceLoadError if PagerDuty loading fails', async () => {
     mockedGetAllServices.mockRejectedValue(new Error('PD error'));
     mockCatalogApi.getEntities.mockResolvedValue({ items: [] });
 
     await expect(loadBothSources(context)).rejects.toThrow(
-      'Failed to load sources',
+      'Failed to load PagerDuty services',
     );
   });
 
-  it('throws error if Backstage loading fails', async () => {
+  it('throws ServiceLoadError if Backstage loading fails', async () => {
     mockedGetAllServices.mockResolvedValue([]);
     mockCatalogApi.getEntities.mockRejectedValue(new Error('BS error'));
 
     await expect(loadBothSources(context)).rejects.toThrow(
-      'Failed to load sources',
+      'Failed to load Backstage components',
     );
   });
 

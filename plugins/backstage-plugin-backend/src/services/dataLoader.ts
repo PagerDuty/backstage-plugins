@@ -88,21 +88,13 @@ export async function loadBackstageComponents({
 export async function loadBothSources(
   context: DataLoaderContext,
 ): Promise<LoadedSources> {
-  try {
-    const [pdServices, bsComponents] = await Promise.all([
-      loadPagerDutyServices(),
-      loadBackstageComponents(context),
-    ]);
+  const [pdServices, bsComponents] = await Promise.all([
+    loadPagerDutyServices(),
+    loadBackstageComponents(context),
+  ]);
 
-    return {
-      pdServices,
-      bsComponents,
-    };
-  } catch (error) {
-    throw new Error(
-      `Failed to load sources: ${
-        error instanceof Error ? error.message : String(error)
-      }`,
-    );
-  }
+  return {
+    pdServices,
+    bsComponents,
+  };
 }
