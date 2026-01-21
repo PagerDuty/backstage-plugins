@@ -174,7 +174,7 @@ describe('loadPagerDutyServices', () => {
     );
   });
 
-  it('handles large number of services', async () => {
+  it('handles multiple services efficiently', async () => {
     // Generate 686 mock services (typical staging environment)
     const mockServices: PagerDutyService[] = Array.from(
       { length: 686 },
@@ -372,7 +372,7 @@ describe('loadBackstageComponents', () => {
     );
   });
 
-  it('handles large number of components', async () => {
+  it('handles multiple components efficiently', async () => {
     // Generate 1000 mock components
     const mockEntities: Entity[] = Array.from({ length: 1000 }, (_, i) => ({
       apiVersion: 'backstage.io/v1alpha1',
