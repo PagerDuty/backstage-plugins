@@ -83,6 +83,7 @@ describe('createRouter', () => {
       config: configReader,
       store: await createDatabase(),
       discovery: mockServices.discovery(),
+      auth: mockServices.auth(),
     });
     app = express().use(router);
   });

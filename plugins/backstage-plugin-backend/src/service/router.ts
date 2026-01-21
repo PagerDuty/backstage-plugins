@@ -5,10 +5,6 @@ import {
   RootConfigService,
 } from '@backstage/backend-plugin-api';
 import {
-  createLegacyAuthAdapters,
-  errorHandler,
-} from '@backstage/backend-common';
-import {
   getAllEscalationPolicies,
   getChangeEvents,
   getIncidents,
@@ -50,13 +46,14 @@ import type {
   CatalogApi,
   GetEntitiesResponse,
 } from '@backstage/catalog-client';
+import { MiddlewareFactory } from '@backstage/backend-defaults/rootHttpRouter';
 
 export interface RouterOptions {
   logger: LoggerService;
   config: RootConfigService;
   store: PagerDutyBackendStore;
   discovery: DiscoveryService;
-  auth?: AuthService;
+  auth: AuthService;
   catalogApi?: CatalogApi;
 }
 
@@ -282,11 +279,6 @@ export async function createRouter(
   options: RouterOptions,
 ): Promise<express.Router> {
   const { logger, config, store, catalogApi } = options;
-  let { auth } = options;
-
-  if (!auth) {
-    auth = createLegacyAuthAdapters(options).auth;
-  }
 
   // Get authentication Config
   await loadAuthConfig(config, logger);
@@ -1034,7 +1026,7 @@ export async function createRouter(
   });
 
   // Add error handler
-  router.use(errorHandler());
+  router.use(MiddlewareFactory.create({ config, logger }).error());
 
   // Return the router
   return router;
