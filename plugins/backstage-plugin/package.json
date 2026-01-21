@@ -1,7 +1,7 @@
 {
   "name": "@pagerduty/backstage-plugin",
   "description": "A Backstage plugin that integrates towards PagerDuty",
-  "version": "0.17.0",
+  "version": "0.17.1",
   "main": "dist/index.esm.js",
   "types": "dist/index.d.ts",
   "license": "Apache-2.0",
@@ -35,7 +35,7 @@
     "lint": "backstage-cli package lint",
     "test": "backstage-cli package test",
     "prepare": "husky install",
-    "prepack": "node ../../scripts/replace-versions.js backstage-plugin && backstage-cli package prepack",
+    "prepack": "backstage-cli package prepack",
     "postpack": "backstage-cli package postpack",
     "clean": "backstage-cli package clean"
   },

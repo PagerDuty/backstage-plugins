@@ -1,6 +1,6 @@
 {
   "name": "@pagerduty/backstage-plugin-backend",
-  "version": "0.10.2",
+  "version": "0.10.3",
   "main": "dist/index.cjs.js",
   "types": "dist/index.d.ts",
   "license": "Apache-2.0",
@@ -30,7 +30,7 @@
     "lint": "backstage-cli package lint",
     "test": "backstage-cli package test",
     "clean": "backstage-cli package clean",
-    "prepack": "node ../../scripts/replace-versions.js backstage-plugin-backend && backstage-cli package prepack",
+    "prepack": "backstage-cli package prepack",
     "postpack": "backstage-cli package postpack"
   },
   "dependencies": {
