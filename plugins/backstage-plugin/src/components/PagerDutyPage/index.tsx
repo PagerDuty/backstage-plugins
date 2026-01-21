@@ -8,7 +8,6 @@ import {
   TabbedLayout,
 } from '@backstage/core-components';
 import { ServiceMappingComponent } from './ServiceMappingComponent';
-import { AutoMatchTestComponent } from './AutoMatchTestComponent';
 import { useApi } from '@backstage/core-plugin-api';
 import { pagerDutyApiRef } from '../../api';
 import { NotFoundError } from '@backstage/errors';
@@ -141,9 +140,6 @@ export const PagerDutyPage = () => {
                 </div>
               </Card>
             </>
-          </TabbedLayout.Route>
-          <TabbedLayout.Route path="/auto-match-test" title="🧪 Auto-Match Test">
-            <AutoMatchTestComponent />
           </TabbedLayout.Route>
         </TabbedLayout>
       </Content>
