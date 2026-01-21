@@ -35,13 +35,9 @@ import useAsyncFn from 'react-use/lib/useAsyncFn';
 import { Button } from '@backstage/ui';
 
 export interface ServiceNotFoundErrorProps {
-  /** The entity that has the orphaned mapping */
-  entity?: Entity;
-  /** Callback when user clicks "Unmap Service" */
-  onUnmap?: () => Promise<void>;
-  /** The orphaned service ID */
+  entity: Entity;
+  onUnmap?: () => Promise<boolean>;
   serviceId?: string;
-  /** The integration key */
   integrationKey?: string;
 }
 
@@ -56,9 +52,8 @@ export const ServiceNotFoundError = ({
   const theme = useTheme();
 
   const [{ value, loading, error }, handleUnmap] = useAsyncFn(async () => {
-    if (!onUnmap) return;
-    return await onUnmap();
-  });
+    return await onUnmap?.();
+  }, [onUnmap]);
 
   useEffect(() => {
     if (value !== undefined) {
@@ -69,19 +64,21 @@ export const ServiceNotFoundError = ({
 
         setShowConfirmDialog(false);
 
-        // Wait before reloading page
+        // Wait to allow user to see success message before page reloads
         await new Promise(resolve => setTimeout(resolve, 1000));
         window.location.reload();
       })();
     }
-  }, [value, alertApi]);
+  }, [value, alertApi, setShowConfirmDialog]);
 
-  if (error) {
-    alertApi.post({
-      message: `Failed to unmap service. ${error.message}`,
-      severity: 'error',
-    });
-  }
+  useEffect(() => {
+    if (error) {
+      alertApi.post({
+        message: `Failed to unmap service. ${error.message}`,
+        severity: 'error',
+      });
+    }
+  }, [error, alertApi]);
 
   return (
     <>
@@ -111,7 +108,6 @@ export const ServiceNotFoundError = ({
         }
       />
 
-      {/* Confirmation Dialog */}
       <Dialog
         open={showConfirmDialog}
         onClose={() => !loading && setShowConfirmDialog(false)}
@@ -176,7 +172,7 @@ export const ServiceNotFoundError = ({
             }}
             isDisabled={loading}
             variant="primary"
-            onClick={() => handleUnmap()}
+            onClick={handleUnmap}
             iconEnd={
               loading ? <CircularProgress size={16} /> : <React.Fragment />
             }
@@ -190,12 +186,4 @@ export const ServiceNotFoundError = ({
       </Dialog>
     </>
   );
-};
-
-// Backwards compatibility: allow calling without props
-ServiceNotFoundError.defaultProps = {
-  entity: undefined,
-  onUnmap: undefined,
-  serviceId: undefined,
-  integrationKey: undefined,
 };

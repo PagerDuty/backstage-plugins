@@ -182,7 +182,6 @@ export class PagerDutyClient implements PagerDutyApi {
       account: string;
     };
   }> {
-    // Parse entity reference
     const match = entityRef.match(/^([^:]+):([^/]+)\/(.+)$/);
     if (!match) {
       throw new Error(`Invalid entity reference: ${entityRef}`);
@@ -190,7 +189,6 @@ export class PagerDutyClient implements PagerDutyApi {
 
     const [, kind, namespace, name] = match;
 
-    // Call GET endpoint
     const url = `${await this.config.discoveryApi.getBaseUrl(
       'pagerduty',
     )}/mapping/entity/${kind}/${namespace}/${name}`;
