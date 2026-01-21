@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 // eslint-disable-next-line @backstage/no-undeclared-imports
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Button as MuiButton,
   Dialog,
@@ -173,9 +173,7 @@ export const ServiceNotFoundError = ({
             isDisabled={loading}
             variant="primary"
             onClick={handleUnmap}
-            iconEnd={
-              loading ? <CircularProgress size={16} /> : <React.Fragment />
-            }
+            iconEnd={loading ? <CircularProgress size={16} /> : <></>}
           >
             {loading ? 'UNMAPPING' : 'UNMAP SERVICE'}
           </Button>

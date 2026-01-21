@@ -279,8 +279,7 @@ export const mockPagerDutyApi: PagerDutyApi = {
     };
   },
 
-  async removeServiceMapping(entityRef: string) {
-    console.log(`Mock: Removing service mapping for ${entityRef}`);
+  async removeServiceMapping(_entityRef: string) {
     return true;
   },
 };
