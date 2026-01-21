@@ -182,6 +182,12 @@ describe('extractAcronym', () => {
       expect(extractAcronym('HTTP Gateway')).toBe('HG'); // First letter of each word
       expect(extractAcronym('HTTPS_PROXY')).toBe('HP'); // HTTPS all caps,  treat as one word
     });
+
+    it('handles slash separator in service names', () => {
+      expect(extractAcronym('Postman/Webhook testing')).toBe('PWT');
+      expect(extractAcronym('API/Gateway/Service')).toBe('AGS');
+      expect(extractAcronym('frontend/backend')).toBe('FB');
+    });
   });
 
   describe('capitals extraction fallback', () => {

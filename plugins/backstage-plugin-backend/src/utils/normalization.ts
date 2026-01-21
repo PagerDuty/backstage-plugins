@@ -19,8 +19,8 @@ export function extractAcronym(name: string): string {
     return name;
   }
 
-  if (/[\s\-_]/.test(name)) {
-    const words = name.split(/[\s\-_]+/).filter(word => word.length > 0);
+  if (/[\s\-_\/]/.test(name)) {
+    const words = name.split(/[\s\-_\/]+/).filter(word => word.length > 0);
 
     if (words.length === 0) {
       return '';
