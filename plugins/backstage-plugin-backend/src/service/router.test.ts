@@ -1,5 +1,3 @@
-import { HostDiscovery, getVoidLogger } from '@backstage/backend-common';
-import { ConfigReader } from '@backstage/config';
 import express from 'express';
 import request from 'supertest';
 
@@ -30,7 +28,7 @@ import {
   RawDbEntityResultRow,
 } from '../db/PagerDutyBackendDatabase';
 import { PagerDutyBackendDatabase } from '../db';
-import { TestDatabases } from '@backstage/backend-test-utils';
+import { mockServices, TestDatabases } from '@backstage/backend-test-utils';
 
 jest.mock('node-fetch');
 
@@ -60,29 +58,31 @@ describe('createRouter', () => {
   let app: express.Express;
 
   beforeAll(async () => {
-    const configReader = new ConfigReader({
-      app: {
-        baseUrl: 'https://example.com/extra-path',
-      },
-      backend: {
-        baseUrl: 'https://example.com/extra-path',
-      },
-      pagerDuty: {
-        apiToken: 'test-token',
-        oauth: {
-          clientId: 'test-client-id',
-          clientSecret: 'test-client',
-          subDomain: 'test-subdomain',
-          region: 'EU',
+    const configReader = mockServices.rootConfig({
+      data: {
+          app: {
+            baseUrl: 'https://example.com/extra-path',
+          },
+          backend: {
+            baseUrl: 'https://example.com/extra-path',
+          },
+          pagerDuty: {
+            apiToken: 'test-token',
+            oauth: {
+              clientId: 'test-client-id',
+              clientSecret: 'test-client',
+              subDomain: 'test-subdomain',
+              region: 'EU',
+            },
+          },
         },
-      },
-    });
+      });
 
     const router = await createRouter({
-      logger: getVoidLogger(),
+      logger: mockServices.rootLogger.mock(),
       config: configReader,
       store: await createDatabase(),
-      discovery: HostDiscovery.fromConfig(configReader),
+      discovery: mockServices.discovery(),
     });
     app = express().use(router);
   });

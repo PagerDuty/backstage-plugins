@@ -1,6 +1,6 @@
 {
   "name": "@pagerduty/backstage-plugin-entity-processor",
-  "version": "0.3.6",
+  "version": "0.3.8",
   "main": "dist/index.cjs.js",
   "types": "dist/index.d.ts",
   "license": "Apache-2.0",
@@ -30,26 +30,21 @@
     "lint": "backstage-cli package lint",
     "test": "backstage-cli package test",
     "clean": "backstage-cli package clean",
-    "prepack": "node ../../scripts/replace-versions.js backstage-plugin-entity-processor && backstage-cli package prepack",
+    "prepack": "backstage-cli package prepack",
     "postpack": "backstage-cli package postpack"
   },
   "dependencies": {
-    "@backstage/backend-common": "^0.23.3",
-    "@backstage/backend-defaults": "^0.4.1",
-    "@backstage/backend-plugin-api": "^0.7.0",
-    "@backstage/catalog-model": "^1.5.0",
-    "@backstage/config": "^1.2.0",
-    "@backstage/plugin-catalog-common": "^1.0.25",
-    "@backstage/plugin-catalog-node": "^1.12.4",
+    "@backstage/backend-plugin-api": "backstage:^",
+    "@backstage/catalog-model": "backstage:^",
+    "@backstage/config": "backstage:^",
+    "@backstage/plugin-catalog-common": "backstage:^",
+    "@backstage/plugin-catalog-node": "backstage:^",
     "@pagerduty/backstage-plugin-common": "workspace:~",
-    "@rjsf/core": "^5.14.3",
     "node-fetch": "^2.6.7",
-    "winston": "^3.2.1",
-    "yn": "^4.0.0",
-    "zod": "^3.22.4"
+    "winston": "^3.2.1"
   },
   "devDependencies": {
-    "@backstage/cli": "^0.33.0"
+    "@backstage/cli": "backstage:^"
   },
   "files": [
     "dist",
