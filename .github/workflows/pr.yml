@@ -35,6 +35,7 @@ jobs:
 
   install:
     if: github.event.pull_request.state != 'closed'
+    needs: changeset-check
     runs-on: ubuntu-latest
     outputs:
       cache-hit: ${{ steps.cache-dependencies.outputs.cache-hit }}
