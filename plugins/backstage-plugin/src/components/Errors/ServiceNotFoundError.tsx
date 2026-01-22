@@ -35,7 +35,7 @@ import useAsyncFn from 'react-use/lib/useAsyncFn';
 import { Button } from '@backstage/ui';
 
 export interface ServiceNotFoundErrorProps {
-  entity?: Entity;
+  entity: Entity;
   onUnmap?: () => Promise<boolean>;
   serviceId?: string;
   integrationKey?: string;
@@ -64,7 +64,6 @@ export const ServiceNotFoundError = ({
 
         setShowConfirmDialog(false);
 
-        // Wait to allow user to see success message before page reloads
         await new Promise(resolve => setTimeout(resolve, 1000));
         window.location.reload();
       })();
