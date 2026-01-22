@@ -11,6 +11,28 @@ on:
       - next
 
 jobs:
+  changeset-check:
+    if: github.event.pull_request.state != 'closed' && github.base_ref == 'next'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Check for changeset
+        run: |
+          CHANGESET_DIFF=$(git diff --numstat origin/${{ github.base_ref }}...HEAD -- .changeset/)
+          if [ -n "$CHANGESET_DIFF" ]; then
+            echo "✅ Changeset changes detected:"
+            git diff --stat origin/${{ github.base_ref }}...HEAD -- .changeset/
+            exit 0
+          else
+            echo "❌ No changeset changes found. Please add a changeset file."
+            echo "Run: yarn changeset"
+            exit 1
+          fi
+
   install:
     if: github.event.pull_request.state != 'closed'
     runs-on: ubuntu-latest
