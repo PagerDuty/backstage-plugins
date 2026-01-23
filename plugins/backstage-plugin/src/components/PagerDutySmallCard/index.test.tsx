@@ -27,6 +27,19 @@ import {
 
 import { alertApiRef } from '@backstage/core-plugin-api';
 import { ApiProvider } from '@backstage/core-app-api';
+import { Entity } from '@backstage/catalog-model';
+
+const mockEntity: Entity = {
+  apiVersion: 'backstage.io/v1alpha1',
+  kind: 'Component',
+  metadata: {
+    name: 'test-component',
+    namespace: 'default',
+  },
+  spec: {
+    type: 'service',
+  },
+};
 
 const service: PagerDutyService = {
   id: 'SERV1CE1D',
@@ -103,7 +116,7 @@ describe('PagerDutySmallCard', () => {
     const { getByText, queryByTestId } = render(
       wrapInTestApp(
         <ApiProvider apis={apis}>
-          <PagerDutySmallCard name="blah" integrationKey="abc123" />
+          <PagerDutySmallCard entity={mockEntity} name="blah" integrationKey="abc123" />
         </ApiProvider>,
       ),
     );
@@ -126,7 +139,7 @@ describe('PagerDutySmallCard', () => {
     const { getByText, queryByTestId } = render(
       wrapInTestApp(
         <ApiProvider apis={apis}>
-          <PagerDutySmallCard name="blah" integrationKey="abc123" />
+          <PagerDutySmallCard entity={mockEntity} name="blah" integrationKey="abc123" />
         </ApiProvider>,
       ),
     );
@@ -142,7 +155,7 @@ describe('PagerDutySmallCard', () => {
     const { getByText, queryByTestId } = render(
       wrapInTestApp(
         <ApiProvider apis={apis}>
-          <PagerDutySmallCard name="blah" integrationKey="abc123" />
+          <PagerDutySmallCard entity={mockEntity} name="blah" integrationKey="abc123" />
         </ApiProvider>,
       ),
     );
@@ -157,7 +170,7 @@ describe('PagerDutySmallCard', () => {
     const { getByText, queryByTestId } = render(
       wrapInTestApp(
         <ApiProvider apis={apis}>
-          <PagerDutySmallCard name="blah" integrationKey="abc123" />
+          <PagerDutySmallCard entity={mockEntity} name="blah" integrationKey="abc123" />
         </ApiProvider>,
       ),
     );
@@ -178,7 +191,7 @@ describe('PagerDutySmallCard', () => {
     const { getByText, queryByTestId, getByRole, getByLabelText } = render(
       wrapInTestApp(
         <ApiProvider apis={apis}>
-          <PagerDutySmallCard name="blah" integrationKey="abc123" />
+          <PagerDutySmallCard entity={mockEntity} name="blah" integrationKey="abc123" />
         </ApiProvider>,
       ),
     );
@@ -201,7 +214,7 @@ describe('PagerDutySmallCard', () => {
       const { getByText, queryByTestId } = render(
         wrapInTestApp(
           <ApiProvider apis={apis}>
-            <PagerDutySmallCard name="blah" integrationKey="abc123" />
+            <PagerDutySmallCard entity={mockEntity} name="blah" integrationKey="abc123" />
           </ApiProvider>,
         ),
       );
@@ -226,6 +239,7 @@ describe('PagerDutySmallCard', () => {
         wrapInTestApp(
           <ApiProvider apis={apis}>
             <PagerDutySmallCard
+              entity={mockEntity}
               name="blah"
               integrationKey="abc123"
               serviceId="def123"
@@ -248,6 +262,7 @@ describe('PagerDutySmallCard', () => {
         wrapInTestApp(
           <ApiProvider apis={apis}>
             <PagerDutySmallCard
+              entity={mockEntity}
               name="blah"
               integrationKey="abc123"
               serviceId="def123"
@@ -267,6 +282,7 @@ describe('PagerDutySmallCard', () => {
         wrapInTestApp(
           <ApiProvider apis={apis}>
             <PagerDutySmallCard
+              entity={mockEntity}
               name="blah"
               integrationKey="abc123"
               serviceId="def123"
@@ -291,7 +307,7 @@ describe('PagerDutySmallCard', () => {
       const { queryByTestId } = render(
         wrapInTestApp(
           <ApiProvider apis={apis}>
-            <PagerDutySmallCard name="blah" serviceId="def123" />
+            <PagerDutySmallCard entity={mockEntity} name="blah" serviceId="def123" />
           </ApiProvider>,
         ),
       );
@@ -310,6 +326,7 @@ describe('PagerDutySmallCard', () => {
         wrapInTestApp(
           <ApiProvider apis={apis}>
             <PagerDutySmallCard
+              entity={mockEntity}
               name="blah"
               integrationKey="abc123"
               serviceId="def123"
@@ -340,6 +357,7 @@ describe('PagerDutySmallCard', () => {
         wrapInTestApp(
           <ApiProvider apis={apis}>
             <PagerDutySmallCard
+              entity={mockEntity}
               name="blah"
               integrationKey="abc123"
               serviceId="def123"

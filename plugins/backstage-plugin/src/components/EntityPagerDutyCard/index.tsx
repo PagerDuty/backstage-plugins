@@ -45,6 +45,7 @@ export const EntityPagerDutyCard = (props: EntityPagerDutyCardProps) => {
     return (
       <PagerDutyCard
         {...pagerDutyEntity}
+        entity={entity}
         readOnly={readOnly}
         disableChangeEvents={disableChangeEvents}
         disableOnCall={disableOnCall}

@@ -14,11 +14,13 @@
  * limitations under the License.
  */
 // eslint-disable-next-line @backstage/no-undeclared-imports
+import { Entity } from '@backstage/catalog-model';
 import { PagerDutyEntity } from '../../types';
 import { PagerDutyCard } from '../PagerDutyCard';
 
 /** @public */
 export type HomePagePagerDutyCardProps = PagerDutyEntity & {
+  entity: Entity;
   readOnly?: boolean;
 };
 

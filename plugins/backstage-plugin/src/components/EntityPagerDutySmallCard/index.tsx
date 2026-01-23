@@ -46,6 +46,7 @@ export const EntityPagerDutySmallCard = (
 
     return (
       <PagerDutySmallCard
+        entity={entity}
         {...pagerDutyEntity}
         readOnly={readOnly}
         disableInsights={disableInsights}

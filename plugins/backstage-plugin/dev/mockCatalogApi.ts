@@ -36,5 +36,23 @@ export const mockCatalogApi = catalogApiMock({
         owner: 'user:guest',
       },
     },
+    {
+      apiVersion: 'backstage.io/v1alpha1',
+      kind: 'Component',
+      metadata: {
+        name: 'unmapped-service',
+        description: 'Service with deleted PagerDuty mapping',
+        annotations: {
+          'github.com/project-slug': 'backstage/unmapped-service',
+          'pagerduty.com/service-id': 'DELETED-SERVICE-ID',
+          'pagerduty.com/integration-key': 'deleted-integration-key',
+        },
+      },
+      spec: {
+        lifecycle: 'production',
+        type: 'service',
+        owner: 'user:guest',
+      },
+    },
   ],
 });
