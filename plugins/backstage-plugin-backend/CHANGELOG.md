@@ -1,5 +1,11 @@
 # @pagerduty/backstage-plugin-backend
 
+## 0.11.0
+
+### Minor Changes
+
+- dae278a: Add auto-matching algorithm for mapping PagerDuty services to Backstage components
+
 ## 0.10.3
 
 ### Patch Changes
