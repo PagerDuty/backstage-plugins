@@ -1,6 +1,5 @@
 import { mocked } from 'jest-mock';
 import { mockServices } from '@backstage/backend-test-utils';
-import { Config } from '@backstage/config';
 import { getAuthToken, loadAuthConfig } from './auth';
 import { RootConfigService } from '@backstage/backend-plugin-api';
 
@@ -16,7 +15,6 @@ function mockedResponse(status: number, body: unknown): Promise<Response> {
 describe('PagerDuty Auth', () => {
   const logger = mockServices.rootLogger();
   let config: RootConfigService;
-  let legacyConfig: Config;
 
   beforeAll(() => {
     jest.useFakeTimers();
@@ -44,25 +42,6 @@ describe('PagerDuty Auth', () => {
           },
         },
       });
-
-      legacyConfig = {
-        getOptional: jest.fn(),
-        getOptionalString: jest.fn(),
-        getOptionalNumber: jest.fn(),
-        getOptionalBoolean: jest.fn(),
-        getOptionalConfig: jest.fn(),
-        getOptionalConfigArray: jest.fn(),
-        getOptionalStringArray: jest.fn(),
-        get: jest.fn(),
-        getString: jest.fn(),
-        getNumber: jest.fn(),
-        getBoolean: jest.fn(),
-        getConfig: jest.fn(),
-        getConfigArray: jest.fn(),
-        getStringArray: jest.fn(),
-        has: jest.fn(),
-        keys: jest.fn(),
-      };
     });
 
     it('should get token with OAuth config', async () => {
@@ -78,7 +57,6 @@ describe('PagerDuty Auth', () => {
 
       await loadAuthConfig({
         config,
-        legacyConfig,
         logger,
       });
 
@@ -110,7 +88,6 @@ describe('PagerDuty Auth', () => {
 
       await loadAuthConfig({
         config,
-        legacyConfig,
         logger,
       });
 
@@ -147,7 +124,6 @@ describe('PagerDuty Auth', () => {
 
       await loadAuthConfig({
         config,
-        legacyConfig,
         logger,
       });
 
@@ -174,7 +150,6 @@ describe('PagerDuty Auth', () => {
 
       await loadAuthConfig({
         config,
-        legacyConfig,
         logger,
       });
 
@@ -183,22 +158,16 @@ describe('PagerDuty Auth', () => {
     });
 
     it('should use legacy API token config', async () => {
-      const mockGetOptionalString = jest.fn(key => {
-        if (key === 'pagerDuty.apiToken') {
-          return 'legacy-api-token';
-        }
-        return undefined;
+      config = mockServices.rootConfig({
+        data: {
+          pagerDuty: {
+            apiToken: 'legacy-api-token',
+          },
+        },
       });
 
-      legacyConfig = {
-        ...legacyConfig,
-        getOptionalString: mockGetOptionalString,
-        has: jest.fn().mockReturnValue(true),
-      };
-
       await loadAuthConfig({
-        config: undefined,
-        legacyConfig,
+        config,
         logger,
       });
 
