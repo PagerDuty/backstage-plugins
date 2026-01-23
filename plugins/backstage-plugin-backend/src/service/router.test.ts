@@ -29,6 +29,7 @@ import {
 } from '../db/PagerDutyBackendDatabase';
 import { PagerDutyBackendDatabase } from '../db';
 import { mockServices, TestDatabases } from '@backstage/backend-test-utils';
+import { CatalogApi } from '@backstage/catalog-client';
 
 jest.mock('node-fetch');
 
@@ -56,33 +57,61 @@ async function createDatabase(): Promise<PagerDutyBackendStore> {
 
 describe('createRouter', () => {
   let app: express.Express;
+  let store: PagerDutyBackendStore;
+  const mockCatalogApi = {
+    queryEntities: jest.fn(),
+    getEntities: jest.fn(),
+    getEntityByRef: jest.fn(),
+    refreshEntity: jest.fn(),
+    getEntitiesByRefs: jest.fn(),
+    getEntityAncestors: jest.fn(),
+    removeEntityByUid: jest.fn(),
+    getEntityFacets: jest.fn(),
+    getLocations: jest.fn(),
+    getLocationById: jest.fn(),
+    getLocationByRef: jest.fn(),
+    addLocation: jest.fn(),
+    removeLocationById: jest.fn(),
+    getLocationByEntity: jest.fn(),
+    validateEntity: jest.fn(),
+    analyzeLocation: jest.fn(),
+    streamEntities: jest.fn(),
+  };
 
   beforeAll(async () => {
     const configReader = mockServices.rootConfig({
       data: {
-          app: {
-            baseUrl: 'https://example.com/extra-path',
-          },
-          backend: {
-            baseUrl: 'https://example.com/extra-path',
-          },
-          pagerDuty: {
-            apiToken: 'test-token',
-            oauth: {
-              clientId: 'test-client-id',
-              clientSecret: 'test-client',
-              subDomain: 'test-subdomain',
-              region: 'EU',
-            },
+        app: {
+          baseUrl: 'https://example.com/extra-path',
+        },
+        backend: {
+          baseUrl: 'https://example.com/extra-path',
+        },
+        pagerDuty: {
+          apiToken: 'test-token',
+          oauth: {
+            clientId: 'test-client-id',
+            clientSecret: 'test-client',
+            subDomain: 'test-subdomain',
+            region: 'EU',
           },
         },
-      });
+      },
+    });
 
+    mockCatalogApi.queryEntities.mockResolvedValue({
+      items: [],
+      totalItems: 0,
+      pageInfo: {},
+    });
+
+    store = await createDatabase();
     const router = await createRouter({
       logger: mockServices.rootLogger.mock(),
       config: configReader,
-      store: await createDatabase(),
+      store,
       discovery: mockServices.discovery(),
+      catalogApi: mockCatalogApi,
     });
     app = express().use(router);
   });
@@ -2271,6 +2300,303 @@ describe('createRouter', () => {
         );
 
         expect(result).toEqual(expectedResponse);
+      });
+    });
+
+    describe('POST /mapping/entities - paginated entity mappings', () => {
+      it('returns 400 if offset is negative', async () => {
+        const response = await request(app)
+          .post('/mapping/entities')
+          .send({ offset: -1, limit: 10 });
+
+        expect(response.status).toEqual(400);
+        expect(response.body).toEqual({
+          errors: ["Bad Request: 'offset' and 'limit' must be valid numbers"],
+        });
+      });
+
+      it('returns 400 if limit is zero', async () => {
+        const response = await request(app)
+          .post('/mapping/entities')
+          .send({ offset: 0, limit: 0 });
+
+        expect(response.status).toEqual(400);
+        expect(response.body).toEqual({
+          errors: ["Bad Request: 'offset' and 'limit' must be valid numbers"],
+        });
+      });
+
+      it('returns 400 if limit is negative', async () => {
+        const response = await request(app)
+          .post('/mapping/entities')
+          .send({ offset: 0, limit: -10 });
+
+        expect(response.status).toEqual(400);
+        expect(response.body).toEqual({
+          errors: ["Bad Request: 'offset' and 'limit' must be valid numbers"],
+        });
+      });
+
+      it('returns 400 if offset is not a number', async () => {
+        const response = await request(app)
+          .post('/mapping/entities')
+          .send({ offset: 'invalid', limit: 10 });
+
+        expect(response.status).toEqual(400);
+        expect(response.body).toEqual({
+          errors: ["Bad Request: 'offset' and 'limit' must be valid numbers"],
+        });
+      });
+
+      it('returns 400 if limit is not a number', async () => {
+        const response = await request(app)
+          .post('/mapping/entities')
+          .send({ offset: 0, limit: 'invalid' });
+
+        expect(response.status).toEqual(400);
+        expect(response.body).toEqual({
+          errors: ["Bad Request: 'offset' and 'limit' must be valid numbers"],
+        });
+      });
+
+      it('returns paginated entities with default parameters', async () => {
+        mockCatalogApi.queryEntities.mockResolvedValue({
+          items: [
+            {
+              apiVersion: 'backstage.io/v1alpha1',
+              kind: 'Component',
+              metadata: {
+                name: 'test-component',
+                namespace: 'default',
+                uid: 'test-uid-1',
+                annotations: {
+                  'pagerduty.com/service-id': 'S3RV1CE1D',
+                },
+              },
+              spec: {
+                type: 'service',
+                owner: 'team-a',
+                lifecycle: 'production',
+              },
+            },
+          ],
+          totalItems: 1,
+          pageInfo: {},
+        });
+
+        mocked(fetch).mockReturnValue(
+          mockedResponse(200, {
+            services: [
+              {
+                id: 'S3RV1CE1D',
+                name: 'Test Service 1',
+                description: 'Test Service Description 1',
+                html_url: 'https://example.pagerduty.com/services/S3RV1CE1D',
+                escalation_policy: {
+                  id: 'P0L1CY1D',
+                  name: 'Test Escalation Policy 1',
+                  html_url:
+                    'https://example.pagerduty.com/escalation_policies/P0L1CY1D',
+                  type: 'escalation_policy_reference',
+                },
+                teams: [
+                  {
+                    id: 'T34M1D',
+                    name: 'Test Team 1',
+                  },
+                ],
+              },
+            ],
+          }),
+        );
+
+        const response = await request(app)
+          .post('/mapping/entities')
+          .send({ offset: 0, limit: 10 });
+
+        expect(response.status).toEqual(200);
+        expect(response.body).toHaveProperty('entities');
+        expect(response.body).toHaveProperty('totalCount');
+        expect(Array.isArray(response.body.entities)).toBe(true);
+      });
+
+      it('returns paginated entities with custom offset and limit', async () => {
+        mockCatalogApi.queryEntities.mockResolvedValue({
+          items: [],
+          totalItems: 0,
+          pageInfo: {},
+        });
+
+        mocked(fetch).mockReturnValue(
+          mockedResponse(200, {
+            services: [],
+          }),
+        );
+
+        const response = await request(app)
+          .post('/mapping/entities')
+          .send({ offset: 20, limit: 5 });
+
+        expect(response.status).toEqual(200);
+        expect(response.body).toHaveProperty('entities');
+        expect(response.body).toHaveProperty('totalCount');
+      });
+
+      it('returns filtered entities when search term is provided', async () => {
+        mockCatalogApi.queryEntities.mockResolvedValue({
+          items: [],
+          totalItems: 0,
+          pageInfo: {},
+        });
+
+        mocked(fetch).mockReturnValue(
+          mockedResponse(200, {
+            services: [],
+          }),
+        );
+
+        const response = await request(app)
+          .post('/mapping/entities')
+          .send({
+            offset: 0,
+            limit: 10,
+            search: 'test-component',
+            searchFields: ['metadata.name', 'spec.owner'],
+          });
+
+        expect(response.status).toEqual(200);
+        expect(response.body).toHaveProperty('entities');
+        expect(response.body).toHaveProperty('totalCount');
+      });
+
+      it('ignores empty search string', async () => {
+        mockCatalogApi.queryEntities.mockResolvedValue({
+          items: [],
+          totalItems: 0,
+          pageInfo: {},
+        });
+
+        mocked(fetch).mockReturnValue(
+          mockedResponse(200, {
+            services: [],
+          }),
+        );
+
+        const response = await request(app).post('/mapping/entities').send({
+          offset: 0,
+          limit: 10,
+          search: '   ',
+        });
+
+        expect(response.status).toEqual(200);
+        expect(response.body).toHaveProperty('entities');
+        expect(response.body).toHaveProperty('totalCount');
+      });
+
+      it('uses default searchFields when not provided', async () => {
+        mockCatalogApi.queryEntities.mockResolvedValue({
+          items: [],
+          totalItems: 0,
+          pageInfo: {},
+        });
+
+        mocked(fetch).mockReturnValue(
+          mockedResponse(200, {
+            services: [],
+          }),
+        );
+
+        const response = await request(app).post('/mapping/entities').send({
+          offset: 0,
+          limit: 10,
+          search: 'test',
+        });
+
+        expect(response.status).toEqual(200);
+        expect(response.body).toHaveProperty('entities');
+        expect(response.body).toHaveProperty('totalCount');
+      });
+
+      it('returns entities with correct status when mapped to PagerDuty service', async () => {
+        mockCatalogApi.queryEntities.mockResolvedValue({
+          items: [
+            {
+              apiVersion: 'backstage.io/v1alpha1',
+              kind: 'Component',
+              metadata: {
+                name: 'test-component',
+                namespace: 'default',
+                uid: 'test-uid-1',
+                annotations: {
+                  'pagerduty.com/service-id': 'S3RV1CE1D',
+                },
+              },
+              spec: {
+                type: 'service',
+                owner: 'team-a',
+                lifecycle: 'production',
+              },
+            },
+          ],
+          totalItems: 1,
+          pageInfo: {},
+        });
+
+        mocked(fetch).mockReturnValue(
+          mockedResponse(200, {
+            services: [
+              {
+                id: 'S3RV1CE1D',
+                name: 'Test Service 1',
+                description: 'Test Service Description 1',
+                html_url: 'https://example.pagerduty.com/services/S3RV1CE1D',
+                escalation_policy: {
+                  id: 'P0L1CY1D',
+                  name: 'Test Escalation Policy 1',
+                  html_url:
+                    'https://example.pagerduty.com/escalation_policies/P0L1CY1D',
+                  type: 'escalation_policy_reference',
+                },
+                teams: [
+                  {
+                    id: 'T34M1D',
+                    name: 'Test Team 1',
+                  },
+                ],
+              },
+            ],
+          }),
+        );
+
+        const response = await request(app)
+          .post('/mapping/entities')
+          .send({ offset: 0, limit: 10 });
+
+        expect(response.status).toEqual(200);
+        expect(response.body).toHaveProperty('entities');
+        expect(response.body).toHaveProperty('totalCount', 1);
+        expect(response.body.entities).toHaveLength(1);
+
+        // Validate complete entity structure
+        expect(response.body.entities[0]).toEqual({
+          name: 'test-component',
+          id: 'test-uid-1',
+          namespace: 'default',
+          type: 'Component',
+          system: '',
+          owner: '"team-a"',
+          lifecycle: '"production"',
+          annotations: {
+            'pagerduty.com/integration-key': '',
+            'pagerduty.com/service-id': 'S3RV1CE1D',
+          },
+          status: 'InSync',
+          serviceName: 'Test Service 1',
+          serviceUrl: 'https://example.pagerduty.com/services/S3RV1CE1D',
+          team: 'Test Team 1',
+          escalationPolicy: 'Test Escalation Policy 1',
+          account: '',
+        });
       });
     });
   });
