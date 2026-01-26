@@ -203,9 +203,7 @@ describe('MappingsTable', () => {
       fireEvent.change(searchInput, { target: { value: 'my-component' } });
     });
 
-    await act(async () => {
-      jest.advanceTimersByTime(500);
-    });
+    jest.advanceTimersByTime(500);
 
     await waitFor(() => {
       expect(mockGetEntityMappingsWithPagination).toHaveBeenCalledWith({

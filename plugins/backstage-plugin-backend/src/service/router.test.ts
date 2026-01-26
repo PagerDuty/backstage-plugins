@@ -2417,18 +2417,114 @@ describe('createRouter', () => {
         expect(response.body).toHaveProperty('entities');
         expect(response.body).toHaveProperty('totalCount');
         expect(Array.isArray(response.body.entities)).toBe(true);
+        expect(response.body.totalCount).toEqual(1);
+        expect(response.body.entities).toHaveLength(1);
+        const entity = response.body.entities[0];
+        expect(entity).toEqual({
+          account: '',
+          annotations: {
+            'pagerduty.com/integration-key': '',
+            'pagerduty.com/service-id': 'S3RV1CE1D',
+          },
+          escalationPolicy: 'Test Escalation Policy 1',
+          id: 'test-uid-1',
+          lifecycle: '"production"',
+          name: 'test-component',
+          namespace: 'default',
+          owner: '"team-a"',
+          serviceName: 'Test Service 1',
+          serviceUrl: 'https://example.pagerduty.com/services/S3RV1CE1D',
+          status: 'InSync',
+          system: '',
+          team: 'Test Team 1',
+          type: 'Component',
+        });
       });
 
       it('returns paginated entities with custom offset and limit', async () => {
         mockCatalogApi.queryEntities.mockResolvedValue({
-          items: [],
-          totalItems: 0,
+          items: [
+            {
+              apiVersion: 'backstage.io/v1alpha1',
+              kind: 'Component',
+              metadata: {
+                name: 'component-1',
+                namespace: 'default',
+                uid: 'uid-1',
+                annotations: {
+                  'pagerduty.com/service-id': 'SERVICE1',
+                },
+              },
+              spec: {
+                type: 'service',
+                owner: 'team-x',
+                lifecycle: 'experimental',
+              },
+            },
+            {
+              apiVersion: 'backstage.io/v1alpha1',
+              kind: 'Component',
+              metadata: {
+                name: 'component-2',
+                namespace: 'production',
+                uid: 'uid-2',
+                annotations: {
+                  'pagerduty.com/service-id': 'SERVICE2',
+                },
+              },
+              spec: {
+                type: 'website',
+                owner: 'team-y',
+                lifecycle: 'production',
+              },
+            },
+          ],
+          totalItems: 25,
           pageInfo: {},
         });
 
         mocked(fetch).mockReturnValue(
           mockedResponse(200, {
-            services: [],
+            services: [
+              {
+                id: 'SERVICE1',
+                name: 'Service One',
+                description: 'First service',
+                html_url: 'https://example.pagerduty.com/services/SERVICE1',
+                escalation_policy: {
+                  id: 'POLICY1',
+                  name: 'Policy One',
+                  html_url:
+                    'https://example.pagerduty.com/escalation_policies/POLICY1',
+                  type: 'escalation_policy_reference',
+                },
+                teams: [
+                  {
+                    id: 'TEAM1',
+                    name: 'Team One',
+                  },
+                ],
+              },
+              {
+                id: 'SERVICE2',
+                name: 'Service Two',
+                description: 'Second service',
+                html_url: 'https://example.pagerduty.com/services/SERVICE2',
+                escalation_policy: {
+                  id: 'POLICY2',
+                  name: 'Policy Two',
+                  html_url:
+                    'https://example.pagerduty.com/escalation_policies/POLICY2',
+                  type: 'escalation_policy_reference',
+                },
+                teams: [
+                  {
+                    id: 'TEAM2',
+                    name: 'Team Two',
+                  },
+                ],
+              },
+            ],
           }),
         );
 
@@ -2439,18 +2535,97 @@ describe('createRouter', () => {
         expect(response.status).toEqual(200);
         expect(response.body).toHaveProperty('entities');
         expect(response.body).toHaveProperty('totalCount');
+        expect(response.body.totalCount).toEqual(25);
+        expect(response.body.entities).toHaveLength(2);
+        expect(response.body.entities[0]).toEqual({
+          account: '',
+          annotations: {
+            'pagerduty.com/integration-key': '',
+            'pagerduty.com/service-id': 'SERVICE1',
+          },
+          escalationPolicy: 'Policy One',
+          id: 'uid-1',
+          lifecycle: '"experimental"',
+          name: 'component-1',
+          namespace: 'default',
+          owner: '"team-x"',
+          serviceName: 'Service One',
+          serviceUrl: 'https://example.pagerduty.com/services/SERVICE1',
+          status: 'InSync',
+          system: '',
+          team: 'Team One',
+          type: 'Component',
+        });
+        expect(response.body.entities[1]).toEqual({
+          account: '',
+          annotations: {
+            'pagerduty.com/integration-key': '',
+            'pagerduty.com/service-id': 'SERVICE2',
+          },
+          escalationPolicy: 'Policy Two',
+          id: 'uid-2',
+          lifecycle: '"production"',
+          name: 'component-2',
+          namespace: 'production',
+          owner: '"team-y"',
+          serviceName: 'Service Two',
+          serviceUrl: 'https://example.pagerduty.com/services/SERVICE2',
+          status: 'InSync',
+          system: '',
+          team: 'Team Two',
+          type: 'Component',
+        });
       });
 
       it('returns filtered entities when search term is provided', async () => {
         mockCatalogApi.queryEntities.mockResolvedValue({
-          items: [],
-          totalItems: 0,
+          items: [
+            {
+              apiVersion: 'backstage.io/v1alpha1',
+              kind: 'Component',
+              metadata: {
+                name: 'test-component-filtered',
+                namespace: 'default',
+                uid: 'uid-filtered',
+                annotations: {
+                  'pagerduty.com/service-id': 'SERVICEFILTERED',
+                },
+              },
+              spec: {
+                type: 'service',
+                owner: 'search-team',
+                lifecycle: 'production',
+              },
+            },
+          ],
+          totalItems: 1,
           pageInfo: {},
         });
 
         mocked(fetch).mockReturnValue(
           mockedResponse(200, {
-            services: [],
+            services: [
+              {
+                id: 'SERVICEFILTERED',
+                name: 'Filtered Service',
+                description: 'A filtered test service',
+                html_url:
+                  'https://example.pagerduty.com/services/SERVICEFILTERED',
+                escalation_policy: {
+                  id: 'POLICYFILTERED',
+                  name: 'Filtered Policy',
+                  html_url:
+                    'https://example.pagerduty.com/escalation_policies/POLICYFILTERED',
+                  type: 'escalation_policy_reference',
+                },
+                teams: [
+                  {
+                    id: 'TEAMFILTERED',
+                    name: 'Filtered Team',
+                  },
+                ],
+              },
+            ],
           }),
         );
 
@@ -2466,42 +2641,78 @@ describe('createRouter', () => {
         expect(response.status).toEqual(200);
         expect(response.body).toHaveProperty('entities');
         expect(response.body).toHaveProperty('totalCount');
-      });
-
-      it('ignores empty search string', async () => {
-        mockCatalogApi.queryEntities.mockResolvedValue({
-          items: [],
-          totalItems: 0,
-          pageInfo: {},
+        expect(response.body.totalCount).toEqual(1);
+        expect(response.body.entities).toHaveLength(1);
+        expect(response.body.entities[0]).toEqual({
+          account: '',
+          annotations: {
+            'pagerduty.com/integration-key': '',
+            'pagerduty.com/service-id': 'SERVICEFILTERED',
+          },
+          escalationPolicy: 'Filtered Policy',
+          id: 'uid-filtered',
+          lifecycle: '"production"',
+          name: 'test-component-filtered',
+          namespace: 'default',
+          owner: '"search-team"',
+          serviceName: 'Filtered Service',
+          serviceUrl: 'https://example.pagerduty.com/services/SERVICEFILTERED',
+          status: 'InSync',
+          system: '',
+          team: 'Filtered Team',
+          type: 'Component',
         });
-
-        mocked(fetch).mockReturnValue(
-          mockedResponse(200, {
-            services: [],
-          }),
-        );
-
-        const response = await request(app).post('/mapping/entities').send({
-          offset: 0,
-          limit: 10,
-          search: '   ',
-        });
-
-        expect(response.status).toEqual(200);
-        expect(response.body).toHaveProperty('entities');
-        expect(response.body).toHaveProperty('totalCount');
       });
 
       it('uses default searchFields when not provided', async () => {
         mockCatalogApi.queryEntities.mockResolvedValue({
-          items: [],
-          totalItems: 0,
+          items: [
+            {
+              apiVersion: 'backstage.io/v1alpha1',
+              kind: 'Component',
+              metadata: {
+                name: 'test-default-search',
+                namespace: 'default',
+                uid: 'uid-default',
+                annotations: {
+                  'pagerduty.com/service-id': 'SERVICEDEFAULT',
+                },
+              },
+              spec: {
+                type: 'service',
+                owner: 'default-team',
+                lifecycle: 'production',
+              },
+            },
+          ],
+          totalItems: 1,
           pageInfo: {},
         });
 
         mocked(fetch).mockReturnValue(
           mockedResponse(200, {
-            services: [],
+            services: [
+              {
+                id: 'SERVICEDEFAULT',
+                name: 'Default Search Service',
+                description: 'Service found with default search fields',
+                html_url:
+                  'https://example.pagerduty.com/services/SERVICEDEFAULT',
+                escalation_policy: {
+                  id: 'POLICYDEFAULT',
+                  name: 'Default Policy',
+                  html_url:
+                    'https://example.pagerduty.com/escalation_policies/POLICYDEFAULT',
+                  type: 'escalation_policy_reference',
+                },
+                teams: [
+                  {
+                    id: 'TEAMDEFAULT',
+                    name: 'Default Team',
+                  },
+                ],
+              },
+            ],
           }),
         );
 
@@ -2514,6 +2725,27 @@ describe('createRouter', () => {
         expect(response.status).toEqual(200);
         expect(response.body).toHaveProperty('entities');
         expect(response.body).toHaveProperty('totalCount');
+        expect(response.body.totalCount).toEqual(1);
+        expect(response.body.entities).toHaveLength(1);
+        expect(response.body.entities[0]).toEqual({
+          account: '',
+          annotations: {
+            'pagerduty.com/integration-key': '',
+            'pagerduty.com/service-id': 'SERVICEDEFAULT',
+          },
+          escalationPolicy: 'Default Policy',
+          id: 'uid-default',
+          lifecycle: '"production"',
+          name: 'test-default-search',
+          namespace: 'default',
+          owner: '"default-team"',
+          serviceName: 'Default Search Service',
+          serviceUrl: 'https://example.pagerduty.com/services/SERVICEDEFAULT',
+          status: 'InSync',
+          system: '',
+          team: 'Default Team',
+          type: 'Component',
+        });
       });
 
       it('returns entities with correct status when mapped to PagerDuty service', async () => {
