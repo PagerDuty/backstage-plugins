@@ -29,7 +29,6 @@ import {
 } from '../db/PagerDutyBackendDatabase';
 import { PagerDutyBackendDatabase } from '../db';
 import { mockServices, TestDatabases } from '@backstage/backend-test-utils';
-import { CatalogApi } from '@backstage/catalog-client';
 
 jest.mock('node-fetch');
 
