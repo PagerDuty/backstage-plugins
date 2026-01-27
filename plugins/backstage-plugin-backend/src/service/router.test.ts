@@ -29,6 +29,7 @@ import {
 } from '../db/PagerDutyBackendDatabase';
 import { PagerDutyBackendDatabase } from '../db';
 import { mockServices, TestDatabases } from '@backstage/backend-test-utils';
+import { InMemoryCatalogClient } from '@backstage/catalog-client/testUtils';
 
 jest.mock('node-fetch');
 
@@ -57,25 +58,97 @@ async function createDatabase(): Promise<PagerDutyBackendStore> {
 describe('createRouter', () => {
   let app: express.Express;
   let store: PagerDutyBackendStore;
-  const mockCatalogApi = {
-    queryEntities: jest.fn(),
-    getEntities: jest.fn(),
-    getEntityByRef: jest.fn(),
-    refreshEntity: jest.fn(),
-    getEntitiesByRefs: jest.fn(),
-    getEntityAncestors: jest.fn(),
-    removeEntityByUid: jest.fn(),
-    getEntityFacets: jest.fn(),
-    getLocations: jest.fn(),
-    getLocationById: jest.fn(),
-    getLocationByRef: jest.fn(),
-    addLocation: jest.fn(),
-    removeLocationById: jest.fn(),
-    getLocationByEntity: jest.fn(),
-    validateEntity: jest.fn(),
-    analyzeLocation: jest.fn(),
-    streamEntities: jest.fn(),
-  };
+
+  // Define test entities for the catalog
+  const testEntities = [
+    {
+      apiVersion: 'backstage.io/v1alpha1',
+      kind: 'Component',
+      metadata: {
+        name: 'test-component',
+        namespace: 'default',
+        uid: 'test-uid-1',
+        annotations: {
+          'pagerduty.com/service-id': 'S3RV1CE1D',
+        },
+      },
+      spec: {
+        type: 'service',
+        owner: 'team-a',
+        lifecycle: 'production',
+      },
+    },
+    {
+      apiVersion: 'backstage.io/v1alpha1',
+      kind: 'Component',
+      metadata: {
+        name: 'component-1',
+        namespace: 'default',
+        uid: 'uid-1',
+        annotations: {
+          'pagerduty.com/service-id': 'SERVICE1',
+        },
+      },
+      spec: {
+        type: 'service',
+        owner: 'team-x',
+        lifecycle: 'experimental',
+      },
+    },
+    {
+      apiVersion: 'backstage.io/v1alpha1',
+      kind: 'Component',
+      metadata: {
+        name: 'component-2',
+        namespace: 'production',
+        uid: 'uid-2',
+        annotations: {
+          'pagerduty.com/service-id': 'SERVICE2',
+        },
+      },
+      spec: {
+        type: 'website',
+        owner: 'team-y',
+        lifecycle: 'production',
+      },
+    },
+    {
+      apiVersion: 'backstage.io/v1alpha1',
+      kind: 'Component',
+      metadata: {
+        name: 'test-component-filtered',
+        namespace: 'default',
+        uid: 'uid-filtered',
+        annotations: {
+          'pagerduty.com/service-id': 'SERVICEFILTERED',
+        },
+      },
+      spec: {
+        type: 'service',
+        owner: 'search-team',
+        lifecycle: 'production',
+      },
+    },
+    {
+      apiVersion: 'backstage.io/v1alpha1',
+      kind: 'Component',
+      metadata: {
+        name: 'test-default-search',
+        namespace: 'default',
+        uid: 'uid-default',
+        annotations: {
+          'pagerduty.com/service-id': 'SERVICEDEFAULT',
+        },
+      },
+      spec: {
+        type: 'service',
+        owner: 'default-team',
+        lifecycle: 'production',
+      },
+    },
+  ];
+
+  const catalogApi = new InMemoryCatalogClient({ entities: testEntities });
 
   beforeAll(async () => {
     const configReader = mockServices.rootConfig({
@@ -98,19 +171,13 @@ describe('createRouter', () => {
       },
     });
 
-    mockCatalogApi.queryEntities.mockResolvedValue({
-      items: [],
-      totalItems: 0,
-      pageInfo: {},
-    });
-
     store = await createDatabase();
     const router = await createRouter({
       logger: mockServices.rootLogger.mock(),
       config: configReader,
       store,
       discovery: mockServices.discovery(),
-      catalogApi: mockCatalogApi,
+      catalogApi: catalogApi,
     });
     app = express().use(router);
   });
@@ -2359,30 +2426,6 @@ describe('createRouter', () => {
       });
 
       it('returns paginated entities with default parameters', async () => {
-        mockCatalogApi.queryEntities.mockResolvedValue({
-          items: [
-            {
-              apiVersion: 'backstage.io/v1alpha1',
-              kind: 'Component',
-              metadata: {
-                name: 'test-component',
-                namespace: 'default',
-                uid: 'test-uid-1',
-                annotations: {
-                  'pagerduty.com/service-id': 'S3RV1CE1D',
-                },
-              },
-              spec: {
-                type: 'service',
-                owner: 'team-a',
-                lifecycle: 'production',
-              },
-            },
-          ],
-          totalItems: 1,
-          pageInfo: {},
-        });
-
         mocked(fetch).mockReturnValue(
           mockedResponse(200, {
             services: [
@@ -2435,86 +2478,25 @@ describe('createRouter', () => {
       });
 
       it('returns paginated entities with custom offset and limit', async () => {
-        mockCatalogApi.queryEntities.mockResolvedValue({
-          items: [
-            {
-              apiVersion: 'backstage.io/v1alpha1',
-              kind: 'Component',
-              metadata: {
-                name: 'component-1',
-                namespace: 'default',
-                uid: 'uid-1',
-                annotations: {
-                  'pagerduty.com/service-id': 'SERVICE1',
-                },
-              },
-              spec: {
-                type: 'service',
-                owner: 'team-x',
-                lifecycle: 'experimental',
-              },
-            },
-            {
-              apiVersion: 'backstage.io/v1alpha1',
-              kind: 'Component',
-              metadata: {
-                name: 'component-2',
-                namespace: 'production',
-                uid: 'uid-2',
-                annotations: {
-                  'pagerduty.com/service-id': 'SERVICE2',
-                },
-              },
-              spec: {
-                type: 'website',
-                owner: 'team-y',
-                lifecycle: 'production',
-              },
-            },
-          ],
-          totalItems: 25,
-          pageInfo: {},
-        });
-
         mocked(fetch).mockReturnValue(
           mockedResponse(200, {
             services: [
               {
-                id: 'SERVICE1',
-                account: 'Test account',
-                name: 'Service One',
-                description: 'First service',
-                html_url: 'https://example.pagerduty.com/services/SERVICE1',
+                id: 'S3RV1CE1D',
+                name: 'Test Service 1',
+                description: 'Test Service Description 1',
+                html_url: 'https://example.pagerduty.com/services/S3RV1CE1D',
                 escalation_policy: {
-                  id: 'POLICY1',
-                  name: 'Policy One',
+                  id: 'P0L1CY1D',
+                  name: 'Test Escalation Policy 1',
                   html_url:
-                    'https://example.pagerduty.com/escalation_policies/POLICY1',
+                    'https://example.pagerduty.com/escalation_policies/P0L1CY1D',
                   type: 'escalation_policy_reference',
                 },
                 teams: [
                   {
-                    id: 'TEAM1',
-                    name: 'Team One',
-                  },
-                ],
-              },
-              {
-                id: 'SERVICE2',
-                name: 'Service Two',
-                description: 'Second service',
-                html_url: 'https://example.pagerduty.com/services/SERVICE2',
-                escalation_policy: {
-                  id: 'POLICY2',
-                  name: 'Policy Two',
-                  html_url:
-                    'https://example.pagerduty.com/escalation_policies/POLICY2',
-                  type: 'escalation_policy_reference',
-                },
-                teams: [
-                  {
-                    id: 'TEAM2',
-                    name: 'Team Two',
+                    id: 'T34M1D',
+                    name: 'Test Team 1',
                   },
                 ],
               },
@@ -2527,90 +2509,46 @@ describe('createRouter', () => {
           .send({ offset: 20, limit: 5 });
 
         expect(response.body.entities[0]).toEqual({
-          account: 'Test account',
-          annotations: {
-            'pagerduty.com/integration-key': '',
-            'pagerduty.com/service-id': 'SERVICE1',
-          },
-          escalationPolicy: 'Policy One',
-          id: 'uid-1',
-          lifecycle: '"experimental"',
-          name: 'component-1',
-          namespace: 'default',
-          owner: '"team-x"',
-          serviceName: 'Service One',
-          serviceUrl: 'https://example.pagerduty.com/services/SERVICE1',
-          status: 'InSync',
-          system: '',
-          team: 'Team One',
-          type: 'Component',
-        });
-        expect(response.body.entities[1]).toEqual({
           account: '',
           annotations: {
             'pagerduty.com/integration-key': '',
-            'pagerduty.com/service-id': 'SERVICE2',
+            'pagerduty.com/service-id': 'S3RV1CE1D',
           },
-          escalationPolicy: 'Policy Two',
-          id: 'uid-2',
+          escalationPolicy: 'Test Escalation Policy 1',
+          id: 'test-uid-1',
           lifecycle: '"production"',
-          name: 'component-2',
-          namespace: 'production',
-          owner: '"team-y"',
-          serviceName: 'Service Two',
-          serviceUrl: 'https://example.pagerduty.com/services/SERVICE2',
+          name: 'test-component',
+          namespace: 'default',
+          owner: '"team-a"',
+          serviceName: 'Test Service 1',
+          serviceUrl: 'https://example.pagerduty.com/services/S3RV1CE1D',
           status: 'InSync',
           system: '',
-          team: 'Team Two',
+          team: 'Test Team 1',
           type: 'Component',
         });
       });
 
       it('returns filtered entities when search term is provided', async () => {
-        mockCatalogApi.queryEntities.mockResolvedValue({
-          items: [
-            {
-              apiVersion: 'backstage.io/v1alpha1',
-              kind: 'Component',
-              metadata: {
-                name: 'test-component-filtered',
-                namespace: 'default',
-                uid: 'uid-filtered',
-                annotations: {
-                  'pagerduty.com/service-id': 'SERVICEFILTERED',
-                },
-              },
-              spec: {
-                type: 'service',
-                owner: 'search-team',
-                lifecycle: 'production',
-              },
-            },
-          ],
-          totalItems: 1,
-          pageInfo: {},
-        });
-
         mocked(fetch).mockReturnValue(
           mockedResponse(200, {
             services: [
               {
-                id: 'SERVICEFILTERED',
-                name: 'Filtered Service',
-                description: 'A filtered test service',
-                html_url:
-                  'https://example.pagerduty.com/services/SERVICEFILTERED',
+                id: 'S3RV1CE1D',
+                name: 'Test Service 1',
+                description: 'Test Service Description 1',
+                html_url: 'https://example.pagerduty.com/services/S3RV1CE1D',
                 escalation_policy: {
-                  id: 'POLICYFILTERED',
-                  name: 'Filtered Policy',
+                  id: 'P0L1CY1D',
+                  name: 'Test Escalation Policy 1',
                   html_url:
-                    'https://example.pagerduty.com/escalation_policies/POLICYFILTERED',
+                    'https://example.pagerduty.com/escalation_policies/P0L1CY1D',
                   type: 'escalation_policy_reference',
                 },
                 teams: [
                   {
-                    id: 'TEAMFILTERED',
-                    name: 'Filtered Team',
+                    id: 'T34M1D',
+                    name: 'Test Team 1',
                   },
                 ],
               },
@@ -2630,68 +2568,43 @@ describe('createRouter', () => {
           account: '',
           annotations: {
             'pagerduty.com/integration-key': '',
-            'pagerduty.com/service-id': 'SERVICEFILTERED',
+            'pagerduty.com/service-id': 'S3RV1CE1D',
           },
-          escalationPolicy: 'Filtered Policy',
-          id: 'uid-filtered',
+          escalationPolicy: 'Test Escalation Policy 1',
+          id: 'test-uid-1',
           lifecycle: '"production"',
-          name: 'test-component-filtered',
+          name: 'test-component',
           namespace: 'default',
-          owner: '"search-team"',
-          serviceName: 'Filtered Service',
-          serviceUrl: 'https://example.pagerduty.com/services/SERVICEFILTERED',
+          owner: '"team-a"',
+          serviceName: 'Test Service 1',
+          serviceUrl: 'https://example.pagerduty.com/services/S3RV1CE1D',
           status: 'InSync',
           system: '',
-          team: 'Filtered Team',
+          team: 'Test Team 1',
           type: 'Component',
         });
       });
 
       it('uses default searchFields when not provided', async () => {
-        mockCatalogApi.queryEntities.mockResolvedValue({
-          items: [
-            {
-              apiVersion: 'backstage.io/v1alpha1',
-              kind: 'Component',
-              metadata: {
-                name: 'test-default-search',
-                namespace: 'default',
-                uid: 'uid-default',
-                annotations: {
-                  'pagerduty.com/service-id': 'SERVICEDEFAULT',
-                },
-              },
-              spec: {
-                type: 'service',
-                owner: 'default-team',
-                lifecycle: 'production',
-              },
-            },
-          ],
-          totalItems: 1,
-          pageInfo: {},
-        });
-
         mocked(fetch).mockReturnValue(
           mockedResponse(200, {
             services: [
               {
-                id: 'SERVICEDEFAULT',
-                name: 'Default Search Service',
-                description: 'Service found with default search fields',
-                html_url:
-                  'https://example.pagerduty.com/services/SERVICEDEFAULT',
+                id: 'S3RV1CE1D',
+                name: 'Test Service 1',
+                description: 'Test Service Description 1',
+                html_url: 'https://example.pagerduty.com/services/S3RV1CE1D',
                 escalation_policy: {
-                  id: 'POLICYDEFAULT',
-                  name: 'Default Policy',
+                  id: 'P0L1CY1D',
+                  name: 'Test Escalation Policy 1',
                   html_url:
-                    'https://example.pagerduty.com/escalation_policies/POLICYDEFAULT',
+                    'https://example.pagerduty.com/escalation_policies/P0L1CY1D',
                   type: 'escalation_policy_reference',
                 },
                 teams: [
                   {
-                    id: 'TEAMDEFAULT',
-                    name: 'Default Team',
+                    id: 'T34M1D',
+                    name: 'Test Team 1',
                   },
                 ],
               },
@@ -2708,48 +2621,24 @@ describe('createRouter', () => {
           account: '',
           annotations: {
             'pagerduty.com/integration-key': '',
-            'pagerduty.com/service-id': 'SERVICEDEFAULT',
+            'pagerduty.com/service-id': 'S3RV1CE1D',
           },
-          escalationPolicy: 'Default Policy',
-          id: 'uid-default',
+          escalationPolicy: 'Test Escalation Policy 1',
+          id: 'test-uid-1',
           lifecycle: '"production"',
-          name: 'test-default-search',
+          name: 'test-component',
           namespace: 'default',
-          owner: '"default-team"',
-          serviceName: 'Default Search Service',
-          serviceUrl: 'https://example.pagerduty.com/services/SERVICEDEFAULT',
+          owner: '"team-a"',
+          serviceName: 'Test Service 1',
+          serviceUrl: 'https://example.pagerduty.com/services/S3RV1CE1D',
           status: 'InSync',
           system: '',
-          team: 'Default Team',
+          team: 'Test Team 1',
           type: 'Component',
         });
       });
 
       it('returns entities with correct status when mapped to PagerDuty service', async () => {
-        mockCatalogApi.queryEntities.mockResolvedValue({
-          items: [
-            {
-              apiVersion: 'backstage.io/v1alpha1',
-              kind: 'Component',
-              metadata: {
-                name: 'test-component',
-                namespace: 'default',
-                uid: 'test-uid-1',
-                annotations: {
-                  'pagerduty.com/service-id': 'S3RV1CE1D',
-                },
-              },
-              spec: {
-                type: 'service',
-                owner: 'team-a',
-                lifecycle: 'production',
-              },
-            },
-          ],
-          totalItems: 1,
-          pageInfo: {},
-        });
-
         mocked(fetch).mockReturnValue(
           mockedResponse(200, {
             services: [
