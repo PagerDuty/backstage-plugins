@@ -671,6 +671,76 @@ export async function getServiceById(
   }
 }
 
+export async function getSerivcesByIdsAndAccount(
+  serviceIds: string[],
+  account?: string,
+): Promise<PagerDutyService[]> {
+  let response: Response;
+  const token = await getAuthToken(account);
+
+  const options: RequestInit = {
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      Accept: 'application/vnd.pagerduty+json;version=2',
+      'Content-Type': 'application/json',
+    },
+  };
+
+  const apiBaseUrl = getApiBaseUrl(account);
+  const baseUrl = `${apiBaseUrl}/services`;
+
+  try {
+    response = await fetchWithRetries(
+      `${baseUrl}?id[]=${serviceIds.join('&id[]=')}`,
+      options,
+    );
+  } catch (error) {
+    throw new Error(`Failed to retrieve service: ${error}`);
+  }
+
+  if (response.status >= 500) {
+    throw new HttpError(
+      `Failed to get service. PagerDuty API returned a server error. Retrying with the same arguments will not work.`,
+      response.status,
+    );
+  }
+
+  switch (response.status) {
+    case 400:
+      throw new HttpError(
+        'Failed to get service. Caller provided invalid arguments.',
+        400,
+      );
+    case 401:
+      throw new HttpError(
+        'Failed to get service. Caller did not supply credentials or did not provide the correct credentials.',
+        401,
+      );
+    case 403:
+      throw new HttpError(
+        'Failed to get service. Caller is not authorized to view the requested resource.',
+        403,
+      );
+    case 404:
+      throw new HttpError(
+        'Failed to get service. The requested resource was not found.',
+        404,
+      );
+    default: // 200
+      break;
+  }
+
+  let result: PagerDutyServicesResponse;
+  try {
+    result = (await response.json()) as PagerDutyServicesResponse;
+
+    return result.services ?? [];
+  } catch (error) {
+    throw new HttpError(`Failed to parse service information: ${error}`, 500);
+  }
+}
+
 export async function getServiceByIntegrationKey(
   integrationKey: string,
   account?: string,
@@ -744,6 +814,18 @@ export async function getServiceByIntegrationKey(
   }
 
   return result.services[0];
+}
+
+export async function getServicesByIds(
+  ids: string[],
+): Promise<PagerDutyService[]> {
+  let services: PagerDutyService[] = [];
+  await Promise.all(
+    Object.entries(EndpointConfig).map(async ([account, _]) => {
+      services = await getSerivcesByIdsAndAccount(ids, account);
+    }),
+  );
+  return services;
 }
 
 export async function getAllServices(): Promise<PagerDutyService[]> {

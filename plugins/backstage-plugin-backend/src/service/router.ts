@@ -23,6 +23,7 @@ import {
   getServiceRelationshipsById,
   addServiceRelationsToService,
   removeServiceRelationsFromService,
+  getServicesByIds,
 } from '../apis/pagerduty';
 import { loadBothSources, ServiceLoadError } from '../services/dataLoader';
 import {
@@ -54,6 +55,7 @@ import * as express from 'express';
 import Router from 'express-promise-router';
 import type {
   CatalogApi,
+  GetEntitiesByRefsResponse,
   GetEntitiesResponse,
 } from '@backstage/catalog-client';
 
@@ -74,7 +76,7 @@ export type Annotations = {
 
 export async function createComponentEntitiesReferenceDict({
   items: componentEntities,
-}: GetEntitiesResponse): Promise<
+}: GetEntitiesResponse | GetEntitiesByRefsResponse): Promise<
   Record<string, { ref: string; name: string }>
 > {
   const componentEntitiesDict: Record<string, { ref: string; name: string }> =
@@ -83,15 +85,15 @@ export async function createComponentEntitiesReferenceDict({
   await Promise.all(
     componentEntities.map(async entity => {
       const serviceId =
-        entity.metadata.annotations?.['pagerduty.com/service-id'];
+        entity?.metadata.annotations?.['pagerduty.com/service-id'];
       const integrationKey =
-        entity.metadata.annotations?.['pagerduty.com/integration-key'];
-      const account = entity.metadata.annotations?.['pagerduty.com/account'];
+        entity?.metadata.annotations?.['pagerduty.com/integration-key'];
+      const account = entity?.metadata.annotations?.['pagerduty.com/account'];
 
       if (serviceId !== undefined && serviceId !== '') {
         componentEntitiesDict[serviceId] = {
-          ref: `${entity.kind}:${entity.metadata.namespace}/${entity.metadata.name}`.toLowerCase(),
-          name: entity.metadata.name,
+          ref: `${entity?.kind}:${entity?.metadata.namespace}/${entity?.metadata.name}`.toLowerCase(),
+          name: entity?.metadata.name ?? '',
         };
       } else if (integrationKey !== undefined && integrationKey !== '') {
         // get service id from integration key, we ignore errors here since we're focused
@@ -103,8 +105,8 @@ export async function createComponentEntitiesReferenceDict({
 
         if (service !== undefined) {
           componentEntitiesDict[service.id] = {
-            ref: `${entity.kind}:${entity.metadata.namespace}/${entity.metadata.name}`.toLowerCase(),
-            name: entity.metadata.name,
+            ref: `${entity?.kind}:${entity?.metadata.namespace}/${entity?.metadata.name}`.toLowerCase(),
+            name: entity?.metadata.name ?? '',
           };
         }
       }
@@ -649,7 +651,7 @@ export async function createRouter(
     }
   });
 
-  // GET /mapping/entity
+  // DEPRECATED: GET /mapping/entity
   router.get('/mapping/entity', async (_, response) => {
     try {
       // Get all the entity mappings from the database
@@ -681,6 +683,187 @@ export async function createRouter(
         );
 
       response.json(result);
+    } catch (error) {
+      if (error instanceof HttpError) {
+        response.status(error.status).json({
+          errors: [`${error.message}`],
+        });
+      }
+    }
+  });
+
+  // POST /mapping/entities - returns mappings for paginated entities with search capability
+  router.post('/mapping/entities', async (request, response) => {
+    try {
+      const {
+        offset = 0,
+        limit = 10,
+        search,
+        searchFields = ['metadata.name', 'spec.owner'],
+      } = request.body;
+
+      if (
+        typeof offset !== 'number' ||
+        typeof limit !== 'number' ||
+        offset < 0 ||
+        limit <= 0
+      ) {
+        response.status(400).json({
+          errors: ["Bad Request: 'offset' and 'limit' must be valid numbers"],
+        });
+        return;
+      }
+
+      const queryOptions: {
+        filter: { kind: string }[];
+        limit: number;
+        offset: number;
+        fullTextFilter?: { term: string; fields: string[] };
+      } = {
+        filter: [{ kind: 'Component' }],
+        limit,
+        offset,
+      };
+
+      if (search && search.trim() !== '') {
+        queryOptions.fullTextFilter = {
+          term: search,
+          fields: searchFields,
+        };
+      }
+
+      const componentEntities = await catalogApi!.queryEntities(queryOptions);
+      const entityMappings = await store.getAllEntityMappings();
+      const componentEntitiesDict: Record<
+        string,
+        { ref: string; name: string }
+      > = await createComponentEntitiesReferenceDict(componentEntities);
+
+      // Get the mappings which are visible in the table at the specific pagination
+      const relevantMappings = entityMappings.filter(mapping => {
+        return componentEntities.items.some(entity => {
+          const entityRef =
+            `${entity?.kind}:${entity?.metadata.namespace}/${entity?.metadata.name}`.toLowerCase();
+          const integrationKey =
+            entity?.metadata.annotations?.['pagerduty.com/integration-key'];
+          return (
+            mapping.entityRef === entityRef ||
+            mapping.integrationKey === integrationKey
+          );
+        });
+      });
+
+      const pagerDutyServiceIds = relevantMappings
+        .map(e => e.serviceId)
+        .filter(Boolean);
+      // Only do requests for PagerDuty services which are visible by the pagination
+      const pagerDutyServices = await getServicesByIds(pagerDutyServiceIds);
+
+      const maps = await buildEntityMappingsResponse(
+        entityMappings,
+        componentEntitiesDict,
+        componentEntities,
+        pagerDutyServices,
+      );
+
+      const formattedEntities = await Promise.all(
+        componentEntities.items.map(async entity => {
+          const annotations = {
+            'pagerduty.com/integration-key':
+              entity.metadata?.annotations?.['pagerduty.com/integration-key'] ??
+              '',
+            'pagerduty.com/service-id':
+              entity.metadata?.annotations?.['pagerduty.com/service-id'] ?? '',
+          };
+
+          const formattedEntity = {
+            name: entity.metadata?.name,
+            id: entity.metadata?.uid ?? '',
+            namespace: entity.metadata?.namespace ?? '',
+            type: entity.kind ?? '',
+            system: entity.spec?.system
+              ? JSON.stringify(entity.spec?.system)
+              : '',
+            owner: entity.spec?.owner ? JSON.stringify(entity.spec?.owner) : '',
+            lifecycle: entity.spec?.lifecycle
+              ? JSON.stringify(entity.spec?.lifecycle)
+              : '',
+            annotations,
+            status: 'NotMapped' as
+              | 'NotMapped'
+              | 'InSync'
+              | 'OutOfSync'
+              | 'ErrorWhenFetchingService',
+            serviceName: '',
+            serviceUrl: '',
+            team: '',
+            escalationPolicy: '',
+            account: '',
+          };
+
+          // Try to find a service by service ID or integration key
+          let service = null;
+          let isServiceError = null;
+          if (annotations['pagerduty.com/service-id']) {
+            const serviceId = annotations['pagerduty.com/service-id'];
+            service = pagerDutyServices.find(s => s.id === serviceId);
+          } else if (annotations['pagerduty.com/integration-key']) {
+            const integrationKey = annotations['pagerduty.com/integration-key'];
+            const account =
+              entity.metadata?.annotations?.['pagerduty.com/account'] || '';
+            try {
+              service = await getServiceByIntegrationKey(
+                integrationKey,
+                account,
+              );
+            } catch (e) {
+              if (e instanceof HttpError && e.status !== 404) {
+                isServiceError = true;
+              }
+            }
+          }
+          const entityRef =
+            `${entity.kind}:${entity.metadata.namespace}/${entity.metadata.name}`.toLowerCase();
+          const entityMapping = maps.mappings.find(
+            e =>
+              e.entityRef === entityRef ||
+              (e.integrationKey &&
+                e.integrationKey ===
+                  annotations['pagerduty.com/integration-key']) ||
+              (e.serviceId &&
+                e.serviceId === annotations['pagerduty.com/service-id']),
+          );
+
+          if (service) {
+            formattedEntity.serviceName = service.name;
+            formattedEntity.serviceUrl = service.html_url;
+            formattedEntity.team = service.teams?.[0]?.name ?? '';
+            formattedEntity.escalationPolicy =
+              service.escalation_policy?.name ?? '';
+            formattedEntity.account = service.account || '';
+            if (entityMapping) {
+              const expectedEntityRef = componentEntitiesDict[service.id]?.ref;
+              if (
+                expectedEntityRef &&
+                expectedEntityRef === entityMapping.entityRef
+              ) {
+                formattedEntity.status = entityMapping.status || 'NotMapped';
+              } else {
+                formattedEntity.status = 'NotMapped';
+              }
+            }
+          } else if (isServiceError) {
+            formattedEntity.status = 'ErrorWhenFetchingService';
+          }
+
+          return formattedEntity;
+        }),
+      );
+
+      response.json({
+        entities: formattedEntities,
+        totalCount: componentEntities.totalItems,
+      });
     } catch (error) {
       if (error instanceof HttpError) {
         response.status(error.status).json({
@@ -959,6 +1142,22 @@ export async function createRouter(
       const serviceResponse: PagerDutyServiceResponse = {
         service: service,
       };
+
+      response.json(serviceResponse);
+    } catch (error) {
+      if (error instanceof HttpError) {
+        response.status(error.status).json({
+          errors: [`${error.message}`],
+        });
+      }
+    }
+  });
+
+  // GET /services
+  router.get('/all-pd-services', async (_, response) => {
+    try {
+      const services = await getAllServices();
+      const serviceResponse: PagerDutyService[] = services;
 
       response.json(serviceResponse);
     } catch (error) {

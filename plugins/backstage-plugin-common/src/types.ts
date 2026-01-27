@@ -287,6 +287,34 @@ export type PagerDutyEntityMappingsResponse = {
 };
 
 /** @public */
+export type FormattedBackstageEntity = {
+  name: string;
+  id: string;
+  namespace: string;
+  type: string;
+  system: string;
+  owner: string;
+  lifecycle: string;
+  annotations: {
+    'pagerduty.com/integration-key': string;
+    'pagerduty.com/service-id': string;
+  };
+  // PagerDuty properties
+  serviceName?: string;
+  serviceUrl?: string;
+  team?: string;
+  escalationPolicy?: string;
+  status?: 'NotMapped' | 'InSync' | 'OutOfSync';
+  account?: string;
+};
+
+/** @public */
+export type PagerDutyEnhancedEntityMappingsResponse = {
+  entities: FormattedBackstageEntity[];
+  totalCount: number;
+};
+
+/** @public */
 export type PagerDutyEntityMappingResponse = {
   mapping: PagerDutyEntityMapping;
 };

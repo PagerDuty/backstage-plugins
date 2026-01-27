@@ -29,8 +29,9 @@ import {
   PagerDutyIncidentsResponse,
   PagerDutyServiceStandardsResponse,
   PagerDutyServiceMetricsResponse,
-  PagerDutyEntityMappingsResponse,
+  PagerDutyEnhancedEntityMappingsResponse,
   PagerDutySetting,
+  PagerDutyService,
 } from '@pagerduty/backstage-plugin-common';
 import { createApiRef, ConfigApi } from '@backstage/core-plugin-api';
 import { NotFoundError } from '@backstage/errors';
@@ -137,12 +138,42 @@ export class PagerDutyClient implements PagerDutyApi {
     return this.request(url, options);
   }
 
-  async getEntityMappings(): Promise<PagerDutyEntityMappingsResponse> {
+  async getEntityMappingsWithPagination(options: {
+    offset: number;
+    limit: number;
+    search?: string;
+    searchFields?: string[];
+  }): Promise<PagerDutyEnhancedEntityMappingsResponse> {
     const url = `${await this.config.discoveryApi.getBaseUrl(
       'pagerduty',
-    )}/mapping/entity`;
+    )}/mapping/entities`;
 
-    return await this.findByUrl<PagerDutyEntityMappingsResponse>(url);
+    const body = JSON.stringify({
+      offset: options.offset,
+      limit: options.limit,
+      search: options.search,
+      searchFields: options.searchFields || ['metadata.name', 'spec.owner'],
+    });
+
+    const requestOptions = {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json; charset=UTF-8',
+        Accept: 'application/json, text/plain, */*',
+      },
+      body,
+    };
+
+    const response = await this.request(url, requestOptions);
+    return response.json();
+  }
+
+  async getAllServices(): Promise<PagerDutyService[]> {
+    const url = `${await this.config.discoveryApi.getBaseUrl(
+      'pagerduty',
+    )}/all-pd-services`;
+
+    return await this.findByUrl<PagerDutyService[]>(url);
   }
 
   async storeServiceMapping(

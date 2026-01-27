@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react';
-import { createStyles, makeStyles, Typography } from '@material-ui/core';
-import { Card, Grid, RadioGroup, Radio } from '@backstage/ui';
+import {
+  CardContent,
+  createStyles,
+  makeStyles,
+  Typography,
+} from '@material-ui/core';
+import { Card, RadioGroup, Radio, Flex, Text } from '@backstage/ui';
 import {
   Header,
   Page,
@@ -83,21 +88,24 @@ export const PagerDutyPage = () => {
       <Content>
         <TabbedLayout>
           <TabbedLayout.Route path="/service-mapping" title="Service Mapping">
-            <Grid.Root gap="3" columns="1">
-              <Grid.Item>
-                <Typography>
-                  Easily map your existing PagerDuty services to entities in
-                  Backstage without the need to add anotations to all your
-                  projects.
-                </Typography>
-                <Typography>
-                  <b>Warning: </b>Only 1:1 mapping is allowed at this time.
-                </Typography>
-              </Grid.Item>
-              <Grid.Item>
-                <ServiceMappingComponent />
-              </Grid.Item>
-            </Grid.Root>
+            <>
+              <Card style={{ marginBottom: 4 }}>
+                <CardContent>
+                  <Flex direction="column">
+                    <Text variant="body-medium" weight="regular">
+                      Easily map your existing PagerDuty services to entities in
+                      Backstage without the need to add anotations to all your
+                      projects.
+                    </Text>
+                    <Text variant="body-medium" weight="bold">
+                      <b>Warning: </b>Only 1:1 mapping is allowed at this time.
+                    </Text>
+                  </Flex>
+                </CardContent>
+              </Card>
+
+              <ServiceMappingComponent />
+            </>
           </TabbedLayout.Route>
           <TabbedLayout.Route path="/settings" title="Configuration">
             <>
