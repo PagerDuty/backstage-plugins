@@ -7,8 +7,12 @@ import {
   Select,
   Flex,
   Text,
+  SearchField,
+  RadioGroup,
+  Radio,
+  Box,
 } from '@backstage/ui';
-import { Dispatch, useState } from 'react';
+import { Dispatch, useState, useEffect } from 'react';
 import { BackstageEntity } from '../types';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { pagerDutyApiRef } from '../../api';
@@ -28,10 +32,50 @@ export default function MappingsDialog({
   const pagerDutyApi = useApi(pagerDutyApiRef);
   const queryClient = useQueryClient();
   const [selectedServiceId, setSelectedServiceId] = useState<string>('');
+  const [selectedTeamIds, setSelectedTeamIds] = useState<string[]>([]);
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState<string>('');
 
+  // Debounce search query (wait 500ms after user stops typing)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Clean up state when dialog closes
+  useEffect(() => {
+    if (!isOpen) {
+      setSelectedServiceId('');
+      setSelectedTeamIds([]);
+      setSearchQuery('');
+      setDebouncedSearchQuery('');
+    }
+  }, [isOpen]);
+
+  // Fetch all teams
+  const { data: teams, isLoading: isTeamsLoading } = useQuery({
+    queryKey: ['pagerduty', 'getAllTeams'],
+    queryFn: () => pagerDutyApi.getAllTeams(),
+    enabled: isOpen,
+  });
+
+  // Fetch filtered services based on selected teams and search query
   const { data: services, isLoading: isServicesLoading } = useQuery({
-    queryKey: ['pagerduty', 'getAllServices'],
-    queryFn: () => pagerDutyApi.getAllServices(),
+    queryKey: ['pagerduty', 'getFilteredServices', selectedTeamIds, debouncedSearchQuery],
+    queryFn: async () => {
+      const teamIdsToSend = selectedTeamIds.length > 0 ? selectedTeamIds : undefined;
+      const queryToSend = debouncedSearchQuery || undefined;
+      const result = await pagerDutyApi.getFilteredServices(
+        teamIdsToSend,
+        queryToSend,
+        10,
+      );
+      return result;
+    },
+    enabled: isOpen,
   });
 
   const { mutateAsync: createMapping, isPending: isCreatingMapping } =
@@ -66,6 +110,18 @@ export default function MappingsDialog({
   const handleSaveMapping = () => {
     if (!entity || !selectedServiceId) return;
 
+    if (selectedServiceId === 'none') {
+      const account = services && services.length > 0 ? services[0].account ?? '' : '';
+
+      createMapping({
+        serviceId: '',
+        integrationKey: '',
+        entityRef: '',
+        account: account,
+      });
+      return;
+    }
+
     const selectedService = services?.find(
       service => service.id === selectedServiceId,
     );
@@ -83,46 +139,97 @@ export default function MappingsDialog({
     });
   };
 
-  const serviceOptions = services?.map(service => ({
-    value: service.id,
-    label: service.name,
-  }));
+  // Prepare team options for Select
+  const teamOptions = [
+    { value: '', label: 'All Teams' },
+    ...(teams?.map(team => ({
+      value: team.id,
+      label: team.name,
+    })) || []),
+  ];
 
   return (
     <Dialog isOpen={isOpen} onOpenChange={setIsOpen}>
       <DialogHeader>Update Entity Mapping</DialogHeader>
       <DialogBody>
-        <Flex>
-          <Text variant="body-medium" weight="regular">
-            Name:
-          </Text>
+        <Flex direction="column" gap="2" mb="4">
           <Text variant="body-medium" weight="bold">
-            {entity?.name}
+            Backstage Component
           </Text>
+          <Text variant="body-medium">{entity?.name}</Text>
         </Flex>
 
-        <Flex mb="3">
-          <Text variant="body-medium" weight="regular">
-            Team:
-          </Text>
+        <Flex direction="column" gap="2" mb="4">
           <Text variant="body-medium" weight="bold">
-            {entity?.owner}
+            Backstage Team
           </Text>
+          <Text variant="body-medium">{entity?.owner}</Text>
         </Flex>
 
-        <Select
-          name="service"
-          isDisabled={isServicesLoading || isCreatingMapping}
-          label="PagerDuty service"
-          placeholder={
-            isServicesLoading
-              ? 'PagerDuty services loading...'
-              : 'Select a PagerDuty service'
-          }
-          options={serviceOptions}
-          value={selectedServiceId}
-          onChange={value => setSelectedServiceId(value as string)}
-        />
+        <Box mb="3">
+          <Text variant="body-medium" weight="bold">
+            Map to Service
+          </Text>
+        </Box>
+
+        <Box mb="3">
+          <Select
+            name="team"
+            isDisabled={isTeamsLoading || isCreatingMapping}
+            label="PagerDuty Team (Optional)"
+            placeholder="All Teams"
+            options={teamOptions}
+            value={selectedTeamIds[0] || ''}
+            onChange={value => {
+              const teamId = String(value || '');
+              setSelectedTeamIds(teamId ? [teamId] : []);
+              setSelectedServiceId('');
+            }}
+          />
+        </Box>
+
+        <Flex direction="column" gap="2" mb="3">
+          <Text variant="body-medium" weight="bold">
+            PagerDuty Services
+          </Text>
+          <Text variant="body-small">
+            Search by service name or service ID
+          </Text>
+          <SearchField
+            value={searchQuery}
+            onChange={setSearchQuery}
+            placeholder="Search"
+          />
+        </Flex>
+
+        {isServicesLoading ? (
+          <Text>Loading services...</Text>
+        ) : (
+          <>
+            <Box style={{ maxHeight: '300px', overflowY: 'auto' }} mb="2">
+              <RadioGroup
+                value={selectedServiceId}
+                onChange={setSelectedServiceId}
+              >
+                <Radio key="none" value="none">
+                  (None)
+                </Radio>
+                {services && services.map(service => (
+                  <Radio key={service.id} value={service.id}>
+                    {service.name}
+                  </Radio>
+                ))}
+              </RadioGroup>
+            </Box>
+            {services && services.length > 0 ? (
+              <Text variant="body-small">
+                Showing {services.length} result{services.length !== 1 ? 's' : ''}
+              </Text>
+            ) : (
+              <Text variant="body-small">No services found</Text>
+            )}
+          </>
+        )}
       </DialogBody>
       <DialogFooter>
         <Button variant="secondary" slot="close">

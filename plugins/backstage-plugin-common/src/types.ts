@@ -97,6 +97,16 @@ export type PagerDutyTeam = {
   self?: string;
   html_url?: string;
   name: string;
+  account?: string;
+};
+
+/** @public */
+export type PagerDutyTeamsResponse = {
+  teams: PagerDutyTeam[];
+  more?: boolean;
+  limit?: number;
+  offset?: number;
+  total?: number;
 };
 
 /** @public  */

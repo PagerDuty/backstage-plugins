@@ -18,6 +18,8 @@ import {
   getServiceStandards,
   getServiceMetrics,
   getAllServices,
+  getAllTeams,
+  getFilteredServices,
   loadPagerDutyEndpointsFromConfig,
   createServiceIntegration,
   getServiceRelationshipsById,
@@ -1160,6 +1162,43 @@ export async function createRouter(
       const serviceResponse: PagerDutyService[] = services;
 
       response.json(serviceResponse);
+    } catch (error) {
+      if (error instanceof HttpError) {
+        response.status(error.status).json({
+          errors: [`${error.message}`],
+        });
+      }
+    }
+  });
+
+  // GET /teams
+  router.get('/teams', async (_, response) => {
+    try {
+      const teams = await getAllTeams();
+      response.json(teams);
+    } catch (error) {
+      if (error instanceof HttpError) {
+        response.status(error.status).json({
+          errors: [`${error.message}`],
+        });
+      }
+    }
+  });
+
+  // GET /filtered-services?team_id=:teamId&query=:query&limit=:limit
+  router.get('/filtered-services', async (request, response) => {
+    try {
+      const teamId = request.query.team_id as string | undefined;
+      const query = request.query.query as string | undefined;
+      const limit = request.query.limit
+        ? parseInt(request.query.limit as string, 10)
+        : 100;
+
+      const teamIdsArray: string[] | undefined = teamId ? [teamId] : undefined;
+
+      const services = await getFilteredServices(teamIdsArray, query, limit);
+
+      response.json(services);
     } catch (error) {
       if (error instanceof HttpError) {
         response.status(error.status).json({

@@ -25,6 +25,7 @@ import {
   PagerDutyServiceMetrics,
   PagerDutySetting,
   PagerDutyService,
+  PagerDutyTeam,
   PagerDutyEnhancedEntityMappingsResponse,
 } from '@pagerduty/backstage-plugin-common';
 import { DiscoveryApi, FetchApi } from '@backstage/core-plugin-api';
@@ -133,6 +134,25 @@ export interface PagerDutyApi {
    *
    */
   getAllServices(): Promise<PagerDutyService[]>;
+
+  /**
+   * Fetches a list of PagerDuty teams.
+   *
+   */
+  getAllTeams(): Promise<PagerDutyTeam[]>;
+
+  /**
+   * Fetches a filtered list of PagerDuty services.
+   *
+   * @param teamIds - Optional array of team IDs to filter by
+   * @param query - Optional search query for service name or ID
+   * @param limit - Optional maximum number of results (default: 100)
+   */
+  getFilteredServices(
+    teamIds?: string[],
+    query?: string,
+    limit?: number,
+  ): Promise<PagerDutyService[]>;
 
   /**
    * Fetches a list of standards for a provided service.

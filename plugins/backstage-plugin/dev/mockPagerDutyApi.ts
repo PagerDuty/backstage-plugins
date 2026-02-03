@@ -320,6 +320,38 @@ export const mockPagerDutyApi: PagerDutyApi = {
     return users;
   },
 
+  async getAllTeams() {
+    return [
+      {
+        id: 'team1',
+        name: 'Team Alpha',
+        html_url: 'https://www.example.com/teams/team1',
+      },
+      {
+        id: 'team2',
+        name: 'Team Beta',
+        html_url: 'https://www.example.com/teams/team2',
+      },
+    ];
+  },
+
+  async getFilteredServices(_teamIds?: string[], _query?: string, _limit?: number) {
+    return [
+      {
+        name: 'SERV1CENAME',
+        id: 'random_id',
+        html_url: 'https://www.example.com',
+        escalation_policy: {
+          id: 'ESCALAT1ONP01ICY1D',
+          name: 'ep-one',
+          html_url:
+            'http://www.example.com/escalation-policy/ESCALAT1ONP01ICY1D',
+        },
+        status: 'warning',
+      },
+    ];
+  },
+
   async triggerAlarm(request: PagerDutyTriggerAlarmRequest) {
     return new Response(request.description);
   },

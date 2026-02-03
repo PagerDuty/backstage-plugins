@@ -32,6 +32,7 @@ import {
   PagerDutyEnhancedEntityMappingsResponse,
   PagerDutySetting,
   PagerDutyService,
+  PagerDutyTeam,
 } from '@pagerduty/backstage-plugin-common';
 import { createApiRef, ConfigApi } from '@backstage/core-plugin-api';
 import { NotFoundError } from '@backstage/errors';
@@ -172,6 +173,42 @@ export class PagerDutyClient implements PagerDutyApi {
     const url = `${await this.config.discoveryApi.getBaseUrl(
       'pagerduty',
     )}/all-pd-services`;
+
+    return await this.findByUrl<PagerDutyService[]>(url);
+  }
+
+  async getAllTeams(): Promise<PagerDutyTeam[]> {
+    const url = `${await this.config.discoveryApi.getBaseUrl(
+      'pagerduty',
+    )}/teams`;
+
+    return await this.findByUrl<PagerDutyTeam[]>(url);
+  }
+
+  async getFilteredServices(
+    teamIds?: string[],
+    query?: string,
+    limit?: number,
+  ): Promise<PagerDutyService[]> {
+    const baseUrl = await this.config.discoveryApi.getBaseUrl('pagerduty');
+    const params = new URLSearchParams();
+
+    if (teamIds && teamIds.length > 0) {
+      params.append('team_id', teamIds[0]);
+    }
+
+    if (query && query.trim() !== '') {
+      params.append('query', query.trim());
+    }
+
+    if (limit) {
+      params.append('limit', limit.toString());
+    }
+
+    const queryString = params.toString();
+    const url = queryString
+      ? `${baseUrl}/filtered-services?${queryString}`
+      : `${baseUrl}/filtered-services`;
 
     return await this.findByUrl<PagerDutyService[]>(url);
   }
