@@ -1,5 +1,5 @@
 // eslint-disable-next-line @backstage/no-undeclared-imports
-import { screen, waitFor, fireEvent, within } from '@testing-library/react';
+import { screen, waitFor, fireEvent } from '@testing-library/react';
 import { renderInTestApp, TestApiRegistry } from '@backstage/test-utils';
 import { pagerDutyApiRef } from '../../api';
 import AutomaticMappingsDialog from './AutomaticMappingsDialog';

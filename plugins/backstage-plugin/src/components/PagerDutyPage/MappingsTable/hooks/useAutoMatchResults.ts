@@ -24,10 +24,19 @@ export function useAutoMatchResults() {
     setAutoMatchResults(results);
   };
 
+  const removeMatch = (entityName: string) => {
+    setAutoMatchResults(prev => {
+      const updated = { ...prev };
+      delete updated[entityName];
+      return updated;
+    });
+  };
+
   return {
     autoMatchResults,
     hasMatches,
     setMatches,
     clearMatches,
+    removeMatch,
   };
 }

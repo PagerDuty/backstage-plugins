@@ -13,7 +13,7 @@ import { useState } from 'react';
 import MappingsDialog from '../MappingsDialog';
 import AutomaticMappingsDialog from '../AutomaticMappingsDialog';
 import AutoMappingsButton from './AutoMappingsButton';
-import { Edit, Search } from '@mui/icons-material';
+import { Edit, Search, Delete } from '@mui/icons-material';
 import StatusCell from './StatusCell';
 import { ServiceCell } from './ServiceCell';
 import { BackstageEntity } from '../../types';
@@ -35,8 +35,13 @@ export default function MappingsTable() {
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearchQuery = useDebounce(searchQuery);
 
-  const { autoMatchResults, hasMatches, setMatches, clearMatches } =
-    useAutoMatchResults();
+  const {
+    autoMatchResults,
+    hasMatches,
+    setMatches,
+    clearMatches,
+    removeMatch,
+  } = useAutoMatchResults();
   const {
     showToast,
     toastMessage,
@@ -98,6 +103,7 @@ export default function MappingsTable() {
           <Column isRowHeader>Team</Column>
           <Column isRowHeader>PagerDuty service</Column>
           <Column isRowHeader>Status</Column>
+          <Column isRowHeader>Account</Column>
           <Column isRowHeader>Mapping Score</Column>
           <Column isRowHeader>Actions</Column>
         </TableHeader>
@@ -108,6 +114,7 @@ export default function MappingsTable() {
               <CellText title={entity.owner} />
               <ServiceCell entity={entity} />
               <StatusCell entity={entity} />
+              <CellText title={entity.account ?? 'default'} />
               <CellText
                 title={
                   entity.mappingScore !== undefined
@@ -116,7 +123,13 @@ export default function MappingsTable() {
                 }
               />
               <CellText
-                leadingIcon={<Edit fontSize="small" />}
+                leadingIcon={
+                  entity.mappingScore !== undefined ? (
+                    <Delete fontSize="small" />
+                  ) : (
+                    <Edit fontSize="small" />
+                  )
+                }
                 color="secondary"
                 style={{
                   paddingLeft: '25px',
@@ -125,8 +138,12 @@ export default function MappingsTable() {
                 }}
                 title=""
                 onClick={() => {
-                  setIsOpen(true);
-                  setSelectedEntity(entity);
+                  if (entity.mappingScore !== undefined) {
+                    removeMatch(entity.name);
+                  } else {
+                    setIsOpen(true);
+                    setSelectedEntity(entity);
+                  }
                 }}
               />
             </Row>
