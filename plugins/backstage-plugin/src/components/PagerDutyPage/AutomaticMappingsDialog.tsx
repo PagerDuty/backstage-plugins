@@ -79,12 +79,13 @@ export default function AutomaticMappingsDialog({
 
           const serviceId = match.pagerDutyService?.serviceId;
           const serviceName = match.pagerDutyService?.name;
+          const account = match.pagerDutyService?.account || '';
 
           if (entityName && score !== undefined && serviceId) {
             matchMap[entityName] = {
               score,
               serviceId,
-              account: '',
+              account,
               serviceName,
             };
           }
@@ -107,9 +108,9 @@ export default function AutomaticMappingsDialog({
   ];
 
   const thresholdOptions = [
-    { value: '100', label: '100%' },
-    { value: '90', label: '>= 90%' },
-    { value: '80', label: '>= 80%' },
+    { value: '100', label: 'Exact Match (100%)' },
+    { value: '90', label: 'High Confidence (>= 90%)' },
+    { value: '80', label: 'Medium Confidence (>= 80%)' },
   ];
 
   const handleBegin = async () => {
@@ -122,68 +123,93 @@ export default function AutomaticMappingsDialog({
   };
 
   return (
-    <Dialog isOpen={isOpen} onOpenChange={setIsOpen}>
+    <Dialog isOpen={isOpen} onOpenChange={setIsOpen} style={{ width: '460px' }}>
       <DialogHeader>Service Auto-Mapping</DialogHeader>
       <DialogBody>
-        <Box
-          style={{
-            backgroundColor: '#FEF3CD',
-            border: '1px solid #F4C430',
-            borderRadius: '4px',
-            padding: '16px',
-            marginBottom: '24px',
-          }}
-        >
-          <Flex gap="2" align="start">
-            <Warning style={{ color: '#F4C430', fontSize: '20px' }} />
-            <Box>
-              <Text variant="body-medium" weight="bold">
-                Disclaimer:
-              </Text>
-              <Text variant="body-medium">
+        <Box p="0 24px 8px 24px">
+          <Box
+            style={{
+              backgroundColor: '#FEF3CD',
+              border: '1px solid #F4C430',
+              borderRadius: '8px',
+              padding: '16px',
+              marginBottom: '8px',
+            }}
+          >
+            <Flex gap="2" align="start" direction="column">
+              <Flex gap="1">
+                <Warning
+                  style={{
+                    color: '#F4C430',
+                    fontSize: 'var(--bui-font-size-3)',
+                  }}
+                />
+                <Text
+                  variant="body-medium"
+                  weight="bold"
+                  style={{ color: '#D97706', marginLeft: '4px' }}
+                >
+                  Disclaimer:
+                </Text>
+              </Flex>
+
+              <Text variant="body-medium" style={{ color: '#6B7280' }}>
                 Service auto-mapping uses service and team names to match
                 components. Please review and confirm any mappings with
                 confidence scores below 100% before syncing.
               </Text>
+            </Flex>
+          </Box>
+
+          <Text
+            variant="body-medium"
+            style={{
+              marginBottom: '16px',
+              display: 'block',
+              lineHeight: '1.6',
+            }}
+          >
+            This feature will map unmapped Backstage components to PagerDuty
+            services and provide a confidence score for each match.
+          </Text>
+
+          <Flex direction="column" gap="5">
+            <Select
+              name="team"
+              isDisabled={isGroupsLoading || isAutoMatching}
+              label="Backstage Team (optional)"
+              placeholder={
+                isGroupsLoading ? 'Loading teams...' : 'Select a team'
+              }
+              options={teamOptions}
+              value={selectedTeam}
+              onChange={value => setSelectedTeam(value as string)}
+            />
+
+            <Box>
+              <Flex direction="column" style={{ marginBottom: '8px' }} gap="0">
+                <Text variant="body-small">Confidence Threshold *</Text>
+                <Text
+                  variant="body-x-small"
+                  style={{
+                    color: '#6B7280',
+                  }}
+                >
+                  Only mappings at or above this threshold will sync
+                  automatically
+                </Text>
+              </Flex>
+              <Select
+                name="threshold"
+                placeholder="Select Confidence Threshold"
+                options={thresholdOptions}
+                value={selectedThreshold}
+                onChange={value => setSelectedThreshold(value as string)}
+                isDisabled={isAutoMatching}
+              />
             </Box>
           </Flex>
         </Box>
-
-        <Text variant="body-medium" style={{ marginBottom: '24px' }}>
-          This feature will map unmapped Backstage components to PagerDuty
-          services and provide a confidence score for each match.
-        </Text>
-
-        <Flex direction="column" gap="4">
-          <Select
-            name="team"
-            isDisabled={isGroupsLoading || isAutoMatching}
-            label="Backstage Team (optional)"
-            placeholder={isGroupsLoading ? 'Loading teams...' : 'Select a team'}
-            options={teamOptions}
-            value={selectedTeam}
-            onChange={value => setSelectedTeam(value as string)}
-          />
-
-          <Box>
-            <Select
-              name="threshold"
-              label="Confidence Threshold"
-              placeholder="Select Confidence Threshold"
-              options={thresholdOptions}
-              value={selectedThreshold}
-              onChange={value => setSelectedThreshold(value as string)}
-              isRequired
-              isDisabled={isAutoMatching}
-            />
-            <Text
-              variant="body-small"
-              style={{ marginTop: '8px', color: '#666' }}
-            >
-              Only mappings at or above this threshold will sync automatically
-            </Text>
-          </Box>
-        </Flex>
       </DialogBody>
       <DialogFooter>
         <Button variant="secondary" slot="close">

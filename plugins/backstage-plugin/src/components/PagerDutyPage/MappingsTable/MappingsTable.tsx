@@ -114,7 +114,9 @@ export default function MappingsTable() {
               <CellText title={entity.owner} />
               <ServiceCell entity={entity} />
               <StatusCell entity={entity} />
-              <CellText title={entity.account ?? 'default'} />
+              <CellText
+                title={entity.account === '' ? 'default' : entity.account!}
+              />
               <CellText
                 title={
                   entity.mappingScore !== undefined

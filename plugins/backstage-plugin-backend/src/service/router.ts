@@ -1162,6 +1162,7 @@ export async function createRouter(
             serviceId: m.pagerDutyService.sourceId,
             name: m.pagerDutyService.rawName,
             team: m.pagerDutyService.teamName,
+            account: m.pagerDutyService.account,
           },
           backstageComponent: {
             entityRef: m.backstageComponent.sourceId,

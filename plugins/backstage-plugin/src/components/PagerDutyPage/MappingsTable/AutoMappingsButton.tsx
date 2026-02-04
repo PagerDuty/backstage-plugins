@@ -29,9 +29,6 @@ export default function AutoMappingsButton({
           Clear Mappings
         </Button>
         <Button
-          style={{
-            background: '#00875a',
-          }}
           variant="primary"
           onClick={onConfirmMappings}
           iconStart={
@@ -54,7 +51,7 @@ export default function AutoMappingsButton({
       Auto-Mapping
       <div
         style={{
-          backgroundColor: '#00875a',
+          backgroundColor: 'var(--bui-bg-solid)',
           color: 'white',
           fontSize: '11px',
           fontWeight: 'bold',

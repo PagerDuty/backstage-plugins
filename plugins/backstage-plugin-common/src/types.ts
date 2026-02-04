@@ -363,6 +363,7 @@ export type AutoMatchPagerDutyService = {
   serviceId: string;
   name: string;
   team: string;
+  account?: string;
 };
 
 /** @public */

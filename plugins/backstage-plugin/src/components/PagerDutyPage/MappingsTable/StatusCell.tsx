@@ -10,7 +10,7 @@ const statusDictionary = {
   ErrorWhenFetchingService: 'Error occured while fetching service',
 } as const;
 const colourDictionary = {
-  InSync: '#00875a',
+  InSync: 'var(--bui-bg-solid)',
   OutOfSync: 'red',
   NotMapped: 'orange',
   AutoMapped: 'blue',

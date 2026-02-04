@@ -35,6 +35,7 @@ export async function loadPagerDutyServices(): Promise<NormalizedService[]> {
         service.name,
         teamName,
         service.id,
+        service.account,
       );
     });
 
