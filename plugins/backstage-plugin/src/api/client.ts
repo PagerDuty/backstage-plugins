@@ -373,6 +373,7 @@ export class PagerDutyClient implements PagerDutyApi {
     const body = JSON.stringify({
       team: options.team === 'all' ? undefined : options.team,
       threshold: options.threshold,
+      bestOnly: true,
     });
 
     const requestOptions = {
