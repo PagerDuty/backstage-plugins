@@ -24,6 +24,7 @@ import {
   PagerDutyUser,
   FormattedBackstageEntity,
   PagerDutyEnhancedEntityMappingsResponse,
+  AutoMatchEntityMappingsResponse,
 } from '@pagerduty/backstage-plugin-common';
 import { Entity } from '@backstage/catalog-model';
 import { v4 as uuidv4 } from 'uuid';
@@ -37,6 +38,71 @@ export const mockPagerDutyApi: PagerDutyApi = {
   },
   async storeSettings(settings) {
     return new Response(JSON.stringify(settings));
+  },
+
+  async autoMatchEntityMappings(options: {
+    team?: string;
+    threshold: number;
+  }): Promise<AutoMatchEntityMappingsResponse> {
+    return {
+      matches: [
+        {
+          pagerDutyService: {
+            serviceId: 'PWM5PN9',
+            name: 'integration producer',
+            team: 'Team1',
+          },
+          backstageComponent: {
+            entityRef: 'component:default/integration-processor',
+            name: 'integration-processor',
+            owner: 'platform team',
+          },
+          score: 100,
+          confidence: 'exact',
+          scoreBreakdown: {
+            baseScore: 96,
+            exactMatch: false,
+            teamMatch: false,
+            acronymMatch: true,
+            rawScore: 101,
+          },
+        },
+        {
+          pagerDutyService: {
+            serviceId: 'SERV1CE1D',
+            name: 'Service1',
+            team: 'Team1',
+          },
+          backstageComponent: {
+            entityRef: 'component:default/entity1',
+            name: 'Entity1',
+            owner: 'team-a',
+          },
+          score: 95,
+          confidence: 'high',
+          scoreBreakdown: {
+            baseScore: 92,
+            exactMatch: true,
+            teamMatch: true,
+            acronymMatch: false,
+            rawScore: 95,
+          },
+        },
+      ],
+      statistics: {
+        totalPagerDutyServices: 4,
+        totalBackstageComponents: 302,
+        totalPossibleComparisons: 1208,
+        matchesFound: 2,
+        exactMatches: 1,
+        highConfidenceMatches: 1,
+        mediumConfidenceMatches: 0,
+        threshold: options.threshold,
+        loadTimeMs: 906,
+        matchTimeMs: 5,
+        totalTimeMs: 911,
+      },
+    };
   },
 
   async getEntityMappingsWithPagination(options: {
@@ -127,6 +193,25 @@ export const mockPagerDutyApi: PagerDutyApi = {
         service_id: serviceId,
         entity_id: entityId,
         id: uuid,
+      }),
+    );
+  },
+  async storeBulkServiceMappings(mappings) {
+    const results = mappings.map(mapping => ({
+      id: uuidv4(),
+      entityRef: mapping.entityRef,
+      serviceId: mapping.serviceId,
+      integrationKey: mapping.integrationKey,
+      account: mapping.account,
+    }));
+
+    return new Response(
+      JSON.stringify({
+        success: results,
+        errors: [],
+        total: mappings.length,
+        successCount: mappings.length,
+        errorCount: 0,
       }),
     );
   },

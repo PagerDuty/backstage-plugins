@@ -11,17 +11,22 @@ import {
 } from '@backstage/ui';
 import { useState } from 'react';
 import MappingsDialog from '../MappingsDialog';
+import AutomaticMappingsDialog from '../AutomaticMappingsDialog';
+import AutoMappingsButton from './AutoMappingsButton';
 import { Edit, Search } from '@mui/icons-material';
 import StatusCell from './StatusCell';
 import { ServiceCell } from './ServiceCell';
-import { useQuery } from '@tanstack/react-query';
-import { useApi } from '@backstage/core-plugin-api';
-import { pagerDutyApiRef } from '../../../api';
 import { BackstageEntity } from '../../types';
 import useDebounce from '../../../hooks/useDebounce';
+import MappingToast from './MappingToast';
+import { useAutoMatchResults } from './hooks/useAutoMatchResults';
+import { useMappingToast } from './hooks/useMappingToast';
+import { useEntityMappings } from './hooks/useEntityMappings';
+import { useConfirmMappings } from './hooks/useConfirmMappings';
 
 export default function MappingsTable() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isAutoMappingOpen, setIsAutoMappingOpen] = useState(false);
   const [selectedEntity, setSelectedEntity] = useState<BackstageEntity | null>(
     null,
   );
@@ -29,29 +34,50 @@ export default function MappingsTable() {
   const [pageSize, setPageSize] = useState(10);
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearchQuery = useDebounce(searchQuery);
-  const pagerDutyApi = useApi(pagerDutyApiRef);
-  const { data: mappings } = useQuery({
-    queryKey: [
-      'pagerduty',
-      'enhancedEntityMappings',
-      {
-        offset,
-        pageSize,
-        search: debouncedSearchQuery,
-      },
-    ],
-    queryFn: () =>
-      pagerDutyApi.getEntityMappingsWithPagination({
-        offset,
-        limit: pageSize,
-        search: debouncedSearchQuery,
-        searchFields: ['metadata.name', 'spec.owner'],
-      }),
+
+  const { autoMatchResults, hasMatches, setMatches, clearMatches } =
+    useAutoMatchResults();
+  const {
+    showToast,
+    toastMessage,
+    toastSeverity,
+    totalMatches,
+    mappingCounts,
+    showSuccess,
+    showError,
+    closeToast,
+  } = useMappingToast();
+  const { mappings, entitiesWithScores } = useEntityMappings(
+    offset,
+    pageSize,
+    debouncedSearchQuery,
+    autoMatchResults,
+  );
+
+  const { confirmMappings, isConfirming } = useConfirmMappings({
+    autoMatchResults,
+    mappingEntities: mappings?.entities,
+    onSuccess: (successCount, totalCount, counts) => {
+      showSuccess(
+        `${successCount} of ${totalCount} mappings saved successfully.`,
+        undefined,
+        counts,
+      );
+    },
+    onError: showError,
+    onClear: clearMatches,
   });
 
   return (
     <>
       <Flex justify="end" gap="2">
+        <AutoMappingsButton
+          hasMatches={hasMatches}
+          onAutoMapping={() => setIsAutoMappingOpen(true)}
+          onConfirmMappings={confirmMappings}
+          onClearMappings={clearMatches}
+          isConfirming={isConfirming}
+        />
         <SearchField
           size="small"
           placeholder="Search for components or teams"
@@ -72,15 +98,23 @@ export default function MappingsTable() {
           <Column isRowHeader>Team</Column>
           <Column isRowHeader>PagerDuty service</Column>
           <Column isRowHeader>Status</Column>
+          <Column isRowHeader>Mapping Score</Column>
           <Column isRowHeader>Actions</Column>
         </TableHeader>
         <TableBody>
-          {mappings?.entities.map((entity: BackstageEntity) => (
+          {entitiesWithScores?.map((entity: BackstageEntity) => (
             <Row key={entity.id}>
               <CellText title={entity.name} />
               <CellText title={entity.owner} />
               <ServiceCell entity={entity} />
               <StatusCell entity={entity} />
+              <CellText
+                title={
+                  entity.mappingScore !== undefined
+                    ? `${entity.mappingScore}%`
+                    : '—'
+                }
+              />
               <CellText
                 leadingIcon={<Edit fontSize="small" />}
                 color="secondary"
@@ -117,6 +151,26 @@ export default function MappingsTable() {
         isOpen={isOpen}
         setIsOpen={setIsOpen}
         entity={selectedEntity}
+      />
+      <AutomaticMappingsDialog
+        isOpen={isAutoMappingOpen}
+        setIsOpen={setIsAutoMappingOpen}
+        onAutoMatchComplete={results => {
+          setMatches(results);
+          const matchCount = Object.keys(results).length;
+          showSuccess(
+            `${matchCount} services mapped successfully.`,
+            matchCount,
+          );
+        }}
+      />
+      <MappingToast
+        open={showToast}
+        onClose={closeToast}
+        severity={toastSeverity}
+        message={toastMessage}
+        totalMatches={totalMatches}
+        mappingCounts={mappingCounts}
       />
     </>
   );

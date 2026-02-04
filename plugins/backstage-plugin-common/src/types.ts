@@ -348,3 +348,56 @@ export type PagerDutySetting = {
 export type PagerDutySettings = {
   settings: PagerDutySetting[];
 };
+
+/** @public */
+export type AutoMatchScoreBreakdown = {
+  baseScore: number;
+  exactMatch: boolean;
+  teamMatch: boolean;
+  acronymMatch: boolean;
+  rawScore: number;
+};
+
+/** @public */
+export type AutoMatchPagerDutyService = {
+  serviceId: string;
+  name: string;
+  team: string;
+};
+
+/** @public */
+export type AutoMatchBackstageComponent = {
+  entityRef: string;
+  name: string;
+  owner: string;
+};
+
+/** @public */
+export type AutoMatchEntityMapping = {
+  pagerDutyService: AutoMatchPagerDutyService;
+  backstageComponent: AutoMatchBackstageComponent;
+  score: number;
+  confidence: string;
+  scoreBreakdown: AutoMatchScoreBreakdown;
+};
+
+/** @public */
+export type AutoMatchStatistics = {
+  totalPagerDutyServices: number;
+  totalBackstageComponents: number;
+  totalPossibleComparisons: number;
+  matchesFound: number;
+  exactMatches: number;
+  highConfidenceMatches: number;
+  mediumConfidenceMatches: number;
+  threshold: number;
+  loadTimeMs: number;
+  matchTimeMs: number;
+  totalTimeMs: number;
+};
+
+/** @public */
+export type AutoMatchEntityMappingsResponse = {
+  matches: AutoMatchEntityMapping[];
+  statistics: AutoMatchStatistics;
+};

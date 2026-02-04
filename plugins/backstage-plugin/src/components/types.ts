@@ -36,8 +36,12 @@ export type BackstageEntity = {
   serviceUrl?: string;
   team?: string;
   escalationPolicy?: string;
-  status?: 'NotMapped' | 'InSync' | 'OutOfSync';
+  status?: 'NotMapped' | 'InSync' | 'OutOfSync' | 'AutoMapped';
   account?: string;
+  // Frontend only properties
+  mappingScore?: number;
+  autoMatchedServiceId?: string;
+  autoMatchedServiceName?: string;
 };
 
 export type Annotations = {
