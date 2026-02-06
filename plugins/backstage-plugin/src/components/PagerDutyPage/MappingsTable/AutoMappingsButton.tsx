@@ -1,6 +1,6 @@
 import { Button, Flex } from '@backstage/ui';
 import { Rocket, Check, Close } from '@mui/icons-material';
-import { CircularProgress } from '@material-ui/core';
+import { CircularProgress, makeStyles } from '@material-ui/core';
 
 interface AutoMappingsButtonProps {
   hasMatches: boolean;
@@ -10,6 +10,17 @@ interface AutoMappingsButtonProps {
   isConfirming?: boolean;
 }
 
+const useStyles = makeStyles(() => ({
+  newBadge: {
+    backgroundColor: 'var(--bui-bg-solid)',
+    color: 'white',
+    fontSize: '11px',
+    fontWeight: 'bold',
+    padding: '2px 6px',
+    borderRadius: '4px',
+  },
+}));
+
 export default function AutoMappingsButton({
   hasMatches,
   onAutoMapping,
@@ -17,6 +28,8 @@ export default function AutoMappingsButton({
   onClearMappings,
   isConfirming = false,
 }: AutoMappingsButtonProps) {
+  const classes = useStyles();
+
   if (hasMatches) {
     return (
       <Flex gap="2">
@@ -49,18 +62,7 @@ export default function AutoMappingsButton({
   return (
     <Button variant="tertiary" onClick={onAutoMapping} iconStart={<Rocket />}>
       Auto-Mapping
-      <div
-        style={{
-          backgroundColor: 'var(--bui-bg-solid)',
-          color: 'white',
-          fontSize: '11px',
-          fontWeight: 'bold',
-          padding: '2px 6px',
-          borderRadius: '4px',
-        }}
-      >
-        NEW
-      </div>
+      <div className={classes.newBadge}>NEW</div>
     </Button>
   );
 }

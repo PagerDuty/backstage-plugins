@@ -3,8 +3,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useApi } from '@backstage/core-plugin-api';
 import { pagerDutyApiRef } from '../../../../api';
 import { BackstageEntity } from '../../../types';
-import { AutoMatchResults } from './useAutoMatchResults';
-import { MappingCounts } from './useMappingToast';
+import { AutoMatchResults } from '../MappingsTable';
+import { MappingCounts } from '../MappingToast';
 
 interface UseConfirmMappingsParams {
   autoMatchResults: AutoMatchResults;
@@ -15,7 +15,6 @@ interface UseConfirmMappingsParams {
     counts: MappingCounts,
   ) => void;
   onError: (errorMessage: string) => void;
-  onClear: () => void;
 }
 
 export function useConfirmMappings({
@@ -23,7 +22,6 @@ export function useConfirmMappings({
   mappingEntities,
   onSuccess,
   onError,
-  onClear,
 }: UseConfirmMappingsParams) {
   const pagerDutyApi = useApi(pagerDutyApiRef);
   const queryClient = useQueryClient();
@@ -58,7 +56,7 @@ export function useConfirmMappings({
 
       if (response.ok) {
         const result = await response.json();
-        const successCount = result.successCount || result.success?.length || 0;
+        const successCount = result.successCount || 0;
         const skippedCount = result.skippedCount || 0;
         const errorCount = result.errorCount || 0;
 
@@ -67,8 +65,6 @@ export function useConfirmMappings({
           skipped: skippedCount,
           errored: errorCount,
         };
-
-        onClear();
         onSuccess(successCount, totalCount, counts);
         queryClient.invalidateQueries({
           queryKey: ['pagerduty', 'enhancedEntityMappings'],

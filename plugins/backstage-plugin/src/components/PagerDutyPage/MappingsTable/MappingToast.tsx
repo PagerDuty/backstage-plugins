@@ -1,24 +1,31 @@
 import { Alert } from '@material-ui/lab';
 import Snackbar from '@mui/material/Snackbar';
 import { CheckCircle, Error as ErrorIcon } from '@mui/icons-material';
-import { MappingCounts } from './hooks/useMappingToast';
+
+export interface MappingCounts {
+  created?: number;
+  skipped?: number;
+  errored?: number;
+}
+
+export type ToastSeverity = 'success' | 'error';
 
 interface MappingToastProps {
   open: boolean;
-  onClose: () => void;
-  severity: 'success' | 'error';
+  severity: ToastSeverity;
   message: string;
   totalMatches?: number;
   mappingCounts?: MappingCounts;
+  onClose: () => void;
 }
 
 export default function MappingToast({
   open,
-  onClose,
   severity,
   message,
   totalMatches = 0,
   mappingCounts = {},
+  onClose,
 }: MappingToastProps) {
   const getTitle = () => {
     if (severity === 'error') {
@@ -48,9 +55,10 @@ export default function MappingToast({
         <br />
         {hasDetailedCounts ? (
           <>
-            {mappingCounts.created !== undefined && mappingCounts.created > 0 && (
-              <>Created: {mappingCounts.created}</>
-            )}
+            {mappingCounts.created !== undefined &&
+              mappingCounts.created > 0 && (
+                <>Created: {mappingCounts.created}</>
+              )}
             {mappingCounts.skipped !== undefined &&
               mappingCounts.skipped > 0 && (
                 <>

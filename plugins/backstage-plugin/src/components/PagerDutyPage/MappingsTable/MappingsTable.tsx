@@ -18,11 +18,19 @@ import StatusCell from './StatusCell';
 import { ServiceCell } from './ServiceCell';
 import { BackstageEntity } from '../../types';
 import useDebounce from '../../../hooks/useDebounce';
-import MappingToast from './MappingToast';
-import { useAutoMatchResults } from './hooks/useAutoMatchResults';
-import { useMappingToast } from './hooks/useMappingToast';
+import MappingToast, { MappingCounts, ToastSeverity } from './MappingToast';
 import { useEntityMappings } from './hooks/useEntityMappings';
 import { useConfirmMappings } from './hooks/useConfirmMappings';
+import { useQueryClient } from '@tanstack/react-query';
+
+export interface AutoMatchResult {
+  score: number;
+  serviceId: string;
+  account: string;
+  serviceName: string;
+}
+
+export type AutoMatchResults = Record<string, AutoMatchResult>;
 
 export default function MappingsTable() {
   const [isOpen, setIsOpen] = useState(false);
@@ -34,24 +42,36 @@ export default function MappingsTable() {
   const [pageSize, setPageSize] = useState(10);
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearchQuery = useDebounce(searchQuery);
+  const queryClient = useQueryClient();
 
-  const {
-    autoMatchResults,
-    hasMatches,
-    setMatches,
-    clearMatches,
-    removeMatch,
-  } = useAutoMatchResults();
-  const {
-    showToast,
-    toastMessage,
-    toastSeverity,
-    totalMatches,
-    mappingCounts,
-    showSuccess,
-    showError,
-    closeToast,
-  } = useMappingToast();
+  const [toastOpen, setToastOpen] = useState(false);
+  const [toastSeverity, setToastSeverity] = useState<ToastSeverity>('success');
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastTotalMatches, setToastTotalMatches] = useState<number>(0);
+  const [toastMappingCounts, setToastMappingCounts] = useState<MappingCounts>(
+    {},
+  );
+
+  const [autoMatchResults, setAutoMatchResults] = useState<AutoMatchResults>(
+    {},
+  );
+  const hasMatches = Object.keys(autoMatchResults).length > 0;
+
+  const clearMatches = () => {
+    setAutoMatchResults({});
+  };
+
+  const setMatches = (results: AutoMatchResults) => {
+    setAutoMatchResults(results);
+  };
+
+  const removeMatch = (entityName: string) => {
+    setAutoMatchResults(prev => {
+      const updated = { ...prev };
+      delete updated[entityName];
+      return updated;
+    });
+  };
   const { mappings, entitiesWithScores } = useEntityMappings(
     offset,
     pageSize,
@@ -63,14 +83,25 @@ export default function MappingsTable() {
     autoMatchResults,
     mappingEntities: mappings?.entities,
     onSuccess: (successCount, totalCount, counts) => {
-      showSuccess(
+      queryClient.invalidateQueries({
+        queryKey: ['pagerduty', 'enhancedEntityMappings'],
+      });
+      clearMatches();
+      setToastOpen(true);
+      setToastSeverity('success');
+      setToastMessage(
         `${successCount} of ${totalCount} mappings saved successfully.`,
-        undefined,
-        counts,
       );
+      setToastTotalMatches(0);
+      setToastMappingCounts(counts);
     },
-    onError: showError,
-    onClear: clearMatches,
+    onError: errorMessage => {
+      setToastOpen(true);
+      setToastSeverity('error');
+      setToastMessage(errorMessage);
+      setToastTotalMatches(0);
+      setToastMappingCounts({});
+    },
   });
 
   return (
@@ -97,7 +128,7 @@ export default function MappingsTable() {
           }}
         />
       </Flex>
-      <Table>
+      <Table selectionMode="none">
         <TableHeader>
           <Column isRowHeader>Name</Column>
           <Column isRowHeader>Team</Column>
@@ -177,19 +208,20 @@ export default function MappingsTable() {
         onAutoMatchComplete={results => {
           setMatches(results);
           const matchCount = Object.keys(results).length;
-          showSuccess(
-            `${matchCount} services mapped successfully.`,
-            matchCount,
-          );
+          setToastOpen(true);
+          setToastSeverity('success');
+          setToastMessage(`${matchCount} services mapped successfully.`);
+          setToastTotalMatches(matchCount);
+          setToastMappingCounts({});
         }}
       />
       <MappingToast
-        open={showToast}
-        onClose={closeToast}
+        open={toastOpen}
         severity={toastSeverity}
         message={toastMessage}
-        totalMatches={totalMatches}
-        mappingCounts={mappingCounts}
+        totalMatches={toastTotalMatches}
+        mappingCounts={toastMappingCounts}
+        onClose={() => setToastOpen(false)}
       />
     </>
   );

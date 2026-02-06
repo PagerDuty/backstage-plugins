@@ -18,7 +18,9 @@ export type RawDbEntityResultRow = {
 /** @public */
 export interface PagerDutyBackendStore {
   insertEntityMapping(entity: PagerDutyEntityMapping): Promise<string>;
-  bulkInsertEntityMappings(entities: PagerDutyEntityMapping[]): Promise<string[]>;
+  bulkInsertEntityMappings(
+    entities: PagerDutyEntityMapping[],
+  ): Promise<string[]>;
   getAllEntityMappings(): Promise<RawDbEntityResultRow[]>;
   findEntityMappingByEntityRef(
     entityRef: string,
@@ -86,14 +88,12 @@ export class PagerDutyBackendDatabase implements PagerDutyBackendStore {
       return [];
     }
 
-    const now = new Date();
     const rows = entities.map(entity => ({
       id: uuid(),
       entityRef: entity.entityRef,
       serviceId: entity.serviceId,
       integrationKey: entity.integrationKey,
       account: entity.account,
-      processedDate: now,
     }));
 
     const results = await this.db<RawDbEntityResultRow>(

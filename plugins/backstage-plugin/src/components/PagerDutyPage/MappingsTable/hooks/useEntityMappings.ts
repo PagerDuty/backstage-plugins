@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useApi } from '@backstage/core-plugin-api';
 import { pagerDutyApiRef } from '../../../../api';
 import { BackstageEntity } from '../../../types';
-import { AutoMatchResults } from './useAutoMatchResults';
+import { AutoMatchResults } from '../MappingsTable';
 
 export function useEntityMappings(
   offset: number,

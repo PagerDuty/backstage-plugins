@@ -663,14 +663,6 @@ export async function createRouter(
         return;
       }
 
-      if (mappings.length === 0) {
-        response.status(400).json({
-          error: "Bad Request: 'mappings' array cannot be empty",
-        });
-        return;
-      }
-
-      // Get all existing entity mappings once
       const existingMappings = await store.getAllEntityMappings();
       const existingServiceIds = new Set(
         existingMappings.map(m => m.serviceId),
@@ -680,7 +672,6 @@ export async function createRouter(
       const skipped: PagerDutyEntityMapping[] = [];
       const errors = [];
 
-      // Filter out mappings that already exist based on serviceId
       for (const entity of mappings) {
         if (!entity.serviceId) {
           errors.push({
@@ -691,20 +682,16 @@ export async function createRouter(
         }
 
         if (existingServiceIds.has(entity.serviceId)) {
-          // Mapping already exists, discard it
           skipped.push(entity);
           continue;
         }
 
-        // in case a mapping is defined and no integration exists,
-        // we need to create one
         if (
           entity.entityRef !== '' &&
           (entity.integrationKey === '' || entity.integrationKey === undefined)
         ) {
           try {
             const backstageVendorId = 'PRO19CT';
-            // check for existing integration key on service
             const service = await getServiceById(
               entity.serviceId,
               entity.account,
@@ -714,8 +701,6 @@ export async function createRouter(
             );
 
             if (!backstageIntegration) {
-              // If an integration does not exist for service,
-              // create it in PagerDuty
               const integrationKey = await createServiceIntegration({
                 serviceId: entity.serviceId,
                 vendorId: backstageVendorId,
@@ -742,13 +727,11 @@ export async function createRouter(
         newMappings.push(entity);
       }
 
-      // Bulk insert new mappings
       let insertedIds: string[] = [];
       if (newMappings.length > 0) {
         try {
           insertedIds = await store.bulkInsertEntityMappings(newMappings);
 
-          // Refresh entities in catalog
           await Promise.all(
             newMappings.map(async entity => {
               if (entity.entityRef !== '') {
