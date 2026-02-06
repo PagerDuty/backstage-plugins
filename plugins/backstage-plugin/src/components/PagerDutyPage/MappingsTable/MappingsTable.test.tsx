@@ -1,5 +1,5 @@
 // eslint-disable-next-line @backstage/no-undeclared-imports
-import { act, fireEvent, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { renderInTestApp, TestApiRegistry } from '@backstage/test-utils';
 import { pagerDutyApiRef } from '../../../api';
 import MappingsTable from './MappingsTable';
@@ -195,13 +195,11 @@ describe('MappingsTable', () => {
       </ApiProvider>,
     );
 
-    const searchInput = screen.getByPlaceholderText(
-      'Search for components or teams',
-    );
+    const filterButton = screen.getByRole('button', { name: 'Toggle filters' });
+    fireEvent.click(filterButton);
 
-    await act(async () => {
-      fireEvent.change(searchInput, { target: { value: 'my-component' } });
-    });
+    const serviceFilter = screen.getByPlaceholderText('Filter by name');
+    fireEvent.change(serviceFilter, { target: { value: 'my-component' } });
 
     jest.advanceTimersByTime(500);
 
@@ -209,8 +207,8 @@ describe('MappingsTable', () => {
       expect(mockGetEntityMappingsWithPagination).toHaveBeenCalledWith({
         offset: 0,
         limit: 10,
-        search: 'my-component',
         searchFields: ['metadata.name', 'spec.owner'],
+        filters: { name: 'my-component', serviceName: '', status: '' },
       });
     });
 
@@ -249,38 +247,135 @@ describe('MappingsTable', () => {
     expect(mockGetEntityMappingsWithPagination).toHaveBeenCalledWith({
       offset: 0,
       limit: 10,
-      search: '',
       searchFields: ['metadata.name', 'spec.owner'],
+      filters: { name: '', serviceName: '', status: '' },
     });
 
     expect(screen.getByText('1 - 10 of 25')).toBeInTheDocument();
 
     const nextButton = screen.getByLabelText('Next');
-    await act(async () => {
-      fireEvent.click(nextButton);
-    });
+    fireEvent.click(nextButton);
 
     await waitFor(() => {
       expect(mockGetEntityMappingsWithPagination).toHaveBeenCalledWith({
         offset: 10,
         limit: 10,
-        search: '',
         searchFields: ['metadata.name', 'spec.owner'],
+        filters: { name: '', serviceName: '', status: '' },
       });
     });
 
     const previousButton = screen.getByLabelText('Previous');
-    await act(async () => {
-      fireEvent.click(previousButton);
-    });
+    fireEvent.click(previousButton);
 
     await waitFor(() => {
       expect(mockGetEntityMappingsWithPagination).toHaveBeenCalledWith({
         offset: 0,
         limit: 10,
-        search: '',
         searchFields: ['metadata.name', 'spec.owner'],
+        filters: { name: '', serviceName: '', status: '' },
       });
     });
+  });
+
+  it('calls API with correct filter parameters when filters are applied', async () => {
+    jest.useFakeTimers();
+    mockGetEntityMappingsWithPagination.mockResolvedValue({
+      entities: [],
+      totalCount: 0,
+    });
+
+    await renderInTestApp(
+      <ApiProvider apis={apis}>
+        <QueryClientProvider client={queryClient}>
+          <MappingsTable />
+        </QueryClientProvider>
+      </ApiProvider>,
+    );
+
+    const filterButton = screen.getByRole('button', { name: 'Toggle filters' });
+    fireEvent.click(filterButton);
+
+    const nameFilter = screen.getByPlaceholderText('Filter by name');
+    fireEvent.change(nameFilter, { target: { value: 'test-service' } });
+
+    // wait because of the debounce
+    jest.advanceTimersByTime(500);
+
+    await waitFor(() => {
+      expect(mockGetEntityMappingsWithPagination).toHaveBeenCalledWith(
+        expect.objectContaining({
+          filters: expect.objectContaining({
+            name: 'test-service',
+          }),
+        }),
+      );
+    });
+
+    jest.useRealTimers();
+  });
+
+  it('resets offset to 0 when filters change', async () => {
+    jest.useFakeTimers();
+    const mockEntities = Array.from({ length: 10 }, (_, i) => ({
+      id: `entity-${i}`,
+      name: `service-${i}`,
+      namespace: 'default',
+      type: 'service',
+      system: 'core',
+      owner: `team-${i}`,
+      lifecycle: 'production',
+      annotations: {
+        'pagerduty.com/integration-key': `key-${i}`,
+        'pagerduty.com/service-id': `PD${i}`,
+      },
+      status: 'InSync' as const,
+    }));
+
+    mockGetEntityMappingsWithPagination.mockResolvedValue({
+      entities: mockEntities,
+      totalCount: 25,
+    });
+
+    await renderInTestApp(
+      <ApiProvider apis={apis}>
+        <QueryClientProvider client={queryClient}>
+          <MappingsTable />
+        </QueryClientProvider>
+      </ApiProvider>,
+    );
+
+    const nextButton = screen.getByLabelText('Next');
+    fireEvent.click(nextButton);
+
+    await waitFor(() => {
+      expect(mockGetEntityMappingsWithPagination).toHaveBeenCalledWith(
+        expect.objectContaining({
+          offset: 10,
+        }),
+      );
+    });
+
+    const filterButton = screen.getByRole('button', { name: 'Toggle filters' });
+    fireEvent.click(filterButton);
+
+    const serviceFilter = screen.getByPlaceholderText('Filter by service');
+    fireEvent.change(serviceFilter, { target: { value: 'pagerduty-service' } });
+
+    // wait because of the debounce
+    jest.advanceTimersByTime(500);
+
+    await waitFor(() => {
+      expect(mockGetEntityMappingsWithPagination).toHaveBeenCalledWith(
+        expect.objectContaining({
+          offset: 0,
+          filters: expect.objectContaining({
+            serviceName: 'pagerduty-service',
+          }),
+        }),
+      );
+    });
+
+    jest.useRealTimers();
   });
 });

@@ -144,6 +144,11 @@ export class PagerDutyClient implements PagerDutyApi {
     limit: number;
     search?: string;
     searchFields?: string[];
+    filters?: {
+      name?: string;
+      serviceName?: string;
+      status?: string;
+    };
   }): Promise<PagerDutyEnhancedEntityMappingsResponse> {
     const url = `${await this.config.discoveryApi.getBaseUrl(
       'pagerduty',
@@ -154,6 +159,7 @@ export class PagerDutyClient implements PagerDutyApi {
       limit: options.limit,
       search: options.search,
       searchFields: options.searchFields || ['metadata.name', 'spec.owner'],
+      filters: options.filters || {},
     });
 
     const requestOptions = {

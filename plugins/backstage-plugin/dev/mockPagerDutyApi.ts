@@ -108,8 +108,12 @@ export const mockPagerDutyApi: PagerDutyApi = {
   async getEntityMappingsWithPagination(options: {
     offset: number;
     limit: number;
-    search?: string;
     searchFields?: string[];
+    filters?: {
+      name?: string;
+      serviceName?: string;
+      status?: string;
+    };
   }): Promise<PagerDutyEnhancedEntityMappingsResponse> {
     const mockEntities: FormattedBackstageEntity[] = [
       {
@@ -167,8 +171,8 @@ export const mockPagerDutyApi: PagerDutyApi = {
     ];
 
     let filteredEntities = [...mockEntities];
-    if (options.search && options.search.trim() !== '') {
-      const searchTerm = options.search.toLowerCase();
+    if (options.filters?.name && options.filters.name.trim() !== '') {
+      const searchTerm = options.filters.name.toLowerCase();
       filteredEntities = mockEntities.filter(
         entity =>
           entity.name.toLowerCase().includes(searchTerm) ||

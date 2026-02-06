@@ -6,16 +6,18 @@ import {
   TableHeader,
   TablePagination,
   CellText,
-  SearchField,
   Flex,
+  ButtonIcon,
+  SearchField,
 } from '@backstage/ui';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import MappingsDialog from '../MappingsDialog';
 import AutomaticMappingsDialog from '../AutomaticMappingsDialog';
 import AutoMappingsButton from './AutoMappingsButton';
-import { Edit, Search, Delete } from '@mui/icons-material';
 import StatusCell from './StatusCell';
 import { ServiceCell } from './ServiceCell';
+import { Edit, Search, Delete, FilterList } from '@mui/icons-material';
+import { FilterRow } from './FilterRow';
 import { BackstageEntity } from '../../types';
 import useDebounce from '../../../hooks/useDebounce';
 import MappingToast, { MappingCounts, ToastSeverity } from './MappingToast';
@@ -40,9 +42,18 @@ export default function MappingsTable() {
   );
   const [offset, setOffset] = useState(0);
   const [pageSize, setPageSize] = useState(10);
+
   const [searchQuery, setSearchQuery] = useState('');
-  const debouncedSearchQuery = useDebounce(searchQuery);
   const queryClient = useQueryClient();
+  const [showFilters, setShowFilters] = useState(false);
+
+  const [filters, setFilters] = useState({
+    name: '',
+    serviceName: '',
+    status: '',
+  });
+
+  const debouncedFilters = useDebounce(filters);
 
   const [toastOpen, setToastOpen] = useState(false);
   const [toastSeverity, setToastSeverity] = useState<ToastSeverity>('success');
@@ -72,10 +83,18 @@ export default function MappingsTable() {
       return updated;
     });
   };
+
+  const handleFilterChange = useCallback(
+    (key: keyof typeof filters, value: string) => {
+      setFilters(prev => ({ ...prev, [key]: value }));
+      setOffset(0);
+    }, [],
+  );
+
   const { mappings, entitiesWithScores } = useEntityMappings(
     offset,
     pageSize,
-    debouncedSearchQuery,
+    debouncedFilters,
     autoMatchResults,
   );
 
@@ -102,6 +121,7 @@ export default function MappingsTable() {
       setToastTotalMatches(0);
       setToastMappingCounts({});
     },
+
   });
 
   return (
@@ -114,6 +134,7 @@ export default function MappingsTable() {
           onClearMappings={clearMatches}
           isConfirming={isConfirming}
         />
+
         <SearchField
           size="small"
           placeholder="Search for components or teams"
@@ -127,6 +148,14 @@ export default function MappingsTable() {
             setOffset(0);
           }}
         />
+
+        <ButtonIcon
+          icon={<FilterList />}
+          aria-label="Toggle filters"
+          onClick={() => setShowFilters(!showFilters)}
+          variant={showFilters ? 'primary' : 'secondary'} >
+          <FilterList />
+        </ButtonIcon>
       </Flex>
       <Table selectionMode="none">
         <TableHeader>
@@ -139,6 +168,8 @@ export default function MappingsTable() {
           <Column isRowHeader>Actions</Column>
         </TableHeader>
         <TableBody>
+          {showFilters && (<FilterRow filters={filters} onFilterChange={handleFilterChange} />)}
+          
           {entitiesWithScores?.map((entity: BackstageEntity) => (
             <Row key={entity.id}>
               <CellText title={entity.name} />

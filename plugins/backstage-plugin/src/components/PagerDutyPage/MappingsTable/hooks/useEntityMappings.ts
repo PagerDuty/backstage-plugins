@@ -7,7 +7,7 @@ import { AutoMatchResults } from '../MappingsTable';
 export function useEntityMappings(
   offset: number,
   pageSize: number,
-  searchQuery: string,
+  filters: { name: string; serviceName: string; status: string },
   autoMatchResults: AutoMatchResults,
 ) {
   const pagerDutyApi = useApi(pagerDutyApiRef);
@@ -19,15 +19,15 @@ export function useEntityMappings(
       {
         offset,
         pageSize,
-        search: searchQuery,
+        filters,
       },
     ],
     queryFn: () =>
       pagerDutyApi.getEntityMappingsWithPagination({
         offset,
         limit: pageSize,
-        search: searchQuery,
         searchFields: ['metadata.name', 'spec.owner'],
+        filters,
       }),
   });
 
