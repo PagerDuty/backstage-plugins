@@ -2690,5 +2690,273 @@ describe('createRouter', () => {
         });
       });
     });
+
+    describe('POST /mapping/entities/bulk', () => {
+      it('returns 400 if mappings is not an array', async () => {
+        const response = await request(app)
+          .post('/mapping/entities/bulk')
+          .send({ mappings: 'invalid' });
+
+        expect(response.status).toEqual(400);
+        expect(response.body).toEqual({
+          error: "Bad Request: 'mappings' must be an array",
+        });
+      });
+
+      it('returns 400 if mappings array is empty', async () => {
+        const response = await request(app)
+          .post('/mapping/entities/bulk')
+          .send({ mappings: [] });
+
+        expect(response.status).toEqual(400);
+        expect(response.body).toEqual({
+          error: "Bad Request: 'mappings' array cannot be empty",
+        });
+      });
+
+      it('returns error for mappings without serviceId', async () => {
+        const response = await request(app)
+          .post('/mapping/entities/bulk')
+          .send({
+            mappings: [
+              {
+                entityRef: 'component:default/test',
+                integrationKey: 'TEST_KEY',
+              },
+            ],
+          });
+
+        expect(response.status).toEqual(200);
+        expect(response.body.errorCount).toEqual(1);
+        expect(response.body.errors[0]).toEqual({
+          entityRef: 'component:default/test',
+          error: 'Missing serviceId',
+        });
+      });
+
+      it('successfully creates new bulk mappings', async () => {
+        const mappings = [
+          {
+            serviceId: 'NEW_SERVICE_1',
+            entityRef: 'component:default/new-component-1',
+            integrationKey: 'INT_KEY_1',
+            account: 'test-account',
+          },
+          {
+            serviceId: 'NEW_SERVICE_2',
+            entityRef: 'component:default/new-component-2',
+            integrationKey: 'INT_KEY_2',
+            account: 'test-account',
+          },
+        ];
+
+        const response = await request(app)
+          .post('/mapping/entities/bulk')
+          .send({ mappings });
+
+        expect(response.status).toEqual(200);
+        expect(response.body.successCount).toEqual(2);
+        expect(response.body.skippedCount).toEqual(0);
+        expect(response.body.errorCount).toEqual(0);
+        expect(response.body.success).toHaveLength(2);
+        expect(response.body.success[0]).toMatchObject({
+          serviceId: 'NEW_SERVICE_1',
+          entityRef: 'component:default/new-component-1',
+          integrationKey: 'INT_KEY_1',
+        });
+      });
+
+      it('skips existing mappings based on serviceId', async () => {
+        // First, create a mapping
+        await request(app).post('/mapping/entity').send({
+          serviceId: 'EXISTING_SERVICE',
+          entityRef: 'component:default/existing',
+          integrationKey: 'EXISTING_KEY',
+          account: 'test-account',
+        });
+
+        // Try to bulk create including the existing one
+        const mappings = [
+          {
+            serviceId: 'EXISTING_SERVICE',
+            entityRef: 'component:default/existing',
+            integrationKey: 'EXISTING_KEY',
+            account: 'test-account',
+          },
+          {
+            serviceId: 'NEW_SERVICE_3',
+            entityRef: 'component:default/new-component-3',
+            integrationKey: 'INT_KEY_3',
+            account: 'test-account',
+          },
+        ];
+
+        const response = await request(app)
+          .post('/mapping/entities/bulk')
+          .send({ mappings });
+
+        expect(response.status).toEqual(200);
+        expect(response.body.successCount).toEqual(1);
+        expect(response.body.skippedCount).toEqual(1);
+        expect(response.body.errorCount).toEqual(0);
+        expect(response.body.skipped).toHaveLength(1);
+        expect(response.body.skipped[0]).toEqual({
+          entityRef: 'component:default/existing',
+          serviceId: 'EXISTING_SERVICE',
+          reason: 'Mapping already exists for this service ID',
+        });
+      });
+
+      it('creates integration key when mapping is defined without one', async () => {
+        mocked(fetch)
+          .mockReturnValueOnce(
+            mockedResponse(200, {
+              service: {
+                id: 'SERVICE_NO_INT',
+                name: 'Service Without Integration',
+                integrations: [],
+              },
+            }),
+          )
+          .mockReturnValueOnce(
+            mockedResponse(201, {
+              integration: {
+                integration_key: 'CREATED_INTEGRATION_KEY',
+              },
+            }),
+          );
+
+        const mappings = [
+          {
+            serviceId: 'SERVICE_NO_INT',
+            entityRef: 'component:default/test-component',
+            integrationKey: '',
+            account: 'test-account',
+          },
+        ];
+
+        const response = await request(app)
+          .post('/mapping/entities/bulk')
+          .send({ mappings });
+
+        expect(response.status).toEqual(200);
+        expect(response.body.successCount).toEqual(1);
+        expect(response.body.success[0].integrationKey).toEqual(
+          'CREATED_INTEGRATION_KEY',
+        );
+      });
+
+      it('uses existing integration key when available', async () => {
+        mocked(fetch).mockReturnValue(
+          mockedResponse(200, {
+            service: {
+              id: 'SERVICE_WITH_INT',
+              name: 'Service With Integration',
+              integrations: [
+                {
+                  vendor: {
+                    id: 'PRO19CT',
+                  },
+                  integration_key: 'EXISTING_BACKSTAGE_KEY',
+                },
+              ],
+            },
+          }),
+        );
+
+        const mappings = [
+          {
+            serviceId: 'SERVICE_WITH_INT',
+            entityRef: 'component:default/test-component',
+            integrationKey: '',
+            account: 'test-account',
+          },
+        ];
+
+        const response = await request(app)
+          .post('/mapping/entities/bulk')
+          .send({ mappings });
+
+        expect(response.status).toEqual(200);
+        expect(response.body.successCount).toEqual(1);
+        expect(response.body.success[0].integrationKey).toEqual(
+          'EXISTING_BACKSTAGE_KEY',
+        );
+      });
+
+      it('handles mixed success, skip, and error scenarios', async () => {
+        // Create an existing mapping
+        await request(app).post('/mapping/entity').send({
+          serviceId: 'EXISTING_MIXED',
+          entityRef: 'component:default/existing',
+          integrationKey: 'EXISTING_KEY',
+          account: 'test-account',
+        });
+
+        mocked(fetch).mockReturnValue(
+          mockedResponse(404, {
+            error: {
+              message: 'Service not found',
+            },
+          }),
+        );
+
+        const mappings = [
+          {
+            serviceId: 'EXISTING_MIXED',
+            entityRef: 'component:default/existing',
+            integrationKey: 'KEY',
+          },
+          {
+            serviceId: 'NEW_SERVICE_VALID',
+            entityRef: 'component:default/new-valid',
+            integrationKey: 'KEY_VALID',
+          },
+          {
+            entityRef: 'component:default/missing-service-id',
+            integrationKey: 'KEY',
+          },
+          {
+            serviceId: 'SERVICE_NEEDS_INT',
+            entityRef: 'component:default/needs-integration',
+            integrationKey: '',
+            account: 'test-account',
+          },
+        ];
+
+        const response = await request(app)
+          .post('/mapping/entities/bulk')
+          .send({ mappings });
+
+        expect(response.status).toEqual(200);
+        expect(response.body.total).toEqual(4);
+        expect(response.body.skippedCount).toEqual(1);
+        expect(response.body.errorCount).toBeGreaterThanOrEqual(1);
+        expect(response.body.successCount).toBeGreaterThanOrEqual(1);
+      });
+
+      it('returns proper response structure with all counts', async () => {
+        const mappings = [
+          {
+            serviceId: 'BULK_SERVICE_1',
+            entityRef: 'component:default/bulk-1',
+            integrationKey: 'BULK_KEY_1',
+          },
+        ];
+
+        const response = await request(app)
+          .post('/mapping/entities/bulk')
+          .send({ mappings });
+
+        expect(response.status).toEqual(200);
+        expect(response.body).toHaveProperty('success');
+        expect(response.body).toHaveProperty('skipped');
+        expect(response.body).toHaveProperty('errors');
+        expect(response.body).toHaveProperty('total');
+        expect(response.body).toHaveProperty('successCount');
+        expect(response.body).toHaveProperty('skippedCount');
+        expect(response.body).toHaveProperty('errorCount');
+      });
+    });
   });
 });

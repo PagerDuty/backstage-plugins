@@ -18,22 +18,84 @@ import { catalogApiMock } from '@backstage/plugin-catalog-react/testUtils';
 
 export const mockCatalogApi = catalogApiMock({
   entities: [
+    // Groups
+    {
+      apiVersion: 'backstage.io/v1alpha1',
+      kind: 'Group',
+      metadata: {
+        name: 'guests',
+        description: 'Guest Team',
+      },
+      spec: {
+        type: 'team',
+        children: [],
+      },
+    },
+    {
+      apiVersion: 'backstage.io/v1alpha1',
+      kind: 'Group',
+      metadata: {
+        name: 'platform-team',
+        description: 'Platform Team',
+      },
+      spec: {
+        type: 'team',
+        children: [],
+      },
+    },
+    {
+      apiVersion: 'backstage.io/v1alpha1',
+      kind: 'Group',
+      metadata: {
+        name: 'infrastructure-team',
+        description: 'Infrastructure Team',
+      },
+      spec: {
+        type: 'team',
+        children: [],
+      },
+    },
+    // Components
     {
       apiVersion: 'backstage.io/v1alpha1',
       kind: 'Component',
       metadata: {
-        name: 'backstage',
-        description: 'backstage.io',
+        name: 'example-website',
         annotations: {
-          'github.com/project-slug': 'backstage/backstage',
-          'pagerduty.com/service-id': 'foo',
-          'pagerduty.com/integration-key': 'foo',
+          'pagerduty.com/service-id': 'P6V1UFE',
         },
       },
       spec: {
-        lifecycle: 'production',
         type: 'website',
-        owner: 'user:guest',
+        lifecycle: 'experimental',
+        owner: 'guests',
+        system: 'examples',
+      },
+    },
+    {
+      apiVersion: 'backstage.io/v1alpha1',
+      kind: 'Component',
+      metadata: {
+        name: 'second-service',
+      },
+      spec: {
+        type: 'website',
+        lifecycle: 'experimental',
+        owner: 'platform-team',
+        system: 'examples',
+      },
+    },
+    {
+      apiVersion: 'backstage.io/v1alpha1',
+      kind: 'Component',
+      metadata: {
+        name: 'test-service',
+      },
+      spec: {
+        type: 'website',
+        lifecycle: 'experimental',
+        owner: 'infrastructure-team',
+        system: 'examples',
       },
     },
   ],

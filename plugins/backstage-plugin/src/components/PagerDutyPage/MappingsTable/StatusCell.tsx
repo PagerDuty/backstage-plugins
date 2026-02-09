@@ -6,12 +6,14 @@ const statusDictionary = {
   InSync: 'In Sync',
   OutOfSync: 'Out of Sync',
   NotMapped: 'Not Mapped',
+  AutoMapped: 'Auto Mapped',
   ErrorWhenFetchingService: 'Error occured while fetching service',
 } as const;
 const colourDictionary = {
-  InSync: 'green',
+  InSync: 'var(--bui-bg-solid)',
   OutOfSync: 'red',
   NotMapped: 'orange',
+  AutoMapped: 'blue',
   ErrorWhenFetchingService: 'red',
 } as const;
 

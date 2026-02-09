@@ -53,3 +53,3603 @@ spec:
     message ExampleMessage {
       string example = 1;
     };
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: tracking-validator
+spec:
+  type: library
+  lifecycle: deprecated
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: validation-worker-v1
+spec:
+  type: library
+  lifecycle: experimental
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: analytics-publisher
+spec:
+  type: website
+  lifecycle: deprecated
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: product-manager-v3
+spec:
+  type: library
+  lifecycle: experimental
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: tracking-controller-v2
+spec:
+  type: website
+  lifecycle: production
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: webhook-api
+spec:
+  type: website
+  lifecycle: production
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: alert-scheduler
+spec:
+  type: service
+  lifecycle: production
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: logging-customer-collector
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: config-deployment-service
+spec:
+  type: library
+  lifecycle: production
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: order-validator
+spec:
+  type: website
+  lifecycle: deprecated
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: security-resolver-v3
+spec:
+  type: library
+  lifecycle: deprecated
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: metrics-processor-v2
+spec:
+  type: service
+  lifecycle: deprecated
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: webhook-inventory-service
+spec:
+  type: library
+  lifecycle: deprecated
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: media-collector-v1
+spec:
+  type: service
+  lifecycle: production
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: oauth-api
+spec:
+  type: library
+  lifecycle: deprecated
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: cache-scheduler
+spec:
+  type: service
+  lifecycle: deprecated
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: backup-publisher
+spec:
+  type: library
+  lifecycle: deprecated
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: download-alert-publisher
+spec:
+  type: website
+  lifecycle: production
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: messaging-controller
+spec:
+  type: service
+  lifecycle: production
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: cache-coordinator
+spec:
+  type: library
+  lifecycle: production
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: product-subscriber
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: ab-test-orchestrator-v2
+spec:
+  type: service
+  lifecycle: experimental
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: alert-controller-v1
+spec:
+  type: website
+  lifecycle: deprecated
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: inventory-order-coordinator
+spec:
+  type: library
+  lifecycle: production
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: file-audit-proxy
+spec:
+  type: website
+  lifecycle: experimental
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: security-manager
+spec:
+  type: website
+  lifecycle: production
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: validation-auth-engine
+spec:
+  type: library
+  lifecycle: deprecated
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: experiment-manager
+spec:
+  type: library
+  lifecycle: production
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: messaging-worker-v3
+spec:
+  type: service
+  lifecycle: experimental
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: cart-gateway
+spec:
+  type: service
+  lifecycle: deprecated
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: integration-download-worker
+spec:
+  type: service
+  lifecycle: experimental
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: ab-test-publisher-v1
+spec:
+  type: website
+  lifecycle: experimental
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: search-publisher-v3
+spec:
+  type: service
+  lifecycle: experimental
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: document-orchestrator
+spec:
+  type: service
+  lifecycle: experimental
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: recommendation-video-orchestrator
+spec:
+  type: website
+  lifecycle: production
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: metrics-admin-validator
+spec:
+  type: website
+  lifecycle: production
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: analytics-feature-router
+spec:
+  type: library
+  lifecycle: production
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: email-subscriber-v1
+spec:
+  type: website
+  lifecycle: production
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: product-aggregator-v2
+spec:
+  type: website
+  lifecycle: experimental
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: export-order-validator
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: recommendation-resolver-v2
+spec:
+  type: service
+  lifecycle: deprecated
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: stream-proxy
+spec:
+  type: library
+  lifecycle: deprecated
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: reporting-api
+spec:
+  type: service
+  lifecycle: production
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: backup-reporting-resolver
+spec:
+  type: website
+  lifecycle: production
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: monitoring-export-publisher
+spec:
+  type: library
+  lifecycle: deprecated
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: transform-order-publisher
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: ab-test-transformer
+spec:
+  type: website
+  lifecycle: deprecated
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: ab-test-user-collector
+spec:
+  type: service
+  lifecycle: deprecated
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: monitoring-executor-v3
+spec:
+  type: library
+  lifecycle: deprecated
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: user-webhook-subscriber
+spec:
+  type: website
+  lifecycle: production
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: logging-token-handler
+spec:
+  type: service
+  lifecycle: production
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: backup-validator-v1
+spec:
+  type: website
+  lifecycle: experimental
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: experiment-user-manager
+spec:
+  type: website
+  lifecycle: production
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: metrics-worker-v1
+spec:
+  type: library
+  lifecycle: production
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: token-coordinator-v1
+spec:
+  type: service
+  lifecycle: production
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: export-handler
+spec:
+  type: library
+  lifecycle: experimental
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: reporting-aggregator
+spec:
+  type: website
+  lifecycle: experimental
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: security-worker
+spec:
+  type: library
+  lifecycle: deprecated
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: video-proxy
+spec:
+  type: library
+  lifecycle: production
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: monitoring-dispatcher-v2
+spec:
+  type: library
+  lifecycle: deprecated
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: stream-processor-v3
+spec:
+  type: service
+  lifecycle: production
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: product-delivery-producer
+spec:
+  type: service
+  lifecycle: experimental
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: webhook-worker-v2
+spec:
+  type: website
+  lifecycle: experimental
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: sync-proxy
+spec:
+  type: website
+  lifecycle: production
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: inventory-processor
+spec:
+  type: website
+  lifecycle: production
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: token-queue-v2
+spec:
+  type: library
+  lifecycle: experimental
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: tracking-dispatcher-v3
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: migration-metrics-scheduler
+spec:
+  type: service
+  lifecycle: experimental
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: email-coordinator-v1
+spec:
+  type: website
+  lifecycle: production
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: reporting-api-controller
+spec:
+  type: library
+  lifecycle: deprecated
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: security-feature-controller
+spec:
+  type: library
+  lifecycle: experimental
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: customer-aggregator
+spec:
+  type: service
+  lifecycle: deprecated
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: customer-processor
+spec:
+  type: library
+  lifecycle: production
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: download-service-v3
+spec:
+  type: website
+  lifecycle: production
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: token-user-collector
+spec:
+  type: website
+  lifecycle: production
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: restore-processor
+spec:
+  type: website
+  lifecycle: deprecated
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: admin-coordinator
+spec:
+  type: website
+  lifecycle: production
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: order-webhook-publisher
+spec:
+  type: service
+  lifecycle: deprecated
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: messaging-subscriber
+spec:
+  type: library
+  lifecycle: experimental
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: ab-test-metrics-consumer
+spec:
+  type: library
+  lifecycle: experimental
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: migration-handler-v3
+spec:
+  type: library
+  lifecycle: production
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: content-stream-gateway
+spec:
+  type: library
+  lifecycle: deprecated
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: cart-order-producer
+spec:
+  type: library
+  lifecycle: experimental
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: image-transformer
+spec:
+  type: library
+  lifecycle: deprecated
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: content-subscriber-v2
+spec:
+  type: library
+  lifecycle: production
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: oauth-manager
+spec:
+  type: service
+  lifecycle: deprecated
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: customer-metrics-proxy
+spec:
+  type: service
+  lifecycle: deprecated
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: transform-collector
+spec:
+  type: website
+  lifecycle: deprecated
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: metrics-notification-gateway
+spec:
+  type: website
+  lifecycle: deprecated
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: token-resolver-v3
+spec:
+  type: service
+  lifecycle: deprecated
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: search-handler
+spec:
+  type: service
+  lifecycle: production
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: video-aggregator
+spec:
+  type: library
+  lifecycle: deprecated
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: audit-queue
+spec:
+  type: library
+  lifecycle: experimental
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: push-handler
+spec:
+  type: website
+  lifecycle: experimental
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: alert-dispatcher
+spec:
+  type: service
+  lifecycle: deprecated
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: messaging-executor-v3
+spec:
+  type: website
+  lifecycle: production
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: delivery-handler-v1
+spec:
+  type: library
+  lifecycle: production
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: product-proxy-v2
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: billing-webhook-subscriber
+spec:
+  type: service
+  lifecycle: deprecated
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: notification-deployment-service
+spec:
+  type: service
+  lifecycle: experimental
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: document-cache-coordinator
+spec:
+  type: service
+  lifecycle: deprecated
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: shipping-feature-publisher
+spec:
+  type: library
+  lifecycle: production
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: payment-transformer
+spec:
+  type: service
+  lifecycle: experimental
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: document-transformer
+spec:
+  type: service
+  lifecycle: production
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: cart-processor
+spec:
+  type: website
+  lifecycle: experimental
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: integration-content-validator
+spec:
+  type: website
+  lifecycle: experimental
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: recommendation-validator
+spec:
+  type: service
+  lifecycle: production
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: integration-controller
+spec:
+  type: website
+  lifecycle: deprecated
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: messaging-delivery-producer
+spec:
+  type: service
+  lifecycle: experimental
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: stream-worker-v3
+spec:
+  type: library
+  lifecycle: experimental
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: import-session-handler
+spec:
+  type: website
+  lifecycle: production
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: token-publisher
+spec:
+  type: library
+  lifecycle: production
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: security-orchestrator-v1
+spec:
+  type: service
+  lifecycle: deprecated
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: push-publisher-v1
+spec:
+  type: service
+  lifecycle: deprecated
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: tracking-inventory-processor
+spec:
+  type: service
+  lifecycle: experimental
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: admin-shipping-collector
+spec:
+  type: website
+  lifecycle: production
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: video-push-producer
+spec:
+  type: library
+  lifecycle: production
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: restore-handler-v2
+spec:
+  type: website
+  lifecycle: deprecated
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: metrics-controller
+spec:
+  type: service
+  lifecycle: deprecated
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: push-consumer-v2
+spec:
+  type: service
+  lifecycle: production
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: sms-proxy-v2
+spec:
+  type: library
+  lifecycle: production
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: data-router
+spec:
+  type: service
+  lifecycle: deprecated
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: transform-resolver
+spec:
+  type: website
+  lifecycle: experimental
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: notification-controller-v1
+spec:
+  type: library
+  lifecycle: experimental
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: cart-token-publisher
+spec:
+  type: service
+  lifecycle: experimental
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: migration-producer-v2
+spec:
+  type: library
+  lifecycle: experimental
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: document-worker-v1
+spec:
+  type: service
+  lifecycle: deprecated
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: video-sms-engine
+spec:
+  type: library
+  lifecycle: production
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: delivery-manager-v3
+spec:
+  type: website
+  lifecycle: production
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: auth-controller
+spec:
+  type: website
+  lifecycle: production
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: messaging-export-handler
+spec:
+  type: service
+  lifecycle: experimental
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: audit-collector
+spec:
+  type: service
+  lifecycle: deprecated
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: alert-backup-router
+spec:
+  type: website
+  lifecycle: production
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: messaging-manager
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: backup-manager-v1
+spec:
+  type: website
+  lifecycle: experimental
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: alert-worker
+spec:
+  type: website
+  lifecycle: production
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: audit-aggregator
+spec:
+  type: service
+  lifecycle: experimental
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: security-sms-handler
+spec:
+  type: library
+  lifecycle: production
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: customer-api-v1
+spec:
+  type: website
+  lifecycle: production
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: push-experiment-dispatcher
+spec:
+  type: service
+  lifecycle: experimental
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: alert-worker-v3
+spec:
+  type: service
+  lifecycle: experimental
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: messaging-router-v3
+spec:
+  type: website
+  lifecycle: production
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: delivery-router-v1
+spec:
+  type: website
+  lifecycle: deprecated
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: upload-coordinator
+spec:
+  type: website
+  lifecycle: deprecated
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: cart-processor-v1
+spec:
+  type: service
+  lifecycle: deprecated
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: recommendation-service
+spec:
+  type: website
+  lifecycle: production
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: logging-storage-handler
+spec:
+  type: service
+  lifecycle: deprecated
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: inventory-orchestrator
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: ab-test-publisher
+spec:
+  type: library
+  lifecycle: production
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: integration-api-v1
+spec:
+  type: website
+  lifecycle: production
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: experiment-sync-producer
+spec:
+  type: service
+  lifecycle: experimental
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: recommendation-manager
+spec:
+  type: library
+  lifecycle: deprecated
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: customer-resolver
+spec:
+  type: library
+  lifecycle: production
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: document-coordinator-v2
+spec:
+  type: library
+  lifecycle: experimental
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: security-config-subscriber
+spec:
+  type: website
+  lifecycle: experimental
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: export-push-publisher
+spec:
+  type: website
+  lifecycle: deprecated
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: monitoring-orchestrator-v1
+spec:
+  type: website
+  lifecycle: experimental
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: billing-collector-v3
+spec:
+  type: library
+  lifecycle: production
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: upload-publisher
+spec:
+  type: website
+  lifecycle: production
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: ab-test-subscriber-v1
+spec:
+  type: library
+  lifecycle: production
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: push-orchestrator-v2
+spec:
+  type: service
+  lifecycle: experimental
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: content-gateway
+spec:
+  type: website
+  lifecycle: experimental
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: deployment-publisher-v3
+spec:
+  type: library
+  lifecycle: production
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: integration-image-subscriber
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: notification-reporting-subscriber
+spec:
+  type: website
+  lifecycle: deprecated
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: payment-orchestrator
+spec:
+  type: library
+  lifecycle: experimental
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: reporting-transformer-v2
+spec:
+  type: website
+  lifecycle: experimental
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: ab-test-subscriber
+spec:
+  type: service
+  lifecycle: experimental
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: token-validator-v1
+spec:
+  type: service
+  lifecycle: experimental
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: recommendation-data-coordinator
+spec:
+  type: library
+  lifecycle: experimental
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: user-executor
+spec:
+  type: service
+  lifecycle: deprecated
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: api-controller-v1
+spec:
+  type: website
+  lifecycle: deprecated
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: file-scheduler
+spec:
+  type: library
+  lifecycle: experimental
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: metrics-proxy-v2
+spec:
+  type: website
+  lifecycle: experimental
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: session-product-queue
+spec:
+  type: library
+  lifecycle: production
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: validation-api
+spec:
+  type: website
+  lifecycle: production
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: delivery-storage-coordinator
+spec:
+  type: service
+  lifecycle: deprecated
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: logging-processor
+spec:
+  type: library
+  lifecycle: deprecated
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: media-gateway-v1
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: stream-proxy-v1
+spec:
+  type: library
+  lifecycle: production
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: billing-queue
+spec:
+  type: library
+  lifecycle: production
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: customer-service
+spec:
+  type: library
+  lifecycle: experimental
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: content-order-transformer
+spec:
+  type: website
+  lifecycle: deprecated
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: experiment-router-v2
+spec:
+  type: library
+  lifecycle: experimental
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: notification-subscriber
+spec:
+  type: library
+  lifecycle: experimental
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: data-messaging-producer
+spec:
+  type: website
+  lifecycle: deprecated
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: oauth-audit-consumer
+spec:
+  type: website
+  lifecycle: deprecated
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: download-proxy
+spec:
+  type: service
+  lifecycle: deprecated
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: email-service-v1
+spec:
+  type: website
+  lifecycle: production
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: api-logging-gateway
+spec:
+  type: website
+  lifecycle: production
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: feature-validator-v2
+spec:
+  type: library
+  lifecycle: experimental
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: notification-consumer-v3
+spec:
+  type: website
+  lifecycle: deprecated
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: shipping-producer-v1
+spec:
+  type: service
+  lifecycle: experimental
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: storage-subscriber
+spec:
+  type: service
+  lifecycle: experimental
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: cache-transformer-v2
+spec:
+  type: library
+  lifecycle: production
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: recommendation-storage-coordinator
+spec:
+  type: service
+  lifecycle: experimental
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: logging-ab-test-aggregator
+spec:
+  type: service
+  lifecycle: deprecated
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: notification-admin-scheduler
+spec:
+  type: service
+  lifecycle: deprecated
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: security-router-v1
+spec:
+  type: website
+  lifecycle: production
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: sync-media-transformer
+spec:
+  type: library
+  lifecycle: deprecated
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: notification-webhook-producer
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: integration-controller-v3
+spec:
+  type: website
+  lifecycle: production
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: deployment-processor
+spec:
+  type: service
+  lifecycle: production
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: download-validator
+spec:
+  type: service
+  lifecycle: experimental
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: media-security-worker
+spec:
+  type: service
+  lifecycle: experimental
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: monitoring-backup-handler
+spec:
+  type: library
+  lifecycle: deprecated
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: oauth-gateway-v3
+spec:
+  type: service
+  lifecycle: deprecated
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: tracking-document-aggregator
+spec:
+  type: library
+  lifecycle: production
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: messaging-aggregator
+spec:
+  type: service
+  lifecycle: deprecated
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: integration-processor
+spec:
+  type: service
+  lifecycle: experimental
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: data-image-scheduler
+spec:
+  type: website
+  lifecycle: experimental
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: backup-download-consumer
+spec:
+  type: library
+  lifecycle: deprecated
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: migration-producer
+spec:
+  type: library
+  lifecycle: production
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: email-subscriber-v3
+spec:
+  type: library
+  lifecycle: production
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: user-collector-v2
+spec:
+  type: library
+  lifecycle: deprecated
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: backup-service
+spec:
+  type: website
+  lifecycle: deprecated
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: image-orchestrator
+spec:
+  type: library
+  lifecycle: deprecated
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: webhook-subscriber
+spec:
+  type: website
+  lifecycle: production
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: oauth-api-v2
+spec:
+  type: library
+  lifecycle: experimental
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: file-feature-coordinator
+spec:
+  type: library
+  lifecycle: deprecated
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: file-engine
+spec:
+  type: library
+  lifecycle: experimental
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: email-backup-handler
+spec:
+  type: service
+  lifecycle: deprecated
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: import-email-engine
+spec:
+  type: service
+  lifecycle: deprecated
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: token-subscriber
+spec:
+  type: website
+  lifecycle: experimental
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: security-delivery-adapter
+spec:
+  type: service
+  lifecycle: deprecated
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: api-consumer
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: restore-scheduler-v1
+spec:
+  type: service
+  lifecycle: experimental
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: webhook-handler
+spec:
+  type: website
+  lifecycle: production
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: video-validation-orchestrator
+spec:
+  type: library
+  lifecycle: deprecated
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: deployment-reporting-consumer
+spec:
+  type: library
+  lifecycle: deprecated
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: order-publisher-v3
+spec:
+  type: website
+  lifecycle: production
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: file-payment-subscriber
+spec:
+  type: library
+  lifecycle: production
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: tracking-consumer
+spec:
+  type: library
+  lifecycle: production
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: customer-router
+spec:
+  type: website
+  lifecycle: deprecated
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: session-router-v1
+spec:
+  type: library
+  lifecycle: deprecated
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: deployment-search-scheduler
+spec:
+  type: website
+  lifecycle: experimental
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: auth-proxy
+spec:
+  type: service
+  lifecycle: production
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: integration-producer-v2
+spec:
+  type: service
+  lifecycle: deprecated
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: cart-proxy-v1
+spec:
+  type: service
+  lifecycle: production
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: document-aggregator-v1
+spec:
+  type: library
+  lifecycle: deprecated
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: billing-queue-v3
+spec:
+  type: website
+  lifecycle: deprecated
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: order-deployment-collector
+spec:
+  type: library
+  lifecycle: production
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: stream-experiment-aggregator
+spec:
+  type: website
+  lifecycle: experimental
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: reporting-coordinator-v2
+spec:
+  type: library
+  lifecycle: deprecated
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: experiment-alert-validator
+spec:
+  type: website
+  lifecycle: deprecated
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: email-scheduler
+spec:
+  type: library
+  lifecycle: experimental
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: upload-audit-dispatcher
+spec:
+  type: service
+  lifecycle: experimental
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: validation-consumer
+spec:
+  type: service
+  lifecycle: experimental
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: shipping-image-adapter
+spec:
+  type: library
+  lifecycle: production
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: sync-api
+spec:
+  type: library
+  lifecycle: experimental
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: inventory-api-api
+spec:
+  type: library
+  lifecycle: experimental
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: validation-router
+spec:
+  type: service
+  lifecycle: experimental
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: export-analytics-publisher
+spec:
+  type: library
+  lifecycle: experimental
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: auth-producer-v2
+spec:
+  type: service
+  lifecycle: experimental
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: document-adapter-v3
+spec:
+  type: website
+  lifecycle: experimental
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: shipping-adapter-v2
+spec:
+  type: website
+  lifecycle: deprecated
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: data-validator
+spec:
+  type: website
+  lifecycle: experimental
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: search-worker-v2
+spec:
+  type: service
+  lifecycle: deprecated
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: ab-test-processor-v3
+spec:
+  type: library
+  lifecycle: deprecated
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: file-alert-adapter
+spec:
+  type: service
+  lifecycle: experimental
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: api-consumer-v3
+spec:
+  type: website
+  lifecycle: experimental
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: audit-coordinator
+spec:
+  type: library
+  lifecycle: deprecated
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: ab-test-controller-v1
+spec:
+  type: service
+  lifecycle: deprecated
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: security-transform-adapter
+spec:
+  type: service
+  lifecycle: production
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: admin-consumer-v1
+spec:
+  type: service
+  lifecycle: experimental
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: validation-service-v1
+spec:
+  type: library
+  lifecycle: experimental
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: api-executor-v3
+spec:
+  type: service
+  lifecycle: experimental
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: backup-worker-v3
+spec:
+  type: website
+  lifecycle: experimental
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: upload-proxy-v2
+spec:
+  type: website
+  lifecycle: deprecated
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: validation-subscriber
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: reporting-coordinator
+spec:
+  type: library
+  lifecycle: deprecated
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: backup-validator-v2
+spec:
+  type: website
+  lifecycle: experimental
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: logging-billing-adapter
+spec:
+  type: library
+  lifecycle: production
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: admin-subscriber-v1
+spec:
+  type: library
+  lifecycle: production
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: security-auth-consumer
+spec:
+  type: library
+  lifecycle: production
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: billing-validation-aggregator
+spec:
+  type: library
+  lifecycle: experimental
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: api-product-queue
+spec:
+  type: service
+  lifecycle: experimental
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: oauth-document-publisher
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: oauth-ab-test-gateway
+spec:
+  type: website
+  lifecycle: production
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: metrics-sync-controller
+spec:
+  type: library
+  lifecycle: experimental
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: media-handler
+spec:
+  type: service
+  lifecycle: production
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: api-coordinator-v3
+spec:
+  type: website
+  lifecycle: experimental
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: content-transform-gateway
+spec:
+  type: website
+  lifecycle: production
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: webhook-image-scheduler
+spec:
+  type: service
+  lifecycle: deprecated
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: logging-adapter
+spec:
+  type: service
+  lifecycle: experimental
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: recommendation-producer
+spec:
+  type: website
+  lifecycle: experimental
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: search-data-manager
+spec:
+  type: service
+  lifecycle: production
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: security-engine-v2
+spec:
+  type: website
+  lifecycle: experimental
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: cart-worker-v1
+spec:
+  type: library
+  lifecycle: production
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: shipping-sync-collector
+spec:
+  type: website
+  lifecycle: experimental
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: ab-test-cart-coordinator
+spec:
+  type: library
+  lifecycle: deprecated
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: auth-router-v3
+spec:
+  type: website
+  lifecycle: experimental
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: analytics-proxy
+spec:
+  type: service
+  lifecycle: production
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: content-worker
+spec:
+  type: website
+  lifecycle: deprecated
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: messaging-consumer-v2
+spec:
+  type: website
+  lifecycle: experimental
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: migration-gateway
+spec:
+  type: website
+  lifecycle: production
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: oauth-transformer-v1
+spec:
+  type: service
+  lifecycle: deprecated
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: data-controller-v3
+spec:
+  type: library
+  lifecycle: production
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: data-queue
+spec:
+  type: website
+  lifecycle: experimental
+  owner: infrastructure-team
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: config-dispatcher-v3
+spec:
+  type: service
+  lifecycle: deprecated
+  owner: platform-team
+  system: examples
+  providesApis: [example-grpc-api]

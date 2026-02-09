@@ -32,6 +32,7 @@ import {
   PagerDutyEnhancedEntityMappingsResponse,
   PagerDutySetting,
   PagerDutyService,
+  AutoMatchEntityMappingsResponse,
 } from '@pagerduty/backstage-plugin-common';
 import { createApiRef, ConfigApi } from '@backstage/core-plugin-api';
 import { NotFoundError } from '@backstage/errors';
@@ -205,6 +206,32 @@ export class PagerDutyClient implements PagerDutyApi {
     return this.request(url, options);
   }
 
+  async storeBulkServiceMappings(
+    mappings: Array<{
+      serviceId: string;
+      integrationKey: string;
+      entityRef: string;
+      account: string;
+    }>,
+  ): Promise<Response> {
+    const body = JSON.stringify({ mappings });
+
+    const options = {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json; charset=UTF-8',
+        Accept: 'application/json, text/plain, */*',
+      },
+      body,
+    };
+
+    const url = `${await this.config.discoveryApi.getBaseUrl(
+      'pagerduty',
+    )}/mapping/entities/bulk`;
+
+    return this.request(url, options);
+  }
+
   async getServiceByEntity(entity: Entity): Promise<PagerDutyServiceResponse> {
     return await this.getServiceByPagerDutyEntity(getPagerDutyEntity(entity));
   }
@@ -333,6 +360,33 @@ export class PagerDutyClient implements PagerDutyApi {
     const url = this.config.eventsBaseUrl ?? 'https://events.pagerduty.com/v2';
 
     return this.request(`${url}/enqueue`, options);
+  }
+
+  async autoMatchEntityMappings(options: {
+    team?: string;
+    threshold: number;
+  }): Promise<AutoMatchEntityMappingsResponse> {
+    const url = `${await this.config.discoveryApi.getBaseUrl(
+      'pagerduty',
+    )}/mapping/entity/auto-match`;
+
+    const body = JSON.stringify({
+      team: options.team === 'all' ? undefined : options.team,
+      threshold: options.threshold,
+      bestOnly: true,
+    });
+
+    const requestOptions = {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json; charset=UTF-8',
+        Accept: 'application/json, text/plain, */*',
+      },
+      body,
+    };
+
+    const response = await this.request(url, requestOptions);
+    return response.json();
   }
 
   private async findByUrl<T>(url: string): Promise<T> {

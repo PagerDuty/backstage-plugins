@@ -26,6 +26,7 @@ import {
   PagerDutySetting,
   PagerDutyService,
   PagerDutyEnhancedEntityMappingsResponse,
+  AutoMatchEntityMappingsResponse,
 } from '@pagerduty/backstage-plugin-common';
 import { DiscoveryApi, FetchApi } from '@backstage/core-plugin-api';
 import { Entity } from '@backstage/catalog-model';
@@ -86,6 +87,17 @@ export interface PagerDutyApi {
     entityRef: string,
     account: string,
   ): Promise<Response>;
+
+  /**
+   * Stores multiple service mappings in the database.
+   *
+   */
+  storeBulkServiceMappings(mappings: Array<{
+    serviceId: string;
+    integrationKey: string;
+    entityRef: string;
+    account: string;
+  }>): Promise<Response>;
 
   /**
    * Fetches the service for the provided pager duty Entity.
@@ -165,6 +177,14 @@ export interface PagerDutyApi {
    * Triggers an incident to whoever is on-call.
    */
   triggerAlarm(request: PagerDutyTriggerAlarmRequest): Promise<Response>;
+
+  /**
+   * Automatically matches unmapped entities to PagerDuty services.
+   */
+  autoMatchEntityMappings(options: {
+    team?: string;
+    threshold: number;
+  }): Promise<AutoMatchEntityMappingsResponse>;
 }
 
 /** @public */
