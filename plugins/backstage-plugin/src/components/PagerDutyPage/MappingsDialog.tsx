@@ -11,6 +11,7 @@ import {
   RadioGroup,
   Radio,
   Box,
+  TextField,
 } from '@backstage/ui';
 import { Dispatch, useState, useEffect } from 'react';
 import { BackstageEntity } from '../types';
@@ -111,11 +112,15 @@ export default function MappingsDialog({
     if (!entity || !selectedServiceId) return;
 
     if (selectedServiceId === 'none') {
-      const account = services && services.length > 0 ? services[0].account ?? '' : '';
+      const currentServiceId = entity.annotations?.['pagerduty.com/service-id'];
+      const currentIntegrationKey = entity.annotations?.['pagerduty.com/integration-key'] || '';
+      const account = entity.account || '';
+
+      if (!currentServiceId) return;
 
       createMapping({
-        serviceId: '',
-        integrationKey: '',
+        serviceId: currentServiceId,
+        integrationKey: currentIntegrationKey,
         entityRef: '',
         account: account,
       });
@@ -156,14 +161,20 @@ export default function MappingsDialog({
           <Text variant="body-medium" weight="bold">
             Backstage Component
           </Text>
-          <Text variant="body-medium">{entity?.name}</Text>
+          <TextField
+            value={entity?.name || ''}
+            isReadOnly
+          />
         </Flex>
 
         <Flex direction="column" gap="2" mb="4">
           <Text variant="body-medium" weight="bold">
-            Backstage Team
+            Team
           </Text>
-          <Text variant="body-medium">{entity?.owner}</Text>
+          <TextField
+            value={entity?.owner || ''}
+            isReadOnly
+          />
         </Flex>
 
         <Box mb="3">
@@ -211,9 +222,11 @@ export default function MappingsDialog({
                 value={selectedServiceId}
                 onChange={setSelectedServiceId}
               >
-                <Radio key="none" value="none">
-                  (None)
-                </Radio>
+                {entity?.annotations?.['pagerduty.com/service-id'] && (
+                  <Radio key="none" value="none">
+                    (None)
+                  </Radio>
+                )}
                 {services && services.map(service => (
                   <Radio key={service.id} value={service.id}>
                     {service.name}
