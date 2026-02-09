@@ -64,12 +64,14 @@ export interface NormalizedService {
   acronym: string;
   sourceId: string;
   source: 'pagerduty' | 'backstage';
+  account?: string;
 }
 
 export function normalizePagerDutyService(
   name: string,
   teamName: string,
   serviceId: string,
+  account?: string,
 ): NormalizedService {
   return {
     rawName: name,
@@ -78,6 +80,7 @@ export function normalizePagerDutyService(
     acronym: extractAcronym(name),
     sourceId: serviceId,
     source: 'pagerduty',
+    account,
   };
 }
 

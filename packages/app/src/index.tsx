@@ -1,7 +1,7 @@
 import '@backstage/cli/asset-types';
 import ReactDOM from 'react-dom/client';
 import '@backstage/ui/css/styles.css';
-
+import './theme/tokens.css';
 // Uncomment the lines below if you want to use the old version of the app
 // import App from './App';
 

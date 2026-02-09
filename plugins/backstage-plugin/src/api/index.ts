@@ -21,3 +21,11 @@ export type {
   PagerDutyClientApiDependencies,
   PagerDutyClientApiConfig,
 } from './types';
+export type {
+  AutoMatchEntityMappingsResponse,
+  AutoMatchEntityMapping,
+  AutoMatchStatistics,
+  AutoMatchPagerDutyService,
+  AutoMatchBackstageComponent,
+  AutoMatchScoreBreakdown,
+} from '@pagerduty/backstage-plugin-common';

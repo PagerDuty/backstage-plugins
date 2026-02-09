@@ -651,6 +651,142 @@ export async function createRouter(
     }
   });
 
+  // POST /mapping/entities/bulk
+  router.post('/mapping/entities/bulk', async (request, response) => {
+    try {
+      const { mappings } = request.body;
+
+      if (!Array.isArray(mappings)) {
+        response.status(400).json({
+          error: "Bad Request: 'mappings' must be an array",
+        });
+        return;
+      }
+
+      const existingMappings = await store.getAllEntityMappings();
+      const existingServiceIds = new Set(
+        existingMappings.map(m => m.serviceId),
+      );
+
+      const newMappings: PagerDutyEntityMapping[] = [];
+      const skipped: PagerDutyEntityMapping[] = [];
+      const errors = [];
+
+      for (const entity of mappings) {
+        if (!entity.serviceId) {
+          errors.push({
+            entityRef: entity.entityRef,
+            error: 'Missing serviceId',
+          });
+          continue;
+        }
+
+        if (existingServiceIds.has(entity.serviceId)) {
+          skipped.push(entity);
+          continue;
+        }
+
+        if (
+          entity.entityRef !== '' &&
+          (entity.integrationKey === '' || entity.integrationKey === undefined)
+        ) {
+          try {
+            const backstageVendorId = 'PRO19CT';
+            const service = await getServiceById(
+              entity.serviceId,
+              entity.account,
+            );
+            const backstageIntegration = service.integrations?.find(
+              integration => integration.vendor?.id === backstageVendorId,
+            );
+
+            if (!backstageIntegration) {
+              const integrationKey = await createServiceIntegration({
+                serviceId: entity.serviceId,
+                vendorId: backstageVendorId,
+                account: entity.account,
+              });
+
+              entity.integrationKey = integrationKey;
+            } else {
+              entity.integrationKey = backstageIntegration.integration_key;
+            }
+          } catch (error) {
+            errors.push({
+              entityRef: entity.entityRef,
+              serviceId: entity.serviceId,
+              error:
+                error instanceof Error
+                  ? `Failed to create integration: ${error.message}`
+                  : 'Failed to create integration',
+            });
+            continue;
+          }
+        }
+
+        newMappings.push(entity);
+      }
+
+      let insertedIds: string[] = [];
+      if (newMappings.length > 0) {
+        try {
+          insertedIds = await store.bulkInsertEntityMappings(newMappings);
+
+          await Promise.all(
+            newMappings.map(async entity => {
+              if (entity.entityRef !== '') {
+                await catalogApi?.refreshEntity(entity.entityRef);
+              }
+            }),
+          );
+        } catch (error) {
+          logger.error(`Bulk insert failed: ${error}`);
+          response.status(500).json({
+            errors: ['Bulk insert failed'],
+          });
+          return;
+        }
+      }
+
+      const results = newMappings.map((entity, index) => ({
+        id: insertedIds[index],
+        entityRef: entity.entityRef,
+        integrationKey: entity.integrationKey,
+        serviceId: entity.serviceId,
+        status: entity.status,
+        account: entity.account,
+      }));
+
+      response.json({
+        success: results,
+        skipped: skipped.map(entity => ({
+          entityRef: entity.entityRef,
+          serviceId: entity.serviceId,
+          reason: 'Mapping already exists for this service ID',
+        })),
+        errors: errors,
+        total: mappings.length,
+        successCount: results.length,
+        skippedCount: skipped.length,
+        errorCount: errors.length,
+      });
+    } catch (error) {
+      if (error instanceof HttpError) {
+        logger.error(
+          `Error occurred while processing bulk mappings: ${error.message}`,
+        );
+        response.status(error.status).json({
+          errors: [`${error.message}`],
+        });
+      } else {
+        logger.error(`Unexpected error: ${error}`);
+        response.status(500).json({
+          errors: ['Internal server error'],
+        });
+      }
+    }
+  });
+
   // DEPRECATED: GET /mapping/entity
   router.get('/mapping/entity', async (_, response) => {
     try {
@@ -960,11 +1096,7 @@ export async function createRouter(
       // Default 100% threshold ensures only exact matches, customers can adjust if needed
       const threshold: number = request.body.threshold ?? 100;
 
-      if (
-        typeof threshold !== 'number' ||
-        threshold < 0 ||
-        threshold > 100
-      ) {
+      if (typeof threshold !== 'number' || threshold < 0 || threshold > 100) {
         response.status(400).json({
           error: 'Invalid threshold. Must be a number between 0 and 100.',
         });
@@ -998,7 +1130,9 @@ export async function createRouter(
         m => m.score >= 80 && m.score < 90,
       ).length;
 
-      const getConfidenceLevel = (score: number): 'exact' | 'high' | 'medium' | 'low' => {
+      const getConfidenceLevel = (
+        score: number,
+      ): 'exact' | 'high' | 'medium' | 'low' => {
         if (score === 100) return 'exact';
         if (score >= 90) return 'high';
         if (score >= 80) return 'medium';
@@ -1011,6 +1145,7 @@ export async function createRouter(
             serviceId: m.pagerDutyService.sourceId,
             name: m.pagerDutyService.rawName,
             team: m.pagerDutyService.teamName,
+            account: m.pagerDutyService.account,
           },
           backstageComponent: {
             entityRef: m.backstageComponent.sourceId,
