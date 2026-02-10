@@ -50,6 +50,7 @@ export default function MappingsTable() {
     serviceName: '',
     status: '',
     teamName: '',
+    account: '',
   });
 
   const debouncedFilters = useDebounce(filters);

@@ -216,7 +216,7 @@ describe('MappingsTable', () => {
         offset: 0,
         limit: 10,
         searchFields: ['metadata.name', 'spec.owner'],
-        filters: { name: 'my-component', serviceName: '', status: '', teamName: '' },
+        filters: { name: 'my-component', serviceName: '', status: '', teamName: '', account: '' },
       });
     });
 
@@ -256,7 +256,7 @@ describe('MappingsTable', () => {
       offset: 0,
       limit: 10,
       searchFields: ['metadata.name', 'spec.owner'],
-      filters: { name: '', serviceName: '', status: '', teamName: '' },
+      filters: { name: '', serviceName: '', status: '', teamName: '', account: '' },
     });
 
     expect(screen.getByText('1 - 10 of 25')).toBeInTheDocument();
@@ -269,7 +269,7 @@ describe('MappingsTable', () => {
         offset: 10,
         limit: 10,
         searchFields: ['metadata.name', 'spec.owner'],
-        filters: { name: '', serviceName: '', status: '', teamName: '' },
+        filters: { name: '', serviceName: '', status: '', teamName: '', account: '' },
       });
     });
 
@@ -281,7 +281,7 @@ describe('MappingsTable', () => {
         offset: 0,
         limit: 10,
         searchFields: ['metadata.name', 'spec.owner'],
-        filters: { name: '', serviceName: '', status: '', teamName: '' },
+        filters: { name: '', serviceName: '', status: '', teamName: '', account: '' },
       });
     });
   });
@@ -379,6 +379,7 @@ describe('MappingsTable', () => {
           offset: 0,
           filters: expect.objectContaining({
             serviceName: 'pagerduty-service',
+            account: '',
           }),
         }),
       );
@@ -416,6 +417,67 @@ describe('MappingsTable', () => {
         expect.objectContaining({
           filters: expect.objectContaining({
             teamName: 'team-platform',
+          }),
+        }),
+      );
+    });
+
+    jest.useRealTimers();
+  });
+
+  it('renders all filter fields when filters are shown', async () => {
+    mockGetEntityMappingsWithPagination.mockResolvedValue({
+      entities: [],
+      totalCount: 0,
+    });
+
+    await renderInTestApp(
+      <ApiProvider apis={apis}>
+        <QueryClientProvider client={queryClient}>
+          <MappingsTable />
+        </QueryClientProvider>
+      </ApiProvider>,
+    );
+
+    const filterButton = screen.getByRole('button', { name: 'Toggle filters' });
+    fireEvent.click(filterButton);
+
+    expect(screen.getByPlaceholderText('Filter by name')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Filter by team')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Filter by service')).toBeInTheDocument();
+    expect(screen.getByLabelText('All Statuses')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Filter by account')).toBeInTheDocument();
+  });
+
+  it('calls API with correct account filter when account filter is applied', async () => {
+    jest.useFakeTimers();
+    mockGetEntityMappingsWithPagination.mockResolvedValue({
+      entities: [],
+      totalCount: 0,
+    });
+
+    await renderInTestApp(
+      <ApiProvider apis={apis}>
+        <QueryClientProvider client={queryClient}>
+          <MappingsTable />
+        </QueryClientProvider>
+      </ApiProvider>,
+    );
+
+    const filterButton = screen.getByRole('button', { name: 'Toggle filters' });
+    fireEvent.click(filterButton);
+
+    const accountFilter = screen.getByPlaceholderText('Filter by account');
+    fireEvent.change(accountFilter, { target: { value: 'my-account' } });
+
+    // wait because of the debounce
+    jest.advanceTimersByTime(500);
+
+    await waitFor(() => {
+      expect(mockGetEntityMappingsWithPagination).toHaveBeenCalledWith(
+        expect.objectContaining({
+          filters: expect.objectContaining({
+            account: 'my-account',
           }),
         }),
       );

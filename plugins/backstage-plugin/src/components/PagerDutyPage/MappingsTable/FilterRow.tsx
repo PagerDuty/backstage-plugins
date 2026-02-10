@@ -1,6 +1,6 @@
 import { Row, Cell, SearchField, Select } from '@backstage/ui';
 
-type FilterableFields = 'name' | 'serviceName' | 'status' | 'teamName';
+type FilterableFields = 'name' | 'serviceName' | 'status' | 'teamName' | 'account';
 
 interface FilterRowProps {
   filters: {
@@ -8,12 +8,13 @@ interface FilterRowProps {
     serviceName: string;
     status: string;
     teamName: string;
+    account: string;
   };
   onFilterChange: (key: FilterableFields, value: string) => void;
 }
 
 const statusOptions = [
-  { value: '', label: 'All' },
+  { value: '', label: 'All Statuses' },
   { value: 'InSync', label: 'In Sync' },
   { value: 'OutOfSync', label: 'Out of Sync' },
   { value: 'NotMapped', label: 'Not Mapped' },
@@ -60,9 +61,14 @@ export function FilterRow({ filters, onFilterChange }: FilterRowProps) {
           options={statusOptions}
         />
       </Cell>
-      
+
       <Cell>
-        <div />
+        <SearchField
+          size="small"
+          placeholder="Filter by account"
+          value={filters.account}
+          onChange={value => onFilterChange('account', value)}
+        />
       </Cell>
       <Cell>
         <div />

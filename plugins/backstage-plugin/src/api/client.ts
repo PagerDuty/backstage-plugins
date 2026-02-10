@@ -149,6 +149,7 @@ export class PagerDutyClient implements PagerDutyApi {
       serviceName?: string;
       status?: string;
       teamName?: string;
+      account?: string;
     };
   }): Promise<PagerDutyEnhancedEntityMappingsResponse> {
     const url = `${await this.config.discoveryApi.getBaseUrl(

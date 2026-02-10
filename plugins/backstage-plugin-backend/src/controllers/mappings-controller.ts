@@ -23,8 +23,9 @@ export function getMappingEntities(store: PagerDutyBackendStore, catalogApi: Cat
       const hasStatusFilter = filters?.status?.trim();
       const hasNameFilter = filters?.name?.trim();
       const hasTeamNameFilter = filters?.teamName?.trim();
+      const hasAccountFilter = filters?.account?.trim();
       const needsBothFullTextFilters = hasNameFilter && hasTeamNameFilter;
-      const needsPostProcessing = hasStatusFilter || needsBothFullTextFilters;
+      const needsPostProcessing = hasStatusFilter || needsBothFullTextFilters || hasAccountFilter;
 
       const queryOptions: {
         filter: Array<{
@@ -188,6 +189,12 @@ export function getMappingEntities(store: PagerDutyBackendStore, catalogApi: Cat
 
       if (hasStatusFilter) {
         formattedEntities = formattedEntities.filter(entity => entity.status === filters.status.trim());
+      }
+
+      if (hasAccountFilter) {
+        formattedEntities = formattedEntities.filter(entity =>
+          entity.account?.toLowerCase().includes(filters.account.trim().toLowerCase())
+        );
       }
 
       const totalCount = needsPostProcessing ? formattedEntities.length : componentEntities.totalItems;

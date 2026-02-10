@@ -7,7 +7,7 @@ import { AutoMatchResults } from '../MappingsTable';
 export function useEntityMappings(
   offset: number,
   pageSize: number,
-  filters: { name: string; serviceName: string; status: string },
+  filters: { name: string; serviceName: string; status: string; teamName: string; account: string },
   autoMatchResults: AutoMatchResults,
 ) {
   const pagerDutyApi = useApi(pagerDutyApiRef);

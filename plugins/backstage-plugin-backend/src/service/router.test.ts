@@ -2981,6 +2981,245 @@ describe('createRouter', () => {
         });
       });
 
+      describe('account filter', () => {
+        it('filters entities by account name', async () => {
+          mocked(fetch).mockReturnValue(
+            mockedResponse(200, {
+              services: [
+                {
+                  id: 'S3RV1CE1D',
+                  name: 'Test Service 1',
+                  description: 'Test Service Description 1',
+                  html_url: 'https://example.pagerduty.com/services/S3RV1CE1D',
+                  escalation_policy: {
+                    id: 'P0L1CY1D',
+                    name: 'Test Escalation Policy 1',
+                    html_url: 'https://example.pagerduty.com/escalation_policies/P0L1CY1D',
+                    type: 'escalation_policy_reference',
+                  },
+                  teams: [
+                    {
+                      id: 'T34M1D',
+                      name: 'Test Team 1',
+                    },
+                  ],
+                  account: 'production-account',
+                },
+                {
+                  id: 'SERVICE1',
+                  name: 'Test Service 2',
+                  description: 'Test Service Description 2',
+                  html_url: 'https://example.pagerduty.com/services/SERVICE1',
+                  escalation_policy: {
+                    id: 'P0L1CY1D',
+                    name: 'Test Escalation Policy 1',
+                    html_url: 'https://example.pagerduty.com/escalation_policies/P0L1CY1D',
+                    type: 'escalation_policy_reference',
+                  },
+                  teams: [
+                    {
+                      id: 'T34M1D',
+                      name: 'Test Team 1',
+                    },
+                  ],
+                  account: 'staging-account',
+                },
+              ],
+            }),
+          );
+
+          const response = await request(app)
+            .post('/mapping/entities')
+            .send({
+              offset: 0,
+              limit: 10,
+              filters: { account: 'production' },
+            });
+
+          expect(response.status).toEqual(200);
+          expect(response.body.entities).toHaveLength(1);
+          expect(response.body.entities[0].account).toEqual('production-account');
+        });
+
+        it('filters entities by account with case-insensitive matching', async () => {
+          mocked(fetch).mockReturnValue(
+            mockedResponse(200, {
+              services: [
+                {
+                  id: 'S3RV1CE1D',
+                  name: 'Test Service 1',
+                  description: 'Test Service Description 1',
+                  html_url: 'https://example.pagerduty.com/services/S3RV1CE1D',
+                  escalation_policy: {
+                    id: 'P0L1CY1D',
+                    name: 'Test Escalation Policy 1',
+                    html_url: 'https://example.pagerduty.com/escalation_policies/P0L1CY1D',
+                    type: 'escalation_policy_reference',
+                  },
+                  teams: [
+                    {
+                      id: 'T34M1D',
+                      name: 'Test Team 1',
+                    },
+                  ],
+                  account: 'Production-Account',
+                },
+              ],
+            }),
+          );
+
+          const response = await request(app)
+            .post('/mapping/entities')
+            .send({
+              offset: 0,
+              limit: 10,
+              filters: { account: 'PRODUCTION' },
+            });
+
+          expect(response.status).toEqual(200);
+          expect(response.body.entities).toHaveLength(1);
+          expect(response.body.entities[0].account).toEqual('Production-Account');
+        });
+
+        it('filters entities by partial account match', async () => {
+          mocked(fetch).mockReturnValue(
+            mockedResponse(200, {
+              services: [
+                {
+                  id: 'S3RV1CE1D',
+                  name: 'Test Service 1',
+                  description: 'Test Service Description 1',
+                  html_url: 'https://example.pagerduty.com/services/S3RV1CE1D',
+                  escalation_policy: {
+                    id: 'P0L1CY1D',
+                    name: 'Test Escalation Policy 1',
+                    html_url: 'https://example.pagerduty.com/escalation_policies/P0L1CY1D',
+                    type: 'escalation_policy_reference',
+                  },
+                  teams: [
+                    {
+                      id: 'T34M1D',
+                      name: 'Test Team 1',
+                    },
+                  ],
+                  account: 'my-production-account',
+                },
+                {
+                  id: 'SERVICE1',
+                  name: 'Test Service 2',
+                  description: 'Test Service Description 2',
+                  html_url: 'https://example.pagerduty.com/services/SERVICE1',
+                  escalation_policy: {
+                    id: 'P0L1CY1D',
+                    name: 'Test Escalation Policy 1',
+                    html_url: 'https://example.pagerduty.com/escalation_policies/P0L1CY1D',
+                    type: 'escalation_policy_reference',
+                  },
+                  teams: [
+                    {
+                      id: 'T34M1D',
+                      name: 'Test Team 1',
+                    },
+                  ],
+                  account: 'staging-account',
+                },
+              ],
+            }),
+          );
+
+          const response = await request(app)
+            .post('/mapping/entities')
+            .send({
+              offset: 0,
+              limit: 10,
+              filters: { account: 'prod' },
+            });
+
+          expect(response.status).toEqual(200);
+          expect(response.body.entities).toHaveLength(1);
+          expect(response.body.entities[0].account).toEqual('my-production-account');
+        });
+
+        it('handles account filter with whitespace', async () => {
+          mocked(fetch).mockReturnValue(
+            mockedResponse(200, {
+              services: [
+                {
+                  id: 'S3RV1CE1D',
+                  name: 'Test Service 1',
+                  description: 'Test Service Description 1',
+                  html_url: 'https://example.pagerduty.com/services/S3RV1CE1D',
+                  escalation_policy: {
+                    id: 'P0L1CY1D',
+                    name: 'Test Escalation Policy 1',
+                    html_url: 'https://example.pagerduty.com/escalation_policies/P0L1CY1D',
+                    type: 'escalation_policy_reference',
+                  },
+                  teams: [
+                    {
+                      id: 'T34M1D',
+                      name: 'Test Team 1',
+                    },
+                  ],
+                  account: 'production-account',
+                },
+              ],
+            }),
+          );
+
+          const response = await request(app)
+            .post('/mapping/entities')
+            .send({
+              offset: 0,
+              limit: 10,
+              filters: { account: '  production  ' },
+            });
+
+          expect(response.status).toEqual(200);
+          expect(response.body.entities).toHaveLength(1);
+          expect(response.body.entities[0].account).toEqual('production-account');
+        });
+
+        it('returns empty array when no entities match account filter', async () => {
+          mocked(fetch).mockReturnValue(
+            mockedResponse(200, {
+              services: [
+                {
+                  id: 'S3RV1CE1D',
+                  name: 'Test Service 1',
+                  description: 'Test Service Description 1',
+                  html_url: 'https://example.pagerduty.com/services/S3RV1CE1D',
+                  escalation_policy: {
+                    id: 'P0L1CY1D',
+                    name: 'Test Escalation Policy 1',
+                    html_url: 'https://example.pagerduty.com/escalation_policies/P0L1CY1D',
+                    type: 'escalation_policy_reference',
+                  },
+                  teams: [
+                    {
+                      id: 'T34M1D',
+                      name: 'Test Team 1',
+                    },
+                  ],
+                  account: 'production-account',
+                },
+              ],
+            }),
+          );
+
+          const response = await request(app)
+            .post('/mapping/entities')
+            .send({
+              offset: 0,
+              limit: 10,
+              filters: { account: 'nonexistent' },
+            });
+
+          expect(response.status).toEqual(200);
+          expect(response.body.entities).toEqual([]);
+        });
+      });
+
       // TODO: Test the rest of the filters when InMemoryCatalogApi supports fullTextSearch (https://pagerduty.atlassian.net/browse/DEVECO-623)
     });
 
@@ -2996,15 +3235,13 @@ describe('createRouter', () => {
         });
       });
 
-      it('returns 400 if mappings array is empty', async () => {
+      it('returns 200 if mappings array is empty', async () => {
         const response = await request(app)
           .post('/mapping/entities/bulk')
           .send({ mappings: [] });
 
-        expect(response.status).toEqual(400);
-        expect(response.body).toEqual({
-          error: "Bad Request: 'mappings' array cannot be empty",
-        });
+        expect(response.status).toEqual(200);
+        expect(response.body.successCount).toEqual(0);
       });
 
       it('returns error for mappings without serviceId', async () => {
