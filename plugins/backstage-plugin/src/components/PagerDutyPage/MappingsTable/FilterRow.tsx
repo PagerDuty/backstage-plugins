@@ -1,12 +1,13 @@
 import { Row, Cell, SearchField, Select } from '@backstage/ui';
 
-type FilterableFields = 'name' | 'serviceName' | 'status';
+type FilterableFields = 'name' | 'serviceName' | 'status' | 'teamName';
 
 interface FilterRowProps {
   filters: {
     name: string;
     serviceName: string;
     status: string;
+    teamName: string;
   };
   onFilterChange: (key: FilterableFields, value: string) => void;
 }
@@ -32,7 +33,12 @@ export function FilterRow({ filters, onFilterChange }: FilterRowProps) {
       </Cell>
 
       <Cell>
-        <div />
+        <SearchField
+          size="small"
+          placeholder="Filter by team"
+          value={filters.teamName}
+          onChange={value => onFilterChange('teamName', value)}
+        />
       </Cell>
       
       <Cell>
@@ -55,6 +61,12 @@ export function FilterRow({ filters, onFilterChange }: FilterRowProps) {
         />
       </Cell>
       
+      <Cell>
+        <div />
+      </Cell>
+      <Cell>
+        <div />
+      </Cell>
       <Cell>
         <div />
       </Cell>

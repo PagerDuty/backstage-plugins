@@ -5,6 +5,7 @@ import { pagerDutyApiRef } from '../../../api';
 import MappingsTable from './MappingsTable';
 import { ApiProvider } from '@backstage/core-app-api';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { catalogApiRef } from '@backstage/plugin-catalog-react';
 
 describe('MappingsTable', () => {
   beforeAll(() => {
@@ -28,7 +29,14 @@ describe('MappingsTable', () => {
     getEntityMappingsWithPagination: mockGetEntityMappingsWithPagination,
   };
 
-  const apis = TestApiRegistry.from([pagerDutyApiRef, mockPagerDutyApi]);
+  const mockCatalogApi = {
+    getEntities: jest.fn(),
+  };
+
+  const apis = TestApiRegistry.from(
+    [pagerDutyApiRef, mockPagerDutyApi],
+    [catalogApiRef, mockCatalogApi],
+  );
 
   const queryClient = new QueryClient({
     defaultOptions: {
@@ -208,7 +216,7 @@ describe('MappingsTable', () => {
         offset: 0,
         limit: 10,
         searchFields: ['metadata.name', 'spec.owner'],
-        filters: { name: 'my-component', serviceName: '', status: '' },
+        filters: { name: 'my-component', serviceName: '', status: '', teamName: '' },
       });
     });
 
@@ -248,7 +256,7 @@ describe('MappingsTable', () => {
       offset: 0,
       limit: 10,
       searchFields: ['metadata.name', 'spec.owner'],
-      filters: { name: '', serviceName: '', status: '' },
+      filters: { name: '', serviceName: '', status: '', teamName: '' },
     });
 
     expect(screen.getByText('1 - 10 of 25')).toBeInTheDocument();
@@ -261,7 +269,7 @@ describe('MappingsTable', () => {
         offset: 10,
         limit: 10,
         searchFields: ['metadata.name', 'spec.owner'],
-        filters: { name: '', serviceName: '', status: '' },
+        filters: { name: '', serviceName: '', status: '', teamName: '' },
       });
     });
 
@@ -273,7 +281,7 @@ describe('MappingsTable', () => {
         offset: 0,
         limit: 10,
         searchFields: ['metadata.name', 'spec.owner'],
-        filters: { name: '', serviceName: '', status: '' },
+        filters: { name: '', serviceName: '', status: '', teamName: '' },
       });
     });
   });
@@ -371,6 +379,43 @@ describe('MappingsTable', () => {
           offset: 0,
           filters: expect.objectContaining({
             serviceName: 'pagerduty-service',
+          }),
+        }),
+      );
+    });
+
+    jest.useRealTimers();
+  });
+
+  it('calls API with correct teamName filter when team filter is applied', async () => {
+    jest.useFakeTimers();
+    mockGetEntityMappingsWithPagination.mockResolvedValue({
+      entities: [],
+      totalCount: 0,
+    });
+
+    await renderInTestApp(
+      <ApiProvider apis={apis}>
+        <QueryClientProvider client={queryClient}>
+          <MappingsTable />
+        </QueryClientProvider>
+      </ApiProvider>,
+    );
+
+    const filterButton = screen.getByRole('button', { name: 'Toggle filters' });
+    fireEvent.click(filterButton);
+
+    const teamFilter = screen.getByPlaceholderText('Filter by team');
+    fireEvent.change(teamFilter, { target: { value: 'team-platform' } });
+
+    // wait because of the debounce
+    jest.advanceTimersByTime(500);
+
+    await waitFor(() => {
+      expect(mockGetEntityMappingsWithPagination).toHaveBeenCalledWith(
+        expect.objectContaining({
+          filters: expect.objectContaining({
+            teamName: 'team-platform',
           }),
         }),
       );

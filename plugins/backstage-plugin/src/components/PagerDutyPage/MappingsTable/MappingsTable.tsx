@@ -8,7 +8,6 @@ import {
   CellText,
   Flex,
   ButtonIcon,
-  SearchField,
 } from '@backstage/ui';
 import { useState, useCallback } from 'react';
 import MappingsDialog from '../MappingsDialog';
@@ -16,7 +15,7 @@ import AutomaticMappingsDialog from '../AutomaticMappingsDialog';
 import AutoMappingsButton from './AutoMappingsButton';
 import StatusCell from './StatusCell';
 import { ServiceCell } from './ServiceCell';
-import { Edit, Search, Delete, FilterList } from '@mui/icons-material';
+import { Edit, Delete, FilterList } from '@mui/icons-material';
 import { FilterRow } from './FilterRow';
 import { BackstageEntity } from '../../types';
 import useDebounce from '../../../hooks/useDebounce';
@@ -43,7 +42,6 @@ export default function MappingsTable() {
   const [offset, setOffset] = useState(0);
   const [pageSize, setPageSize] = useState(10);
 
-  const [searchQuery, setSearchQuery] = useState('');
   const queryClient = useQueryClient();
   const [showFilters, setShowFilters] = useState(false);
 
@@ -51,6 +49,7 @@ export default function MappingsTable() {
     name: '',
     serviceName: '',
     status: '',
+    teamName: '',
   });
 
   const debouncedFilters = useDebounce(filters);
@@ -133,20 +132,6 @@ export default function MappingsTable() {
           onConfirmMappings={confirmMappings}
           onClearMappings={clearMatches}
           isConfirming={isConfirming}
-        />
-
-        <SearchField
-          size="small"
-          placeholder="Search for components or teams"
-          style={{
-            maxWidth: '250px',
-          }}
-          icon={<Search />}
-          value={searchQuery}
-          onChange={value => {
-            setSearchQuery(value);
-            setOffset(0);
-          }}
         />
 
         <ButtonIcon
