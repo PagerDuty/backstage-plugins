@@ -2,13 +2,13 @@ import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useApi } from '@backstage/core-plugin-api';
 import { pagerDutyApiRef } from '../../../../api';
-import { BackstageEntity } from '../../../types';
 import { AutoMatchResults } from '../MappingsTable';
 import { MappingCounts } from '../MappingToast';
+import { FormattedBackstageEntity } from '@pagerduty/backstage-plugin-common';
 
 interface UseConfirmMappingsParams {
   autoMatchResults: AutoMatchResults;
-  mappingEntities?: BackstageEntity[];
+  mappingEntities?: FormattedBackstageEntity[];
   onSuccess: (
     successCount: number,
     totalCount: number,
@@ -34,7 +34,7 @@ export function useConfirmMappings({
       const mappingsToCreate = Object.entries(autoMatchResults).map(
         ([entityName, matchData]) => {
           const entity = mappingEntities?.find(
-            (e: BackstageEntity) => e.name === entityName,
+            (e: FormattedBackstageEntity) => e.name === entityName,
           );
 
           const entityRef = entity

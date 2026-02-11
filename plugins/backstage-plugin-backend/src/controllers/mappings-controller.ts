@@ -3,14 +3,60 @@ import * as Pagerduty from '../services/pagerduty';
 import * as CatalogEntityUtils from '../utils/catalog-entity';
 import { PagerDutyBackendStore } from '../db';
 import { CatalogApi, GetEntitiesResponse, QueryEntitiesResponse } from '@backstage/catalog-client';
-import { HttpError, PagerDutyEntityMappingsResponse, PagerDutyService } from '@pagerduty/backstage-plugin-common';
+import { HttpError, PagerDutyEntityMappingsResponse, PagerDutyService, FormattedBackstageEntity } from '@pagerduty/backstage-plugin-common';
 import { getServiceByIntegrationKey, getServicesByIds } from '../apis/pagerduty';
 import { RawDbEntityResultRow } from '../db/PagerDutyBackendDatabase';
+
+// Status order for sorting (from least to most complete)
+const STATUS_ORDER: Record<NonNullable<FormattedBackstageEntity['status']>, number> = {
+  'ErrorWhenFetchingService': 0,
+  'NotMapped': 1,
+  'OutOfSync': 2,
+  'InSync': 3,
+};
+
+function compareEntities(
+  a: FormattedBackstageEntity,
+  b: FormattedBackstageEntity,
+  column: string,
+  direction: 'ascending' | 'descending',
+): number {
+  let comparison = 0;
+
+  const fieldMap: Record<string, keyof FormattedBackstageEntity> = {
+    name: 'name',
+    team: 'owner',
+    serviceName: 'serviceName',
+    status: 'status',
+    account: 'account',
+  };
+
+  const field = fieldMap[column];
+
+  if (field === 'status') {
+    const aStatus = (a.status || 'NotMapped') as NonNullable<FormattedBackstageEntity['status']>;
+    const bStatus = (b.status || 'NotMapped') as NonNullable<FormattedBackstageEntity['status']>;
+    const aOrder = STATUS_ORDER[aStatus];
+    const bOrder = STATUS_ORDER[bStatus];
+    comparison = aOrder - bOrder;
+  } else {
+    const aValue = ((a[field] || '') as string).toLowerCase();
+    const bValue = ((b[field] || '') as string).toLowerCase();
+
+    if (aValue < bValue) {
+      comparison = -1;
+    } else if (aValue > bValue) {
+      comparison = 1;
+    }
+  }
+
+  return direction === 'ascending' ? comparison : -comparison;
+}
 
 export function getMappingEntities(store: PagerDutyBackendStore, catalogApi: CatalogApi | undefined) {
   return async function getMappingEntitiesFunction(request: Request, response: Response) {
     try {
-      const { offset = 0, limit = 10, filters = {} } = request.body;
+      const { offset = 0, limit = 10, filters = {}, sort } = request.body;
 
       if (typeof offset !== 'number' || typeof limit !== 'number' || offset < 0 || limit <= 0) {
         response
@@ -20,12 +66,40 @@ export function getMappingEntities(store: PagerDutyBackendStore, catalogApi: Cat
         return;
       }
 
+      const validSortColumns = ['name', 'team', 'serviceName', 'status', 'account'];
+      const validSortDirections = ['ascending', 'descending'];
+
+      if (sort !== undefined) {
+        if (typeof sort !== 'object' || sort === null) {
+          response
+            .status(400)
+            .json({ errors: ["Bad Request: 'sort' must be an object"] });
+          return;
+        }
+
+        if (typeof sort.column !== 'string' || !validSortColumns.includes(sort.column)) {
+          response
+            .status(400)
+            .json({ errors: [`Bad Request: 'sort.column' must be one of: ${validSortColumns.join(', ')}`] });
+          return;
+        }
+
+        if (typeof sort.direction !== 'string' || !validSortDirections.includes(sort.direction)) {
+          response
+            .status(400)
+            .json({ errors: [`Bad Request: 'sort.direction' must be one of: ${validSortDirections.join(', ')}`] });
+          return;
+        }
+      }
+
       const hasStatusFilter = filters?.status?.trim();
       const hasNameFilter = filters?.name?.trim();
       const hasTeamNameFilter = filters?.teamName?.trim();
       const hasAccountFilter = filters?.account?.trim();
       const needsBothFullTextFilters = hasNameFilter && hasTeamNameFilter;
-      const needsPostProcessing = hasStatusFilter || needsBothFullTextFilters || hasAccountFilter;
+      const needsSortPostProcessing = !!sort;
+
+      const needsPostProcessing = hasStatusFilter || needsBothFullTextFilters || hasAccountFilter || needsSortPostProcessing;
 
       const queryOptions: {
         filter: Array<{
@@ -42,15 +116,15 @@ export function getMappingEntities(store: PagerDutyBackendStore, catalogApi: Cat
         offset: needsPostProcessing ? 0 : offset,
       };
 
+      const allEntityMappings = await store.getAllEntityMappings();
+
       if (filters?.serviceName?.trim()) {
         const serviceQuery = filters.serviceName.trim();
 
         const matchingPagerDutyServiceIds = await Pagerduty.getServicesIdsByPartialName(serviceQuery);
 
-        if (matchingPagerDutyServiceIds.length > 0) {
-          const entityMappings = await store.getAllEntityMappings();
-
-          const mappingsWithMatchingPagerdutyServices = entityMappings.filter(
+        if (matchingPagerDutyServiceIds.length > 0) {        
+          const mappingsWithMatchingPagerdutyServices = allEntityMappings.filter(
             mapping => matchingPagerDutyServiceIds.includes(mapping.serviceId),
           );
 
@@ -83,9 +157,7 @@ export function getMappingEntities(store: PagerDutyBackendStore, catalogApi: Cat
         filters.name,
         filters.teamName,
       );
-
-      const allEntityMappings = await store.getAllEntityMappings();
-
+ 
       const currentPageMappings = allEntityMappings.filter(mapping => {
         return componentEntities.items.some(entity => {
           const entityRef = CatalogEntityUtils.entityRef(entity).toLowerCase();
@@ -110,7 +182,7 @@ export function getMappingEntities(store: PagerDutyBackendStore, catalogApi: Cat
         currentPagePagerDutyServices,
       );
 
-      let formattedEntities = await Promise.all(
+      let formattedEntities: Array<FormattedBackstageEntity> = await Promise.all(
         componentEntities.items.map(async entity => {
           const annotations = {
             'pagerduty.com/integration-key': CatalogEntityUtils.getPagerDutyIntegrationKey(entity) ?? '',
@@ -126,7 +198,7 @@ export function getMappingEntities(store: PagerDutyBackendStore, catalogApi: Cat
             owner: entity.spec?.owner ? JSON.stringify(entity.spec?.owner) : '',
             lifecycle: entity.spec?.lifecycle ? JSON.stringify(entity.spec?.lifecycle) : '',
             annotations,
-            status: 'NotMapped',
+            status: 'NotMapped' as NonNullable<FormattedBackstageEntity['status']>,
             serviceName: '',
             serviceUrl: '',
             team: '',
@@ -174,9 +246,10 @@ export function getMappingEntities(store: PagerDutyBackendStore, catalogApi: Cat
               const expectedEntityRef = componentEntitiesDict[service.id]?.ref;
 
               if (expectedEntityRef && expectedEntityRef === entityMapping.entityRef) {
-                formattedEntity.status = entityMapping.status || 'NotMapped';
+                formattedEntity.status = 
+                  (entityMapping.status || 'NotMapped') as NonNullable<FormattedBackstageEntity['status']>;
               } else {
-                formattedEntity.status = 'NotMapped';
+                formattedEntity.status = 'NotMapped' as NonNullable<FormattedBackstageEntity['status']>;
               }
             }
           } else if (isServiceError) {
@@ -195,6 +268,10 @@ export function getMappingEntities(store: PagerDutyBackendStore, catalogApi: Cat
         formattedEntities = formattedEntities.filter(entity =>
           entity.account?.toLowerCase().includes(filters.account.trim().toLowerCase())
         );
+      }
+
+      if (sort) {
+        formattedEntities.sort((a, b) => compareEntities(a, b, sort.column, sort.direction));
       }
 
       const totalCount = needsPostProcessing ? formattedEntities.length : componentEntities.totalItems;

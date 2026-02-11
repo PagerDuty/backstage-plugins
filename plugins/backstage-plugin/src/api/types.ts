@@ -73,12 +73,14 @@ export interface PagerDutyApi {
   getEntityMappingsWithPagination(options: {
     offset: number;
     limit: number;
-    searchFields?: string[];
     filters?: {
       name?: string;
       serviceName?: string;
       status?: string;
+      teamName?: string;
+      account?: string;
     };
+    sort?: { column: string; direction: 'ascending' | 'descending' };
   }): Promise<PagerDutyEnhancedEntityMappingsResponse>;
 
   /**

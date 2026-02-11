@@ -51,6 +51,7 @@ function mockedResponse(status: number, body: unknown): Promise<Response> {
   } as Response);
 }
 
+// This mocked database implements auto-cleanup after each test
 const testDatabase = TestDatabases.create();
 
 async function createDatabase(): Promise<PagerDutyBackendStore> {
@@ -104,7 +105,7 @@ describe('createRouter', () => {
       kind: 'Component',
       metadata: {
         name: 'component-2',
-        namespace: 'production',
+        namespace: 'default',
         uid: 'uid-2',
         annotations: {
           'pagerduty.com/service-id': 'SERVICE2',
@@ -3221,6 +3222,315 @@ describe('createRouter', () => {
       });
 
       // TODO: Test the rest of the filters when InMemoryCatalogApi supports fullTextSearch (https://pagerduty.atlassian.net/browse/DEVECO-623)
+
+      describe('sorting', () => {
+        beforeEach(async () => {
+          await store.insertEntityMapping({
+            serviceId: 'SERVICE1',
+            entityRef: 'component:default/component-1',
+            integrationKey: 'integration-key-1',
+            account: 'production',
+          });
+
+          await store.insertEntityMapping({
+            serviceId: 'SERVICE2',
+            entityRef: 'component:default/component-2',
+            integrationKey: 'integration-key-2',
+            account: 'development',
+          });
+        });
+
+        it('returns 400 if sort is not an object', async () => {
+          const response = await request(app)
+            .post('/mapping/entities')
+            .send({ offset: 0, limit: 10, sort: 'invalid' });
+
+          expect(response.status).toEqual(400);
+          expect(response.body).toEqual({
+            errors: ["Bad Request: 'sort' must be an object"],
+          });
+        });
+
+        it('returns 400 if sort.column is invalid', async () => {
+          const response = await request(app)
+            .post('/mapping/entities')
+            .send({
+              offset: 0,
+              limit: 10,
+              sort: { column: 'invalid', direction: 'ascending' }
+            });
+
+          expect(response.status).toEqual(400);
+          expect(response.body).toEqual({
+            errors: ["Bad Request: 'sort.column' must be one of: name, team, serviceName, status, account"],
+          });
+        });
+
+        it('returns 400 if sort.direction is invalid', async () => {
+          const response = await request(app)
+            .post('/mapping/entities')
+            .send({
+              offset: 0,
+              limit: 10,
+              sort: { column: 'name', direction: 'invalid' }
+            });
+
+          expect(response.status).toEqual(400);
+          expect(response.body).toEqual({
+            errors: ["Bad Request: 'sort.direction' must be one of: ascending, descending"],
+          });
+        });
+
+        it('sorts entities by name in ascending order', async () => {
+          mocked(fetch).mockReturnValue(
+            mockedResponse(200, { services: [] }),
+          );
+
+          const response = await request(app)
+            .post('/mapping/entities')
+            .send({
+              offset: 0,
+              limit: 10,
+              sort: { column: 'name', direction: 'ascending' }
+            });
+
+          expect(response.status).toEqual(200);
+          expect(response.body.entities).toBeDefined();
+
+          const responseNames = response.body.entities.map((e: { name: string }) => e.name);
+          const entitiesAscedingNames = testEntities.map(e => e.metadata.name).sort((a, b) => a.localeCompare(b));
+
+          expect(responseNames).toEqual(entitiesAscedingNames);
+        });
+
+        it('sorts entities by name in descending order', async () => {
+          mocked(fetch).mockReturnValue(
+            mockedResponse(200, {
+              services: [
+                {
+                  id: 'S3RV1CE1',
+                  name: 'Service A',
+                  html_url: 'https://example.pagerduty.com/services/S3RV1CE1',
+                  escalation_policy: {
+                    id: 'P0L1CY1D',
+                    name: 'Policy',
+                    html_url: 'https://example.pagerduty.com/escalation_policies/P0L1CY1D',
+                    type: 'escalation_policy_reference',
+                  },
+                  teams: [{ id: 'T34M1D', name: 'Team' }],
+                },
+              ],
+            }),
+          );
+
+          const response = await request(app)
+            .post('/mapping/entities')
+            .send({
+              offset: 0,
+              limit: 10,
+              sort: { column: 'name', direction: 'descending' }
+            });
+
+          expect(response.status).toEqual(200);
+          expect(response.body.entities).toBeDefined();
+
+          const responseNames = response.body.entities.map((e: { name: string }) => e.name);
+          const entitiesDescendingNames = testEntities.map(e => e.metadata.name).sort((a, b) => b.localeCompare(a));
+          
+          expect(responseNames).toEqual(entitiesDescendingNames);
+        });
+
+        it('sorts entities by serviceName in ascending order', async () => {
+          mocked(fetch).mockReturnValue(
+            mockedResponse(200, {
+              services: [
+                {
+                  id: 'SERVICE1',
+                  name: 'Alpha Service',
+                  html_url: 'https://example.pagerduty.com/services/SERVICE1',
+                  escalation_policy: {
+                    id: 'P0L1CY1D',
+                    name: 'Policy',
+                    html_url: 'https://example.pagerduty.com/escalation_policies/P0L1CY1D',
+                    type: 'escalation_policy_reference',
+                  },
+                  teams: [{ id: 'T34M1D', name: 'Team' }],
+                },
+                {
+                  id: 'SERVICE2',
+                  name: 'Beta Service',
+                  html_url: 'https://example.pagerduty.com/services/SERVICE2',
+                  escalation_policy: {
+                    id: 'P0L1CY1D',
+                    name: 'Policy',
+                    html_url: 'https://example.pagerduty.com/escalation_policies/P0L1CY1D',
+                    type: 'escalation_policy_reference',
+                  },
+                  teams: [{ id: 'T34M1D', name: 'Team' }],
+                },
+              ],
+            }),
+          );
+
+          const response = await request(app)
+            .post('/mapping/entities')
+            .send({
+              offset: 0,
+              limit: 10,
+              sort: { column: 'serviceName', direction: 'ascending' }
+            });
+
+          expect(response.status).toEqual(200);
+          expect(response.body.entities).toBeDefined();
+
+          const responseServiceNames = response.body.entities.map((e: { serviceName: string }) => e.serviceName);
+          const entitiesAscendingServiceNames = ['', '', '', '', 'Alpha Service', 'Beta Service'];
+          
+          expect(responseServiceNames).toEqual(entitiesAscendingServiceNames);
+        });
+
+        it('sorts entities by status in ascending order', async () => {
+          mocked(fetch).mockReturnValue(
+            mockedResponse(200, {
+              services: [
+                {
+                  id: 'S3RV1CE1D',
+                  name: 'Service A',
+                  html_url: 'https://example.pagerduty.com/services/S3RV1CE1D',
+                  escalation_policy: {
+                    id: 'P0L1CY1D',
+                    name: 'Policy',
+                    html_url: 'https://example.pagerduty.com/escalation_policies/P0L1CY1D',
+                    type: 'escalation_policy_reference',
+                  },
+                  teams: [{ id: 'T34M1D', name: 'Team' }],
+                },
+              ],
+            }),
+          );
+
+          const response = await request(app)
+            .post('/mapping/entities')
+            .send({
+              offset: 0,
+              limit: 10,
+              sort: { column: 'status', direction: 'ascending' }
+            });
+
+          expect(response.status).toEqual(200);
+          expect(response.body.entities).toBeDefined();
+
+          const responseStatuses = response.body.entities.map((e: { status: string }) => e.status);
+          const entitiesAscendingStatuses = ['NotMapped', 'NotMapped', 'NotMapped', 'NotMapped', 'NotMapped', 'InSync'];
+
+          expect(responseStatuses).toEqual(entitiesAscendingStatuses);
+        });
+
+        it('sorts entities by account in ascending order', async () => {
+          mocked(fetch).mockReturnValue(
+            mockedResponse(200, {
+              services: [
+                {
+                  id: 'SERVICE1',
+                  name: 'Service A',
+                  html_url: 'https://example.pagerduty.com/services/SERVICE1',
+                  escalation_policy: {
+                    id: 'P0L1CY1D',
+                    name: 'Policy',
+                    html_url: 'https://example.pagerduty.com/escalation_policies/P0L1CY1D',
+                    type: 'escalation_policy_reference',
+                  },
+                  teams: [{ id: 'T34M1D', name: 'Team' }],
+                  account: 'production',
+                },
+                {
+                  id: 'SERVICE2',
+                  name: 'Service B',
+                  html_url: 'https://example.pagerduty.com/services/SERVICE2',
+                  escalation_policy: {
+                    id: 'P0L1CY1D',
+                    name: 'Policy',
+                    html_url: 'https://example.pagerduty.com/escalation_policies/P0L1CY1D',
+                    type: 'escalation_policy_reference',
+                  },
+                  teams: [{ id: 'T34M1D', name: 'Team' }],
+                  account: 'development',
+                },
+              ],
+            }),
+          );
+
+          const response = await request(app)
+            .post('/mapping/entities')
+            .send({
+              offset: 0,
+              limit: 10,
+              sort: { column: 'account', direction: 'ascending' }
+            });
+
+          expect(response.status).toEqual(200);
+          expect(response.body.entities).toBeDefined();
+
+          const responseAccounts = response.body.entities.map((e: { account: string }) => e.account);
+          const sortedAccounts = ['', '', '', '', 'development', 'production'];
+          
+          expect(responseAccounts).toEqual(sortedAccounts);
+        });
+
+        it('sorts entities with filters applied', async () => {
+          mocked(Pagerduty.getServicesIdsByPartialName).mockResolvedValue(['SERVICE1', 'SERVICE2']);
+
+          mocked(fetch).mockReturnValue(
+            mockedResponse(200, {
+              services: [
+                {
+                  id: 'SERVICE1',
+                  name: 'Service A',
+                  html_url: 'https://example.pagerduty.com/services/SERVICE1',
+                  escalation_policy: {
+                    id: 'P0L1CY1D',
+                    name: 'Policy',
+                    html_url: 'https://example.pagerduty.com/escalation_policies/P0L1CY1D',
+                    type: 'escalation_policy_reference',
+                  },
+                  teams: [{ id: 'T34M1D', name: 'Team' }],
+                  account: 'production',
+                },
+                {
+                  id: 'SERVICE2',
+                  name: 'Service B',
+                  html_url: 'https://example.pagerduty.com/services/SERVICE2',
+                  escalation_policy: {
+                    id: 'P0L1CY1D',
+                    name: 'Policy',
+                    html_url: 'https://example.pagerduty.com/escalation_policies/P0L1CY1D',
+                    type: 'escalation_policy_reference',
+                  },
+                  teams: [{ id: 'T34M1D', name: 'Team' }],
+                  account: 'development',
+                },
+              ],
+            }),
+          );
+
+          const response = await request(app)
+            .post('/mapping/entities')
+            .send({
+              offset: 0,
+              limit: 10,
+              filters: { serviceName: 'Service' },
+              sort: { column: 'account', direction: 'ascending' }
+            });
+
+          expect(response.status).toEqual(200);
+          expect(response.body.entities).toBeDefined();
+
+          const responseAccounts = response.body.entities.map((e: { account: string }) => e.account);
+          const sortedAccounts = ['development', 'production'];
+
+          expect(responseAccounts).toEqual(sortedAccounts);
+        });
+      });
     });
 
     describe('POST /mapping/entities/bulk', () => {
