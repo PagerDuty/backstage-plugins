@@ -8,8 +8,8 @@ import {
   Flex,
   Text,
   SearchField,
-  RadioGroup,
-  Radio,
+  ToggleButtonGroup,
+  ToggleButton,
   Box,
   TextField,
 } from '@backstage/ui';
@@ -157,6 +157,23 @@ export default function MappingsDialog({
     <Dialog isOpen={isOpen} onOpenChange={setIsOpen}>
       <DialogHeader>Update Entity Mapping</DialogHeader>
       <DialogBody>
+        <style>
+          {`
+            .toggle-group-container {
+              border: 1px solid var(--bui-border);
+              border-radius: var(--bui-radius-2);
+            }
+            .full-width-toggle-group[data-orientation='vertical'] {
+              width: 100% !important;
+            }
+            .full-width-toggle-group button {
+              font-weight: normal !important;
+            }
+            .full-width-toggle-group .bui-ToggleButtonContent {
+              justify-content: flex-start !important;
+            }
+          `}
+        </style>
         <Flex direction="column" gap="2" mb="4">
           <Text variant="body-medium" weight="bold">
             Backstage Component
@@ -217,22 +234,33 @@ export default function MappingsDialog({
           <Text>Loading services...</Text>
         ) : (
           <>
-            <Box style={{ maxHeight: '300px', overflowY: 'auto' }} mb="2">
-              <RadioGroup
-                value={selectedServiceId}
-                onChange={setSelectedServiceId}
+            <Box
+              mb="2"
+              width="100%"
+              className="toggle-group-container"
+              style={{ maxHeight: '300px', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}
+            >
+              <ToggleButtonGroup
+                selectionMode="single"
+                orientation="vertical"
+                className="full-width-toggle-group"
+                selectedKeys={selectedServiceId ? [selectedServiceId] : []}
+                onSelectionChange={(keys) => {
+                  const selected = Array.from(keys as Set<string>)[0] || '';
+                  setSelectedServiceId(selected);
+                }}
               >
                 {entity?.annotations?.['pagerduty.com/service-id'] && (
-                  <Radio key="none" value="none">
+                  <ToggleButton key="none" id="none">
                     (None)
-                  </Radio>
+                  </ToggleButton>
                 )}
                 {services && services.map(service => (
-                  <Radio key={service.id} value={service.id}>
+                  <ToggleButton key={service.id} id={service.id}>
                     {service.name}
-                  </Radio>
+                  </ToggleButton>
                 ))}
-              </RadioGroup>
+              </ToggleButtonGroup>
             </Box>
             {services && services.length > 0 ? (
               <Text variant="body-small">

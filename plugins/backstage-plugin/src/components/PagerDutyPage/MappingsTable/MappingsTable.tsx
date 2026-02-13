@@ -1,7 +1,7 @@
 import {
   Column,
   Row,
-  Table,
+  TableRoot,
   TableBody,
   TableHeader,
   TablePagination,
@@ -66,7 +66,7 @@ export default function MappingsTable() {
           }}
         />
       </Flex>
-      <Table>
+      <TableRoot>
         <TableHeader>
           <Column isRowHeader>Name</Column>
           <Column isRowHeader>Team</Column>
@@ -98,13 +98,13 @@ export default function MappingsTable() {
             </Row>
           ))}
         </TableBody>
-      </Table>
+      </TableRoot>
       <TablePagination
         offset={offset}
         pageSize={pageSize}
-        setPageSize={setPageSize}
-        setOffset={setOffset}
-        rowCount={mappings?.totalCount || 0}
+        totalCount={mappings?.totalCount || 0}
+        hasNextPage={offset + pageSize < (mappings?.totalCount || 0)}
+        hasPreviousPage={offset > 0}
         onNextPage={() => setOffset(offset + pageSize)}
         onPreviousPage={() => setOffset(Math.max(0, offset - pageSize))}
         onPageSizeChange={newPageSize => {
