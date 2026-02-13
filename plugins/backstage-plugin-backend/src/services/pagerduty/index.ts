@@ -1,12 +1,7 @@
-import { getAllServices } from "../../apis/pagerduty";
+import { getServicesByPartialName } from "../../apis/pagerduty";
 
 export async function getServicesIdsByPartialName(partialName: string): Promise<string[]> {
-  const pagerdutyServices = await getAllServices();
-  const matchingServices = pagerdutyServices.filter(service =>
-    service.name
-      .toLowerCase()
-      .includes(partialName.toLowerCase()),
-  );
+  const pagerdutyServices = await getServicesByPartialName(partialName);
 
-  return matchingServices.map(service => service.id);
+  return pagerdutyServices.map(service => service.id);
 }

@@ -252,6 +252,10 @@ export async function createRouter(
     auth = createLegacyAuthAdapters(options).auth;
   }
 
+  if (!catalogApi) {
+    throw new Error('Catalog API is required to start the PagerDuty plugin backend');
+  }
+
   // Get authentication Config
   await loadAuthConfig(config, logger);
 
@@ -784,7 +788,6 @@ export async function createRouter(
     }
   });
 
-  // POST /mapping/entities - returns mappings for paginated entities with search capability
   router.post('/mapping/entities', MappingsController.getMappingEntities(store, catalogApi));
 
   // GET /mapping/entity

@@ -15,6 +15,9 @@ const STATUS_ORDER: Record<NonNullable<FormattedBackstageEntity['status']>, numb
   'InSync': 3,
 };
 
+// Maximum number of entities to fetch when post-processing filters are needed
+const MAX_ENTITIES_FOR_POST_PROCESSING = 10000;
+
 function compareEntities(
   a: FormattedBackstageEntity,
   b: FormattedBackstageEntity,
@@ -53,7 +56,7 @@ function compareEntities(
   return direction === 'ascending' ? comparison : -comparison;
 }
 
-export function getMappingEntities(store: PagerDutyBackendStore, catalogApi: CatalogApi | undefined) {
+export function getMappingEntities(store: PagerDutyBackendStore, catalogApi: CatalogApi) {
   return async function getMappingEntitiesFunction(request: Request, response: Response) {
     try {
       const { offset = 0, limit = 10, filters = {}, sort } = request.body;
@@ -112,7 +115,7 @@ export function getMappingEntities(store: PagerDutyBackendStore, catalogApi: Cat
         fullTextFilter?: { term: string; fields: string[] };
       } = {
         filter: [{ kind: 'Component' }],
-        limit: needsPostProcessing ? 10000 : limit,
+        limit: needsPostProcessing ? MAX_ENTITIES_FOR_POST_PROCESSING : limit,
         offset: needsPostProcessing ? 0 : offset,
       };
 
@@ -152,7 +155,7 @@ export function getMappingEntities(store: PagerDutyBackendStore, catalogApi: Cat
       }
 
       const componentEntities = await _queryEntitiesWithFilters(
-        catalogApi!,
+        catalogApi,
         queryOptions,
         filters.name,
         filters.teamName,

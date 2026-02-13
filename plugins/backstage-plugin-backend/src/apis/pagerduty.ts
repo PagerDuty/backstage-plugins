@@ -907,6 +907,87 @@ export async function getAllServices(): Promise<PagerDutyService[]> {
   return allServices;
 }
 
+export async function getServicesByPartialName(
+  partialName: string,
+): Promise<PagerDutyService[]> {
+  const allServices: PagerDutyService[] = [];
+
+  await Promise.all(
+    Object.entries(EndpointConfig).map(async ([account, _]) => {
+      let response: Response;
+      const params = `query=${encodeURIComponent(partialName)}&time_zone=UTC&include[]=integrations&include[]=escalation_policies&include[]=teams&total=true`;
+
+      const token = await getAuthToken(account);
+
+      const options: RequestInit = {
+        method: 'GET',
+        headers: {
+          Authorization: token,
+          Accept: 'application/vnd.pagerduty+json;version=2',
+          'Content-Type': 'application/json',
+        },
+      };
+
+      const apiBaseUrl = getApiBaseUrl(account);
+      const baseUrl = `${apiBaseUrl}/services`;
+
+      let offset = 0;
+      const limit = 50;
+      let result: PagerDutyServicesAPIResponse;
+
+      try {
+        do {
+          const paginatedUrl = `${baseUrl}?${params}&offset=${offset}&limit=${limit}`;
+
+          response = await fetchWithRetries(paginatedUrl, options);
+
+          if (response.status >= 500) {
+            throw new HttpError(
+              `Failed to get services. PagerDuty API returned a server error. Retrying with the same arguments will not work.`,
+              response.status,
+            );
+          }
+
+          switch (response.status) {
+            case 400:
+              throw new HttpError(
+                'Failed to get services. Caller provided invalid arguments.',
+                400,
+              );
+            case 401:
+              throw new HttpError(
+                'Failed to get services. Caller did not supply credentials or did not provide the correct credentials.',
+                401,
+              );
+            case 403:
+              throw new HttpError(
+                'Failed to get services. Caller is not authorized to view the requested resource.',
+                403,
+              );
+            default: // 200
+              break;
+          }
+
+          result = (await response.json()) as PagerDutyServicesAPIResponse;
+
+          // set account
+          result.services.forEach(service => {
+            service.account = account;
+          });
+
+          allServices.push(...result.services);
+
+          offset += limit;
+        } while (offset < result.total!);
+      } catch (error) {
+        throw error;
+      }
+    }),
+  );
+
+  return allServices;
+}
+
 export async function getChangeEvents(
   serviceId: string,
   account?: string,
