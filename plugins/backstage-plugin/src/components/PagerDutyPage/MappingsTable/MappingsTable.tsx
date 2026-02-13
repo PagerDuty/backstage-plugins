@@ -41,6 +41,22 @@ export default function MappingsTable() {
   );
   const [offset, setOffset] = useState(0);
   const [pageSize, setPageSize] = useState(10);
+  const [sort, setSort] = 
+    useState<{ column: string; direction: 'ascending' | 'descending' } | undefined>(undefined);
+  
+  
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const changeSort: (s: any) => void = ((sortDescriptor: { column: string; direction: 'ascending' | 'descending' }) => {
+    if (sort?.column === sortDescriptor.column) {
+      const newDirection = sort.direction === 'ascending' ? 'descending' : 'ascending';
+      setSort({ column: sortDescriptor.column, direction: newDirection });
+    } else {
+      setSort(sortDescriptor);
+    }
+
+    setOffset(0);
+  });
+
 
   const queryClient = useQueryClient();
   const [showFilters, setShowFilters] = useState(false);
@@ -95,6 +111,7 @@ export default function MappingsTable() {
     offset,
     pageSize,
     debouncedFilters,
+    sort,
     autoMatchResults,
   );
 
@@ -143,16 +160,18 @@ export default function MappingsTable() {
           <FilterList />
         </ButtonIcon>
       </Flex>
-      <Table selectionMode="none">
+
+      <Table sortDescriptor={sort} onSortChange={changeSort} selectionMode="none">
         <TableHeader>
-          <Column isRowHeader>Name</Column>
-          <Column isRowHeader>Team</Column>
-          <Column isRowHeader>PagerDuty service</Column>
-          <Column isRowHeader>Status</Column>
-          <Column isRowHeader>Account</Column>
+          <Column isRowHeader id='name' allowsSorting>Name</Column>
+          <Column isRowHeader id='team' allowsSorting>Team</Column>
+          <Column isRowHeader id='serviceName' allowsSorting>PagerDuty service</Column>
+          <Column isRowHeader id='status' allowsSorting>Status</Column>
+          <Column isRowHeader id='account' allowsSorting>Account</Column>
           <Column isRowHeader>Mapping Score</Column>
           <Column isRowHeader>Actions</Column>
         </TableHeader>
+
         <TableBody>
           {showFilters && (<FilterRow filters={filters} onFilterChange={handleFilterChange} />)}
           

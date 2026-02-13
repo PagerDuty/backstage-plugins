@@ -215,8 +215,8 @@ describe('MappingsTable', () => {
       expect(mockGetEntityMappingsWithPagination).toHaveBeenCalledWith({
         offset: 0,
         limit: 10,
-        searchFields: ['metadata.name', 'spec.owner'],
         filters: { name: 'my-component', serviceName: '', status: '', teamName: '', account: '' },
+        sort: undefined
       });
     });
 
@@ -255,8 +255,8 @@ describe('MappingsTable', () => {
     expect(mockGetEntityMappingsWithPagination).toHaveBeenCalledWith({
       offset: 0,
       limit: 10,
-      searchFields: ['metadata.name', 'spec.owner'],
       filters: { name: '', serviceName: '', status: '', teamName: '', account: '' },
+      sort: undefined
     });
 
     expect(screen.getByText('1 - 10 of 25')).toBeInTheDocument();
@@ -268,8 +268,8 @@ describe('MappingsTable', () => {
       expect(mockGetEntityMappingsWithPagination).toHaveBeenCalledWith({
         offset: 10,
         limit: 10,
-        searchFields: ['metadata.name', 'spec.owner'],
         filters: { name: '', serviceName: '', status: '', teamName: '', account: '' },
+        sort: undefined
       });
     });
 
@@ -280,8 +280,8 @@ describe('MappingsTable', () => {
       expect(mockGetEntityMappingsWithPagination).toHaveBeenCalledWith({
         offset: 0,
         limit: 10,
-        searchFields: ['metadata.name', 'spec.owner'],
         filters: { name: '', serviceName: '', status: '', teamName: '', account: '' },
+        sort: undefined
       });
     });
   });
@@ -484,5 +484,320 @@ describe('MappingsTable', () => {
     });
 
     jest.useRealTimers();
+  });
+
+  describe('sorting', () => {
+    it('calls API with sort parameter when Name column header is clicked', async () => {
+      mockGetEntityMappingsWithPagination.mockResolvedValue({
+        entities: [],
+        totalCount: 0,
+      });
+
+      await renderInTestApp(
+        <ApiProvider apis={apis}>
+          <QueryClientProvider client={queryClient}>
+            <MappingsTable />
+          </QueryClientProvider>
+        </ApiProvider>,
+      );
+
+      const nameColumnHeader = screen.getByText('Name');
+      fireEvent.click(nameColumnHeader);
+
+      await waitFor(() => {
+        expect(mockGetEntityMappingsWithPagination).toHaveBeenCalledWith(
+          expect.objectContaining({
+            sort: { column: 'name', direction: 'ascending' },
+          }),
+        );
+      });
+    });
+
+    it('toggles sort direction when clicking the same column header twice', async () => {
+      mockGetEntityMappingsWithPagination.mockResolvedValue({
+        entities: [],
+        totalCount: 0,
+      });
+
+      await renderInTestApp(
+        <ApiProvider apis={apis}>
+          <QueryClientProvider client={queryClient}>
+            <MappingsTable />
+          </QueryClientProvider>
+        </ApiProvider>,
+      );
+
+      const nameColumnHeader = screen.getByText('Name');
+
+      // First click - ascending
+      fireEvent.click(nameColumnHeader);
+
+      await waitFor(() => {
+        expect(mockGetEntityMappingsWithPagination).toHaveBeenCalledWith(
+          expect.objectContaining({
+            sort: { column: 'name', direction: 'ascending' },
+          }),
+        );
+      });
+
+      // Second click - descending
+      fireEvent.click(nameColumnHeader);
+
+      await waitFor(() => {
+        expect(mockGetEntityMappingsWithPagination).toHaveBeenCalledWith(
+          expect.objectContaining({
+            sort: { column: 'name', direction: 'descending' },
+          }),
+        );
+      });
+    });
+
+    it('calls API with sort parameter when Team column header is clicked', async () => {
+      mockGetEntityMappingsWithPagination.mockResolvedValue({
+        entities: [],
+        totalCount: 0,
+      });
+
+      await renderInTestApp(
+        <ApiProvider apis={apis}>
+          <QueryClientProvider client={queryClient}>
+            <MappingsTable />
+          </QueryClientProvider>
+        </ApiProvider>,
+      );
+
+      const teamColumnHeader = screen.getByText('Team');
+      fireEvent.click(teamColumnHeader);
+
+      await waitFor(() => {
+        expect(mockGetEntityMappingsWithPagination).toHaveBeenCalledWith(
+          expect.objectContaining({
+            sort: { column: 'team', direction: 'ascending' },
+          }),
+        );
+      });
+    });
+
+    it('calls API with sort parameter when PagerDuty service column header is clicked', async () => {
+      mockGetEntityMappingsWithPagination.mockResolvedValue({
+        entities: [],
+        totalCount: 0,
+      });
+
+      await renderInTestApp(
+        <ApiProvider apis={apis}>
+          <QueryClientProvider client={queryClient}>
+            <MappingsTable />
+          </QueryClientProvider>
+        </ApiProvider>,
+      );
+
+      const serviceColumnHeader = screen.getByText('PagerDuty service');
+      fireEvent.click(serviceColumnHeader);
+
+      await waitFor(() => {
+        expect(mockGetEntityMappingsWithPagination).toHaveBeenCalledWith(
+          expect.objectContaining({
+            sort: { column: 'serviceName', direction: 'ascending' },
+          }),
+        );
+      });
+    });
+
+    it('calls API with sort parameter when Status column header is clicked', async () => {
+      mockGetEntityMappingsWithPagination.mockResolvedValue({
+        entities: [],
+        totalCount: 0,
+      });
+
+      await renderInTestApp(
+        <ApiProvider apis={apis}>
+          <QueryClientProvider client={queryClient}>
+            <MappingsTable />
+          </QueryClientProvider>
+        </ApiProvider>,
+      );
+
+      const statusColumnHeader = screen.getByText('Status');
+      fireEvent.click(statusColumnHeader);
+
+      await waitFor(() => {
+        expect(mockGetEntityMappingsWithPagination).toHaveBeenCalledWith(
+          expect.objectContaining({
+            sort: { column: 'status', direction: 'ascending' },
+          }),
+        );
+      });
+    });
+
+    it('calls API with sort parameter when Account column header is clicked', async () => {
+      mockGetEntityMappingsWithPagination.mockResolvedValue({
+        entities: [],
+        totalCount: 0,
+      });
+
+      await renderInTestApp(
+        <ApiProvider apis={apis}>
+          <QueryClientProvider client={queryClient}>
+            <MappingsTable />
+          </QueryClientProvider>
+        </ApiProvider>,
+      );
+
+      const accountColumnHeader = screen.getByText('Account');
+      fireEvent.click(accountColumnHeader);
+
+      await waitFor(() => {
+        expect(mockGetEntityMappingsWithPagination).toHaveBeenCalledWith(
+          expect.objectContaining({
+            sort: { column: 'account', direction: 'ascending' },
+          }),
+        );
+      });
+    });
+
+    it('switches sort column when clicking different column headers', async () => {
+      mockGetEntityMappingsWithPagination.mockResolvedValue({
+        entities: [],
+        totalCount: 0,
+      });
+
+      await renderInTestApp(
+        <ApiProvider apis={apis}>
+          <QueryClientProvider client={queryClient}>
+            <MappingsTable />
+          </QueryClientProvider>
+        </ApiProvider>,
+      );
+
+      // Sort by name
+      const nameColumnHeader = screen.getByText('Name');
+      fireEvent.click(nameColumnHeader);
+
+      await waitFor(() => {
+        expect(mockGetEntityMappingsWithPagination).toHaveBeenCalledWith(
+          expect.objectContaining({
+            sort: { column: 'name', direction: 'ascending' },
+          }),
+        );
+      });
+
+      // Switch to sort by team
+      const teamColumnHeader = screen.getByText('Team');
+      fireEvent.click(teamColumnHeader);
+
+      await waitFor(() => {
+        expect(mockGetEntityMappingsWithPagination).toHaveBeenCalledWith(
+          expect.objectContaining({
+            sort: { column: 'team', direction: 'ascending' },
+          }),
+        );
+      });
+    });
+
+    it('resets offset to 0 when sort changes', async () => {
+      const mockEntities = Array.from({ length: 10 }, (_, i) => ({
+        id: `entity-${i}`,
+        name: `service-${i}`,
+        namespace: 'default',
+        type: 'service',
+        system: 'core',
+        owner: `team-${i}`,
+        lifecycle: 'production',
+        annotations: {
+          'pagerduty.com/integration-key': `key-${i}`,
+          'pagerduty.com/service-id': `PD${i}`,
+        },
+        status: 'InSync' as const,
+      }));
+
+      mockGetEntityMappingsWithPagination.mockResolvedValue({
+        entities: mockEntities,
+        totalCount: 25,
+      });
+
+      await renderInTestApp(
+        <ApiProvider apis={apis}>
+          <QueryClientProvider client={queryClient}>
+            <MappingsTable />
+          </QueryClientProvider>
+        </ApiProvider>,
+      );
+
+      // Navigate to second page
+      const nextButton = screen.getByLabelText('Next');
+      fireEvent.click(nextButton);
+
+      await waitFor(() => {
+        expect(mockGetEntityMappingsWithPagination).toHaveBeenCalledWith(
+          expect.objectContaining({
+            offset: 10,
+          }),
+        );
+      });
+
+      // Click sort column - should reset to offset 0
+      const nameColumnHeader = screen.getByText('Name');
+      fireEvent.click(nameColumnHeader);
+
+      await waitFor(() => {
+        expect(mockGetEntityMappingsWithPagination).toHaveBeenCalledWith(
+          expect.objectContaining({
+            offset: 0,
+            sort: { column: 'name', direction: 'ascending' },
+          }),
+        );
+      });
+    });
+
+    it('maintains sort when filters are applied', async () => {
+      jest.useFakeTimers();
+      mockGetEntityMappingsWithPagination.mockResolvedValue({
+        entities: [],
+        totalCount: 0,
+      });
+
+      await renderInTestApp(
+        <ApiProvider apis={apis}>
+          <QueryClientProvider client={queryClient}>
+            <MappingsTable />
+          </QueryClientProvider>
+        </ApiProvider>,
+      );
+
+      // Apply sort first
+      const nameColumnHeader = screen.getByText('Name');
+      fireEvent.click(nameColumnHeader);
+
+      await waitFor(() => {
+        expect(mockGetEntityMappingsWithPagination).toHaveBeenCalledWith(
+          expect.objectContaining({
+            sort: { column: 'name', direction: 'ascending' },
+          }),
+        );
+      });
+
+      // Apply filter
+      const filterButton = screen.getByRole('button', { name: 'Toggle filters' });
+      fireEvent.click(filterButton);
+
+      const nameFilter = screen.getByPlaceholderText('Filter by name');
+      fireEvent.change(nameFilter, { target: { value: 'test-service' } });
+
+      jest.advanceTimersByTime(500);
+
+      await waitFor(() => {
+        expect(mockGetEntityMappingsWithPagination).toHaveBeenCalledWith(
+          expect.objectContaining({
+            filters: expect.objectContaining({
+              name: 'test-service',
+            }),
+            sort: { column: 'name', direction: 'ascending' },
+          }),
+        );
+      });
+
+      jest.useRealTimers();
+    });
   });
 });
