@@ -281,7 +281,7 @@ describe('MappingsTable', () => {
         offset: 0,
         limit: 10,
         filters: { name: '', serviceName: '', status: '', teamName: '', account: '' },
-        Sort: undefined
+        sort: undefined
       });
     });
   });
