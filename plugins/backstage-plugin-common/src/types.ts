@@ -304,7 +304,7 @@ export type FormattedBackstageEntity = {
   serviceUrl?: string;
   team?: string;
   escalationPolicy?: string;
-  status?: 'NotMapped' | 'InSync' | 'OutOfSync';
+  status?: 'NotMapped' | 'InSync' | 'OutOfSync' | 'ErrorWhenFetchingService';
   account?: string;
 };
 
