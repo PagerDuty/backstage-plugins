@@ -1,13 +1,15 @@
 import { useQuery } from '@tanstack/react-query';
 import { useApi } from '@backstage/core-plugin-api';
 import { pagerDutyApiRef } from '../../../../api';
-import { BackstageEntity } from '../../../types';
 import { AutoMatchResults } from '../MappingsTable';
+import { FormattedBackstageEntity } from '@pagerduty/backstage-plugin-common';
+import { BackstageEntity } from '../../../types';
 
 export function useEntityMappings(
   offset: number,
   pageSize: number,
-  searchQuery: string,
+  filters: { name: string; serviceName: string; status: string; teamName: string; account: string },
+  sort: { column: string; direction: 'ascending' | 'descending' } | undefined,
   autoMatchResults: AutoMatchResults,
 ) {
   const pagerDutyApi = useApi(pagerDutyApiRef);
@@ -19,21 +21,21 @@ export function useEntityMappings(
       {
         offset,
         pageSize,
-        search: searchQuery,
+        filters,
+        sort,
       },
     ],
     queryFn: () =>
       pagerDutyApi.getEntityMappingsWithPagination({
         offset,
         limit: pageSize,
-        search: searchQuery,
-        searchFields: ['metadata.name', 'spec.owner'],
+        filters,
+        sort,
       }),
   });
 
   // Merge auto-match results with entities
-  const entitiesWithScores = mappings?.entities.map(
-    (entity: BackstageEntity) => {
+  const entitiesWithScores = mappings?.entities.map((entity: FormattedBackstageEntity): BackstageEntity => {
       const matchResult = autoMatchResults[entity.name];
 
       if (matchResult) {
@@ -47,7 +49,7 @@ export function useEntityMappings(
         };
       }
 
-      return entity;
+      return entity as BackstageEntity;
     },
   );
 

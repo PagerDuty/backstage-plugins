@@ -108,8 +108,13 @@ export const mockPagerDutyApi: PagerDutyApi = {
   async getEntityMappingsWithPagination(options: {
     offset: number;
     limit: number;
-    search?: string;
     searchFields?: string[];
+    filters?: {
+      name?: string;
+      serviceName?: string;
+      status?: string;
+      teamName?: string;
+    };
   }): Promise<PagerDutyEnhancedEntityMappingsResponse> {
     const mockEntities: FormattedBackstageEntity[] = [
       {
@@ -167,12 +172,16 @@ export const mockPagerDutyApi: PagerDutyApi = {
     ];
 
     let filteredEntities = [...mockEntities];
-    if (options.search && options.search.trim() !== '') {
-      const searchTerm = options.search.toLowerCase();
+
+    if (options.filters?.name?.trim()) {
       filteredEntities = mockEntities.filter(
-        entity =>
-          entity.name.toLowerCase().includes(searchTerm) ||
-          entity.owner.toLowerCase().includes(searchTerm),
+        entity => entity.name.toLowerCase().includes(options.filters!.name!.toLowerCase())
+      );
+    }
+
+    if (options.filters?.teamName?.trim()) {
+      filteredEntities = mockEntities.filter(
+        entity => entity.owner.toLowerCase().includes(options.filters!.teamName!.toLowerCase())
       );
     }
 

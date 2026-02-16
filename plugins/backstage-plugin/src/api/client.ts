@@ -142,8 +142,14 @@ export class PagerDutyClient implements PagerDutyApi {
   async getEntityMappingsWithPagination(options: {
     offset: number;
     limit: number;
-    search?: string;
-    searchFields?: string[];
+    filters?: {
+      name?: string;
+      serviceName?: string;
+      status?: string;
+      teamName?: string;
+      account?: string;
+    };
+    sort?: { column: string; direction: 'ascending' | 'descending' };
   }): Promise<PagerDutyEnhancedEntityMappingsResponse> {
     const url = `${await this.config.discoveryApi.getBaseUrl(
       'pagerduty',
@@ -152,8 +158,8 @@ export class PagerDutyClient implements PagerDutyApi {
     const body = JSON.stringify({
       offset: options.offset,
       limit: options.limit,
-      search: options.search,
-      searchFields: options.searchFields || ['metadata.name', 'spec.owner'],
+      filters: options.filters || {},
+      sort: options.sort,
     });
 
     const requestOptions = {
