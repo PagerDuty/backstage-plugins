@@ -889,7 +889,6 @@ export async function getAllServices(): Promise<PagerDutyService[]> {
 
           result = (await response.json()) as PagerDutyServicesAPIResponse;
 
-          // set account
           result.services.forEach(service => {
             service.account = account;
           });
@@ -970,7 +969,6 @@ export async function getServicesByPartialName(
 
           result = (await response.json()) as PagerDutyServicesAPIResponse;
 
-          // set account
           result.services.forEach(service => {
             service.account = account;
           });
