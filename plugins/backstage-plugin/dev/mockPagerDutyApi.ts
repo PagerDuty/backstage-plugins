@@ -25,6 +25,7 @@ import {
 } from '@pagerduty/backstage-plugin-common';
 import { Entity } from '@backstage/catalog-model';
 import { v4 as uuidv4 } from 'uuid';
+import { NotFoundError } from '@backstage/errors';
 
 export const mockPagerDutyApi: PagerDutyApi = {
   async getSetting(id: string) {
@@ -76,6 +77,11 @@ export const mockPagerDutyApi: PagerDutyApi = {
     );
   },
   async getServiceByPagerDutyEntity(pagerDutyEntity: PagerDutyEntity) {
+    // Simulate service not found for deleted service
+    if (pagerDutyEntity.serviceId === 'DELETED-SERVICE-ID') {
+      throw new NotFoundError('Service not found in PagerDuty');
+    }
+
     return {
       service: {
         name: pagerDutyEntity.name,
@@ -93,6 +99,11 @@ export const mockPagerDutyApi: PagerDutyApi = {
   },
 
   async getServiceByEntity(entity: Entity) {
+    // Simulate service not found for unmapped-service component
+    if (entity.metadata.name === 'unmapped-service') {
+      throw new NotFoundError('Service not found in PagerDuty');
+    }
+
     return {
       service: {
         name: entity.metadata.name,
@@ -110,6 +121,11 @@ export const mockPagerDutyApi: PagerDutyApi = {
   },
 
   async getServiceById(serviceId: string) {
+    // Simulate service not found for deleted service
+    if (serviceId === 'DELETED-SERVICE-ID') {
+      throw new NotFoundError('Service not found in PagerDuty');
+    }
+
     return {
       service: {
         name: 'SERV1CENAME',
@@ -250,5 +266,20 @@ export const mockPagerDutyApi: PagerDutyApi = {
 
   async triggerAlarm(request: PagerDutyTriggerAlarmRequest) {
     return new Response(request.description);
+  },
+
+  async getEntityMapping(entityRef: string) {
+    return {
+      mapping: {
+        entityRef: entityRef,
+        serviceId: 'DELETED-SERVICE-ID',
+        integrationKey: 'deleted-integration-key',
+        account: 'default',
+      },
+    };
+  },
+
+  async removeServiceMapping(_entityRef: string) {
+    return true;
   },
 };
