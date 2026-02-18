@@ -45,6 +45,7 @@ import { BackstageTheme } from '@backstage/theme';
 import { PagerDutyCardServiceResponse } from '../../api/types';
 import { EscalationPolicy } from '../Escalation';
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
+import { Entity } from '@backstage/catalog-model';
 
 const useStyles = makeStyles<BackstageTheme>(_ =>
   createStyles({
@@ -75,6 +76,7 @@ const BasicCard = ({ children }: { children: ReactNode }) => (
 
 /** @public */
 export type PagerDutyCardProps = PagerDutyEntity & {
+  entity: Entity;
   readOnly?: boolean;
   disableInsights?: boolean;
   disableOnCall?: boolean;
@@ -85,7 +87,7 @@ export const PagerDutySmallCard = (props: PagerDutyCardProps) => {
   const classes = useStyles();
 
   const theme = useTheme();
-  const { readOnly, disableInsights, disableOnCall } = props;
+  const { entity, readOnly, disableInsights, disableOnCall } = props;
   const api = useApi(pagerDutyApiRef);
   const [refreshStatus, setRefreshStatus] = useState<boolean>(false);
 
@@ -138,7 +140,7 @@ export const PagerDutySmallCard = (props: PagerDutyCardProps) => {
         errorNode = <MissingTokenError />;
         break;
       case NotFoundError:
-        errorNode = <ServiceNotFoundError />;
+        errorNode = <ServiceNotFoundError entity={entity} />;
         break;
       default:
         errorNode = <ForbiddenError />;
