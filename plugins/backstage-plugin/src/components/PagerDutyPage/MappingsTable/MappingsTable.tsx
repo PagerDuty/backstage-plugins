@@ -285,7 +285,9 @@ export default function MappingsTable() {
         <Table
           columnConfig={columnConfig}
           {...tableProps}
-          emptyState={<EmptyTableState filters={showFilters ? filters : undefined} />}
+          emptyState={
+            <EmptyTableState filters={showFilters ? filters : undefined} />
+          }
         />
       )}
 

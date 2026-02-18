@@ -902,7 +902,7 @@ describe('MappingsTable', () => {
         totalCount: 25,
       });
 
-      await renderInTestApp(
+      const { container } = await renderInTestApp(
         <ApiProvider apis={apis}>
           <QueryClientProvider client={queryClient}>
             <MappingsTable />
@@ -913,6 +913,9 @@ describe('MappingsTable', () => {
       await waitFor(() => {
         expect(screen.getByText('service-0')).toBeInTheDocument();
       });
+
+      const table = container.querySelector('table[role="grid"]');
+      expect(table).not.toHaveAttribute('data-stale', 'true');
 
       mockGetEntityMappingsWithPagination.mockImplementation(
         () =>
@@ -934,16 +937,30 @@ describe('MappingsTable', () => {
       const nextButton = screen.getByLabelText('Next table page');
       fireEvent.click(nextButton);
 
+      // During loading: table should be marked as stale
+      await waitFor(() => {
+        const staleTable = container.querySelector('table[role="grid"]');
+        expect(staleTable).toHaveAttribute('data-stale', 'true');
+      });
+
       // Current page data should still be visible (stale state)
       expect(screen.getByText('service-0')).toBeInTheDocument();
 
-      // Wait for new page data to load and filter button to be enabled again
       await waitFor(
         () => {
           expect(screen.getByText('service-10')).toBeInTheDocument();
         },
         { timeout: 200 },
       );
+
+      // After loading: table should not be stale anymore
+      await waitFor(() => {
+        const freshTable = container.querySelector('table[role="grid"]');
+        expect(freshTable).not.toHaveAttribute('data-stale', 'true');
+      });
+
+      // Old data should be gone
+      expect(screen.queryByText('service-0')).not.toBeInTheDocument();
     });
   });
 });
