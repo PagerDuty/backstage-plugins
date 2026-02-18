@@ -215,8 +215,14 @@ describe('MappingsTable', () => {
       expect(mockGetEntityMappingsWithPagination).toHaveBeenCalledWith({
         offset: 0,
         limit: 10,
-        filters: { name: 'my-component', serviceName: '', status: '', teamName: '', account: '' },
-        sort: undefined
+        filters: {
+          name: 'my-component',
+          serviceName: '',
+          status: '',
+          teamName: '',
+          account: '',
+        },
+        sort: undefined,
       });
     });
 
@@ -255,33 +261,51 @@ describe('MappingsTable', () => {
     expect(mockGetEntityMappingsWithPagination).toHaveBeenCalledWith({
       offset: 0,
       limit: 10,
-      filters: { name: '', serviceName: '', status: '', teamName: '', account: '' },
-      sort: undefined
+      filters: {
+        name: '',
+        serviceName: '',
+        status: '',
+        teamName: '',
+        account: '',
+      },
+      sort: undefined,
     });
 
     expect(screen.getByText('1 - 10 of 25')).toBeInTheDocument();
 
-    const nextButton = screen.getByLabelText('Next');
+    const nextButton = screen.getByLabelText('Next table page');
     fireEvent.click(nextButton);
 
     await waitFor(() => {
       expect(mockGetEntityMappingsWithPagination).toHaveBeenCalledWith({
         offset: 10,
         limit: 10,
-        filters: { name: '', serviceName: '', status: '', teamName: '', account: '' },
-        sort: undefined
+        filters: {
+          name: '',
+          serviceName: '',
+          status: '',
+          teamName: '',
+          account: '',
+        },
+        sort: undefined,
       });
     });
 
-    const previousButton = screen.getByLabelText('Previous');
+    const previousButton = screen.getByLabelText('Previous table page');
     fireEvent.click(previousButton);
 
     await waitFor(() => {
       expect(mockGetEntityMappingsWithPagination).toHaveBeenCalledWith({
         offset: 0,
         limit: 10,
-        filters: { name: '', serviceName: '', status: '', teamName: '', account: '' },
-        sort: undefined
+        filters: {
+          name: '',
+          serviceName: '',
+          status: '',
+          teamName: '',
+          account: '',
+        },
+        sort: undefined,
       });
     });
   });
@@ -353,7 +377,12 @@ describe('MappingsTable', () => {
       </ApiProvider>,
     );
 
-    const nextButton = screen.getByLabelText('Next');
+    // Wait for initial data to load
+    await waitFor(() => {
+      expect(screen.getByText('service-0')).toBeInTheDocument();
+    });
+
+    const nextButton = screen.getByLabelText('Next table page');
     fireEvent.click(nextButton);
 
     await waitFor(() => {
@@ -366,6 +395,13 @@ describe('MappingsTable', () => {
 
     const filterButton = screen.getByRole('button', { name: 'Toggle filters' });
     fireEvent.click(filterButton);
+
+    // Wait for filter inputs to appear
+    await waitFor(() => {
+      expect(
+        screen.getByPlaceholderText('Filter by service'),
+      ).toBeInTheDocument();
+    });
 
     const serviceFilter = screen.getByPlaceholderText('Filter by service');
     fireEvent.change(serviceFilter, { target: { value: 'pagerduty-service' } });
@@ -444,9 +480,13 @@ describe('MappingsTable', () => {
 
     expect(screen.getByPlaceholderText('Filter by name')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('Filter by team')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('Filter by service')).toBeInTheDocument();
+    expect(
+      screen.getByPlaceholderText('Filter by service'),
+    ).toBeInTheDocument();
     expect(screen.getByLabelText('All Statuses')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('Filter by account')).toBeInTheDocument();
+    expect(
+      screen.getByPlaceholderText('Filter by account'),
+    ).toBeInTheDocument();
   });
 
   it('calls API with correct account filter when account filter is applied', async () => {
@@ -725,7 +765,7 @@ describe('MappingsTable', () => {
       );
 
       // Navigate to second page
-      const nextButton = screen.getByLabelText('Next');
+      const nextButton = screen.getByLabelText('Next table page');
       fireEvent.click(nextButton);
 
       await waitFor(() => {
@@ -778,7 +818,9 @@ describe('MappingsTable', () => {
       });
 
       // Apply filter
-      const filterButton = screen.getByRole('button', { name: 'Toggle filters' });
+      const filterButton = screen.getByRole('button', {
+        name: 'Toggle filters',
+      });
       fireEvent.click(filterButton);
 
       const nameFilter = screen.getByPlaceholderText('Filter by name');
@@ -798,6 +840,110 @@ describe('MappingsTable', () => {
       });
 
       jest.useRealTimers();
+    });
+  });
+
+  describe('Loading states', () => {
+    it('displays skeleton on initial load', async () => {
+      mockGetEntityMappingsWithPagination.mockImplementation(
+        () =>
+          new Promise(resolve => {
+            setTimeout(() => {
+              resolve({
+                entities: [],
+                totalCount: 0,
+              });
+            }, 100);
+          }),
+      );
+
+      const { container } = await renderInTestApp(
+        <ApiProvider apis={apis}>
+          <QueryClientProvider client={queryClient}>
+            <MappingsTable />
+          </QueryClientProvider>
+        </ApiProvider>,
+      );
+
+      // Check that skeleton is displayed during initial load
+      const skeletons = container.querySelectorAll('.bui-Skeleton');
+      expect(skeletons.length).toBeGreaterThan(0);
+
+      // Wait for loading to complete
+      await waitFor(
+        () => {
+          const skeletonsAfter = container.querySelectorAll('.bui-Skeleton');
+          expect(skeletonsAfter.length).toBe(0);
+        },
+        { timeout: 200 },
+      );
+    });
+
+    it('disables filter button and shows stale data when navigating to next page', async () => {
+      const mockEntities = Array.from({ length: 10 }, (_, i) => ({
+        id: `entity-${i}`,
+        name: `service-${i}`,
+        namespace: 'default',
+        type: 'service',
+        system: 'core',
+        owner: `team-${i}`,
+        lifecycle: 'production',
+        annotations: {
+          'pagerduty.com/integration-key': `key-${i}`,
+          'pagerduty.com/service-id': `PD${i}`,
+        },
+        serviceName: `Service ${i}`,
+        status: 'InSync' as const,
+        account: 'my-account',
+      }));
+
+      mockGetEntityMappingsWithPagination.mockResolvedValueOnce({
+        entities: mockEntities,
+        totalCount: 25,
+      });
+
+      await renderInTestApp(
+        <ApiProvider apis={apis}>
+          <QueryClientProvider client={queryClient}>
+            <MappingsTable />
+          </QueryClientProvider>
+        </ApiProvider>,
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('service-0')).toBeInTheDocument();
+      });
+
+      mockGetEntityMappingsWithPagination.mockImplementation(
+        () =>
+          new Promise(resolve => {
+            setTimeout(() => {
+              resolve({
+                entities: mockEntities.map((e, i) => ({
+                  ...e,
+                  id: `entity-${i + 10}`,
+                  name: `service-${i + 10}`,
+                })),
+                totalCount: 25,
+              });
+            }, 100);
+          }),
+      );
+
+      // Click next page
+      const nextButton = screen.getByLabelText('Next table page');
+      fireEvent.click(nextButton);
+
+      // Current page data should still be visible (stale state)
+      expect(screen.getByText('service-0')).toBeInTheDocument();
+
+      // Wait for new page data to load and filter button to be enabled again
+      await waitFor(
+        () => {
+          expect(screen.getByText('service-10')).toBeInTheDocument();
+        },
+        { timeout: 200 },
+      );
     });
   });
 });
