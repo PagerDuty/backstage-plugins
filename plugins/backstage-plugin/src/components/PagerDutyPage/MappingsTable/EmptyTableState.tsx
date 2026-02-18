@@ -1,26 +1,10 @@
 import { Flex, Text } from '@backstage/ui';
 
-interface Filters {
-  name: string;
-  serviceName: string;
-  status: string;
-  teamName: string;
-  account: string;
-}
-
 interface EmptyTableStateProps {
-  filters?: Filters;
+  hasActiveFilters: boolean;
 }
 
-export function EmptyTableState({ filters }: EmptyTableStateProps) {
-  const hasActiveFilters =
-    filters &&
-    (!!filters.name ||
-      !!filters.serviceName ||
-      !!filters.status ||
-      !!filters.teamName ||
-      !!filters.account);
-
+export function EmptyTableState({ hasActiveFilters }: EmptyTableStateProps) {
   return (
     <Flex
       direction="column"

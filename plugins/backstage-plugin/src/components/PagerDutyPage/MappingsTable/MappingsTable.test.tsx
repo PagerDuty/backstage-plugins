@@ -853,11 +853,11 @@ describe('MappingsTable', () => {
                 entities: [],
                 totalCount: 0,
               });
-            }, 100);
+            }, 50);
           }),
       );
 
-      const { container } = await renderInTestApp(
+      await renderInTestApp(
         <ApiProvider apis={apis}>
           <QueryClientProvider client={queryClient}>
             <MappingsTable />
@@ -865,21 +865,29 @@ describe('MappingsTable', () => {
         </ApiProvider>,
       );
 
-      // Check that skeleton is displayed during initial load
-      const skeletons = container.querySelectorAll('.bui-Skeleton');
-      expect(skeletons.length).toBeGreaterThan(0);
+      expect(screen.getByTestId('mappings-table-skeleton')).toBeInTheDocument();
+
+      // Empty state message should not be visible during loading
+      expect(
+        screen.queryByText('No service mappings found'),
+      ).not.toBeInTheDocument();
 
       // Wait for loading to complete
       await waitFor(
         () => {
-          const skeletonsAfter = container.querySelectorAll('.bui-Skeleton');
-          expect(skeletonsAfter.length).toBe(0);
+          expect(
+            screen.queryByTestId('mappings-table-skeleton'),
+          ).not.toBeInTheDocument();
+          // Empty state message should appear
+          expect(
+            screen.getByText('No service mappings found'),
+          ).toBeInTheDocument();
         },
         { timeout: 200 },
       );
     });
 
-    it('disables filter button and shows stale data when navigating to next page', async () => {
+    it('while loading the next page data goes stale and the rows disabled', async () => {
       const mockEntities = Array.from({ length: 10 }, (_, i) => ({
         id: `entity-${i}`,
         name: `service-${i}`,
@@ -902,7 +910,7 @@ describe('MappingsTable', () => {
         totalCount: 25,
       });
 
-      const { container } = await renderInTestApp(
+      await renderInTestApp(
         <ApiProvider apis={apis}>
           <QueryClientProvider client={queryClient}>
             <MappingsTable />
@@ -914,7 +922,8 @@ describe('MappingsTable', () => {
         expect(screen.getByText('service-0')).toBeInTheDocument();
       });
 
-      const table = container.querySelector('table[role="grid"]');
+      // Verify table is not stale initially
+      const table = screen.getByRole('grid');
       expect(table).not.toHaveAttribute('data-stale', 'true');
 
       mockGetEntityMappingsWithPagination.mockImplementation(
@@ -939,7 +948,7 @@ describe('MappingsTable', () => {
 
       // During loading: table should be marked as stale
       await waitFor(() => {
-        const staleTable = container.querySelector('table[role="grid"]');
+        const staleTable = screen.getByRole('grid');
         expect(staleTable).toHaveAttribute('data-stale', 'true');
       });
 
@@ -955,7 +964,7 @@ describe('MappingsTable', () => {
 
       // After loading: table should not be stale anymore
       await waitFor(() => {
-        const freshTable = container.querySelector('table[role="grid"]');
+        const freshTable = screen.getByRole('grid');
         expect(freshTable).not.toHaveAttribute('data-stale', 'true');
       });
 

@@ -2,7 +2,7 @@ import { Box, Flex, Skeleton } from '@backstage/ui';
 
 export function TableSkeleton() {
   return (
-    <Box style={{ width: '100%' }} mt="4">
+    <Box data-testid="mappings-table-skeleton" style={{ width: '100%' }} mt="4">
       <Flex
         gap="4"
         style={{

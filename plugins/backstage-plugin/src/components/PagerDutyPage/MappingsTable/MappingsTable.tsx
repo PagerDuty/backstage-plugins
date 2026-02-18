@@ -98,7 +98,7 @@ export default function MappingsTable() {
       const response = await pagerDutyApi.getEntityMappingsWithPagination({
         offset,
         limit: pageSize,
-        filters: filter || debouncedFilters,
+        filters: filter,
         sort: sort
           ? { column: String(sort.column), direction: sort.direction }
           : undefined,
@@ -254,6 +254,14 @@ export default function MappingsTable() {
   const isInitialLoad =
     tableProps.loading && (!tableProps.data || tableProps.data.length === 0);
 
+  const hasActiveFilters =
+    showFilters &&
+    (!!filters.name ||
+      !!filters.serviceName ||
+      !!filters.status ||
+      !!filters.teamName ||
+      !!filters.account);
+
   return (
     <>
       <Flex justify="end" gap="2">
@@ -285,9 +293,7 @@ export default function MappingsTable() {
         <Table
           columnConfig={columnConfig}
           {...tableProps}
-          emptyState={
-            <EmptyTableState filters={showFilters ? filters : undefined} />
-          }
+          emptyState={<EmptyTableState hasActiveFilters={hasActiveFilters} />}
         />
       )}
 
