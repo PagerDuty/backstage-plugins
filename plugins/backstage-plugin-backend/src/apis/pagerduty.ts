@@ -1187,6 +1187,40 @@ export async function createServiceIntegration({
   }
 }
 
+export async function updateCatalog(entity: string, account: string): Promise<void> {
+  let response: Response;
+  const apiBaseUrl = getApiBaseUrl(account);
+  const baseUrl = `${apiBaseUrl}/catalog/backstage/services`;
+  const token = await getAuthToken(account);
+  
+  const options: RequestInit = {
+    method: 'PUT',
+    headers: {
+      Authorization: token,
+      Accept: 'application/vnd.pagerduty+json;version=2',
+      'Content-Type': 'application/json',
+    },
+    body: entity,
+  };
+
+  try {
+    response = await fetchWithRetries(baseUrl, options);
+  } catch (error) {
+    throw new Error(`Failed to update catalog: ${error}`);
+  }
+
+  if (response.status === 202) {
+    return;
+  }
+  
+  if (response.status >= 400 && response.status <= 499) {
+    const errorText = await response.text();
+    throw new HttpError(`Failed to update catalog: ${errorText}`, response.status);
+  }
+  
+  throw new Error(`Failed to update catalog. Received unexpected status code: ${response.status}`)
+}
+
 export async function fetchWithRetries(
   url: string,
   options: RequestInit,

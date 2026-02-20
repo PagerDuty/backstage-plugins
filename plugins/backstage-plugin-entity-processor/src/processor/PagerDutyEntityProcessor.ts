@@ -318,6 +318,10 @@ export class PagerDutyEntityProcessor implements CatalogProcessor {
                 break;
             }
           }
+          
+          const account =
+            entity.metadata.annotations?.['pagerduty.com/account'] || '';
+          await client.updateCatalog(entity, account);
         }
       } catch (error) {
         this.logger.error(

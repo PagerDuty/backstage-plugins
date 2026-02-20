@@ -23,6 +23,7 @@ import {
   getServiceRelationshipsById,
   addServiceRelationsToService,
   removeServiceRelationsFromService,
+  updateCatalog
 } from '../apis/pagerduty';
 import {
   HttpError,
@@ -481,6 +482,33 @@ export async function createRouter(
       }
     },
   );
+
+  // PUT /catalog/backstage/services
+  router.put('/catalog/backstage/services', async (request, response) => {
+    try {
+      const entity = request.body;
+      
+      // Extract account from query parameters
+      const account = (request.query.account as string) || '';
+
+      await updateCatalog(JSON.stringify(entity), account);
+      response.sendStatus(202);
+    } catch (error) {
+      if (error instanceof HttpError) {
+        response.status(error.status).json({
+          errors: [`${error.message}`],
+        });
+      } else if (error instanceof Error) { 
+        response.status(500).json({
+          errors: [`${error.message}`],
+        });
+      } else {
+        response.status(500).json({
+          errors: [`${error}`],
+        });
+      }
+    }
+  });
 
   // POST /settings
   router.post('/settings', async (request, response) => {

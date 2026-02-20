@@ -13,7 +13,22 @@ kind: Component
 metadata:
   name: example-website
   annotations:
-    pagerduty.com/service-id: P6V1UFE
+    pagerduty.com/service-id: PZ5ECXV
+spec:
+  type: website
+  lifecycle: experimental
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: example-website-2
+  annotations:
+    pagerduty.com/service-id: PZ5ECXV
+    pagerduty.com/account: PZOTTAM
 spec:
   type: website
   lifecycle: experimental
@@ -32,6 +47,152 @@ spec:
   owner: guests
   system: examples
   providesApis: [example-grpc-api]
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: flexible-objects-service
+  description: "Renan top"
+  annotations:
+    github.com/team-slug: pagerduty/flexible-work-objects
+    github.com/project-slug: pagerduty/flexible-objects-service
+    pagerduty.com/service-id: P6V1UFE
+    pagerduty.com/account: PZOTTAM
+  data_classification: customer-pii
+  links:
+    # Buildkite
+    - title: Buildkite Production
+      icon: build
+      url: https://buildkite.com/pagerduty/flexible-objects-service-deploy-to-production
+
+    - title: Buildkite Staging
+      icon: build
+      url: https://buildkite.com/pagerduty/flexible-objects-service-deploy-to-staging
+
+    - title: Buildkite Load Test
+      icon: build
+      url: https://buildkite.com/pagerduty/flexible-objects-service-deploy-to-load-test
+
+    # CircleCI
+    - title: CircleCI
+      icon: build
+      url: https://app.circleci.com/pipelines/github/PagerDuty/flexible-objects-service
+
+    # Argo
+    - title: Argo Production us-west-2
+      icon: rocket
+      url: https://argocd.pagey.tools/applications/flexible-objects-service-prod-usw2
+    - title: Argo Production us-west-1
+      icon: rocket
+      url: https://argocd.pagey.tools/applications/flexible-objects-service-prod-usw1
+    - title: Argo EU-Prod eu-central-1
+      icon: rocket
+      url: https://argocd.pagey.tools/applications/flexible-objects-service-euprod-euc1
+    - title: Argo EU-Prod eu-west-1
+      icon: rocket
+      url: https://argocd.pagey.tools/applications/flexible-objects-service-euprod-euw1
+    - title: Argo Staging us-west-2
+      icon: rocket
+      url: https://argocd.pagey.tools/applications/flexible-objects-service-stg-usw2
+    - title: Argo Staging us-west-1
+      icon: rocket
+      url: https://argocd.pagey.tools/applications/flexible-objects-service-stg-usw1
+    - title: Argo Load Test us-west-2
+      icon: rocket
+      url: https://argocd.pagey.tools/applications/flexible-objects-service-lt-usw2
+    - title: Argo Load Test us-west-1
+      icon: rocket
+      url: https://argocd.pagey.tools/applications/flexible-objects-service-lt-usw1
+
+    # Argo Rollouts
+    - title: Argo Rollouts Production us-west-2
+      icon: rocket
+      url: https://argo-rollouts.eks-prod-pd-usw2.pd-internal.com/rollouts/rollout/flexible-objects-service/flexible-objects-service
+    - title: Argo Rollouts Production us-west-1
+      icon: rocket
+      url: https://argo-rollouts.eks-prod-pd-usw1.pd-internal.com/rollouts/rollout/flexible-objects-service/flexible-objects-service
+    - title: Argo Rollouts EU-Prod eu-central-1
+      icon: rocket
+      url: https://argo-rollouts.eks-euprod-pd-euc1.eu.pd-internal.com/rollouts/rollout/flexible-objects-service/flexible-objects-service
+    - title: Argo Rollouts EU-Prod eu-west-1
+      icon: rocket
+      url: https://argo-rollouts.eks-euprod-pd-euw1.eu.pd-internal.com/rollouts/rollout/flexible-objects-service/flexible-objects-service
+    - title: Argo Rollouts Staging us-west-2
+      icon: rocket
+      url: https://argo-rollouts.eks-stg-pd-usw2.pd-staging.com/rollouts/rollout/flexible-objects-service/flexible-objects-service
+    - title: Argo Rollouts Staging us-west-1
+      icon: rocket
+      url: https://argo-rollouts.eks-stg-pd-usw1.pd-staging.com/rollouts/rollout/flexible-objects-service/flexible-objects-service
+    - title: Argo Rollouts Load Test us-west-2
+      icon: rocket
+      url: https://argo-rollouts.eks-lt-pd-usw2.cloudoverflow.com/rollouts/rollout/flexible-objects-service/flexible-objects-service
+    - title: Argo Rollouts Load Test us-west-1
+      icon: rocket
+      url: https://argo-rollouts.eks-lt-pd-usw1.cloudoverflow.com/rollouts/rollout/flexible-objects-service/flexible-objects-service
+
+    # Kubernetes dashboard
+    - title: Kubernetes Production us-west-2
+      url: https://dashboard.eks-prod-pd-usw2.pd-internal.com/#/workloads?namespace=flexible-objects-service
+    - title: Kubernetes Production us-west-1
+      url: https://dashboard.eks-prod-pd-usw1.pd-internal.com/#/workloads?namespace=flexible-objects-service
+    - title: Kubernetes EU-Prod eu-central-1
+      url: https://dashboard.eks-euprod-pd-euc1.eu.pd-internal.com/#/workloads?namespace=flexible-objects-service
+    - title: Kubernetes EU-Prod eu-west-1
+      url: https://dashboard.eks-euprod-pd-euw1.eu.pd-internal.com/#/workloads?namespace=flexible-objects-service
+    - title: Kubernetes Staging us-west-2
+      url: https://dashboard.eks-stg-pd-usw2.pd-staging.com/#/workloads?namespace=flexible-objects-service
+    - title: Kubernetes Staging us-west-1
+      url: https://dashboard.eks-stg-pd-usw1.pd-staging.com/#/workloads?namespace=flexible-objects-service
+    - title: Kubernetes Load Test us-west-2
+      url: https://dashboard.eks-lt-pd-usw2.cloudoverflow.com/#/workloads?namespace=flexible-objects-service
+    - title: Kubernetes Load Test us-west-1
+      url: https://dashboard.eks-lt-pd-usw1.cloudoverflow.com/#/workloads?namespace=flexible-objects-service
+
+    # Grafana
+    - title: Logs Production
+      icon: search
+      url: https://grafana.pagey.tools/explore?schemaVersion=1&panes=%7B%2299y%22:%7B%22datasource%22:%22loki-eks-prod-pd-usw2%22,%22queries%22:%5B%7B%22refId%22:%22A%22,%22expr%22:%22%7Bk8s_namespace_name%3D%5C%22flexible-objects%5C%22,%20k8s_container_name%3D~%5C%22flexible-objects-service.%2A%5C%22%7D%22,%22queryType%22:%22range%22,%22datasource%22:%7B%22type%22:%22loki%22,%22uid%22:%22loki-eks-prod-pd-usw2%22%7D,%22editorMode%22:%22code%22,%22direction%22:%22backward%22%7D%5D,%22range%22:%7B%22from%22:%22now-15m%22,%22to%22:%22now%22%7D%7D%7D&orgId=1
+    - title: Logs EU-Prod
+      icon: search
+      url: https://grafana.pagey.tools/explore?schemaVersion=1&panes=%7B%2299y%22:%7B%22datasource%22:%22loki-eks-euprod-pd-euc1%22,%22queries%22:%5B%7B%22refId%22:%22A%22,%22expr%22:%22%7Bk8s_namespace_name%3D%5C%22flexible-objects%5C%22,%20k8s_container_name%3D~%5C%22flexible-objects-service.%2A%5C%22%7D%22,%22queryType%22:%22range%22,%22datasource%22:%7B%22type%22:%22loki%22,%22uid%22:%22loki-eks-euprod-pd-euc1%22%7D,%22editorMode%22:%22builder%22,%22direction%22:%22backward%22%7D%5D,%22range%22:%7B%22from%22:%22now-15m%22,%22to%22:%22now%22%7D%7D%7D&orgId=1
+    - title: Logs Staging
+      icon: search
+      url: https://grafana.pagey.tools/explore?schemaVersion=1&panes=%7B%2299y%22:%7B%22datasource%22:%22loki-eks-stg-pd-usw2%22,%22queries%22:%5B%7B%22refId%22:%22A%22,%22expr%22:%22%7Bk8s_namespace_name%3D%5C%22flexible-objects%5C%22,%20k8s_container_name%3D~%5C%22flexible-objects-service.%2A%5C%22,%20k8s_cluster_name%3D%5C%22eks-stg-pd-usw2%5C%22%7D%22,%22queryType%22:%22range%22,%22datasource%22:%7B%22type%22:%22loki%22,%22uid%22:%22loki-eks-stg-pd-usw2%22%7D,%22editorMode%22:%22builder%22,%22direction%22:%22backward%22%7D%5D,%22range%22:%7B%22from%22:%22now-15m%22,%22to%22:%22now%22%7D%7D%7D&orgId=1
+    - title: Logs Load Test
+      icon: search
+      url: https://grafana.pagey.tools/explore?schemaVersion=1&panes=%7B%2299y%22:%7B%22datasource%22:%22loki-eks-stg-pd-usw2%22,%22queries%22:%5B%7B%22refId%22:%22A%22,%22expr%22:%22%7Bk8s_namespace_name%3D%5C%22flexible-objects%5C%22,%20k8s_container_name%3D~%5C%22flexible-objects-service.%2A%5C%22,%20k8s_cluster_name%3D%5C%22eks-lt-pd-usw2%5C%22%7D%22,%22queryType%22:%22range%22,%22datasource%22:%7B%22type%22:%22loki%22,%22uid%22:%22loki-eks-stg-pd-usw2%22%7D,%22editorMode%22:%22builder%22,%22direction%22:%22backward%22%7D%5D,%22range%22:%7B%22from%22:%22now-15m%22,%22to%22:%22now%22%7D%7D%7D&orgId=1
+
+    # Consul
+    - title: Consul Production us-west-2
+      url: https://consul-admin.pd-internal.com/ui/us-west-2/services?filter=flexible-objects-service
+    - title: Consul Production us-west-1
+      url: https://consul-admin.pd-internal.com/ui/us-west-1/services?filter=flexible-objects-service
+    - title: Consul EU-Prod eu-central-1
+      url: https://consul-admin.eu.pd-internal.com/ui/eu-central-1/services?filter=flexible-objects-service
+    - title: Consul EU-Prod eu-west-1
+      url: https://consul-admin.eu.pd-internal.com/ui/eu-west-1/services?filter=flexible-objects-service
+    - title: Consul Staging us-west-2
+      url: https://consul-admin.pd-staging.com/ui/us-west-2/services?filter=flexible-objects-service
+    - title: Consul Staging us-west-1
+      url: https://consul-admin.pd-staging.com/ui/us-west-1/services?filter=flexible-objects-service
+    - title: Consul Load Test us-west-2
+      url: https://consul-admin.pd-staging.com/ui/us-west-2/services?filter=flexible-objects-service
+    - title: Consul Load Test us-west-1
+      url: https://consul-admin.pd-staging.com/ui/us-west-1/services?filter=flexible-objects-service
+
+    # Bugsnag
+    - title: Bugsnag, all environments
+      url: https://app.bugsnag.com/pagerduty-1/flexible-objects-service/overview?release_stage=production
+
+    # Edit Links
+    - url: https://github.com/PagerDuty/flexible-objects-service/edit/main/catalog-info.yaml
+      title: Edit Links
+      icon: edit
+spec:
+  type: service
+  owner: guests
+  lifecycle: production
 ---
 # https://backstage.io/docs/features/software-catalog/descriptor-format#kind-api
 apiVersion: backstage.io/v1alpha1

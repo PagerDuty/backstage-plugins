@@ -120,6 +120,7 @@ permission:
   enabled: true
 
 pagerDuty:
+  apiToken: ${PAGERDUTY_API_TOKEN}
   oauth:
     clientId: ${PAGERDUTY_CLIENT_ID}
     clientSecret: ${PAGERDUTY_CLIENT_SECRET}

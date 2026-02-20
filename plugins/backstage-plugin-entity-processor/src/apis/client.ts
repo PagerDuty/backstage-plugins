@@ -11,6 +11,9 @@ import {
   PagerDutySetting,
   PagerDutyEntityMappingsResponse,
 } from '@pagerduty/backstage-plugin-common';
+import {
+  Entity
+} from '@backstage/catalog-model';
 
 export interface PagerDutyClientOptions {
   auth: AuthService;
@@ -622,6 +625,57 @@ export class PagerDutyClient {
     } catch (error) {
       this.logger.error(`Error getting value for setting: ${error}`);
       throw new Error(`Error getting value for setting: ${error}`);
+    }
+  }
+
+  async updateCatalog(entity: Entity, account?: string): Promise<void> {
+    let response: Response;
+
+    if (this.baseUrl === '') {
+      this.baseUrl = await this.discovery.getBaseUrl('pagerduty');
+    }
+
+    const options: RequestInit = {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json; charset=UTF-8',
+        Accept: 'application/json, text/plain, */*',
+        Authorization: await this.generatePluginToPluginToken(),
+      },
+      body: JSON.stringify(entity),
+    };
+  
+
+    const url = `${await this.discovery.getBaseUrl(
+      'pagerduty',
+    )}/catalog/backstage/services`;
+
+    let finalUrl = url;
+    if (account) {
+      finalUrl = url.concat(`?account=${account}`);
+    }
+
+    try {
+      response = await fetchWithRetries(finalUrl, options);
+
+      if (response.status >= 500) {
+        throw new Error(
+          `Failed to update catalog entity. API returned a server error. Retrying with the same arguments will not work.`,
+        );
+      }
+
+      if (response.status !== 202) {
+        throw new Error(await response.text());
+      }
+
+      return;
+    } catch (error) {
+      this.logger.error(
+        `Failed to update catalog entity ${entity.metadata.name}: ${error}`,
+      );
+      throw new Error(
+        `Failed to update catalog entity ${entity.metadata.name}: ${error}`,
+      );
     }
   }
 
