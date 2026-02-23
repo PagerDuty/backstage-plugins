@@ -1,15 +1,13 @@
 import {
-  Column,
-  Row,
   Table,
-  TableBody,
-  TableHeader,
-  TablePagination,
+  useTable,
   CellText,
   Flex,
   ButtonIcon,
+  type ColumnConfig,
 } from '@backstage/ui';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
+import { useApi } from '@backstage/core-plugin-api';
 import MappingsDialog from '../MappingsDialog';
 import AutomaticMappingsDialog from '../AutomaticMappingsDialog';
 import AutoMappingsButton from './AutoMappingsButton';
@@ -17,12 +15,15 @@ import StatusCell from './StatusCell';
 import { ServiceCell } from './ServiceCell';
 import { Edit, Delete, FilterList } from '@mui/icons-material';
 import { FilterRow } from './FilterRow';
+import { TableSkeleton } from './TableSkeleton';
+import { EmptyTableState } from './EmptyTableState';
 import { BackstageEntity } from '../../types';
 import useDebounce from '../../../hooks/useDebounce';
 import MappingToast, { MappingCounts, ToastSeverity } from './MappingToast';
-import { useEntityMappings } from './hooks/useEntityMappings';
 import { useConfirmMappings } from './hooks/useConfirmMappings';
 import { useQueryClient } from '@tanstack/react-query';
+import { pagerDutyApiRef } from '../../../api';
+import { FormattedBackstageEntity } from '@pagerduty/backstage-plugin-common';
 
 export interface AutoMatchResult {
   score: number;
@@ -34,31 +35,14 @@ export interface AutoMatchResult {
 export type AutoMatchResults = Record<string, AutoMatchResult>;
 
 export default function MappingsTable() {
+  const pagerDutyApi = useApi(pagerDutyApiRef);
+  const queryClient = useQueryClient();
+
   const [isOpen, setIsOpen] = useState(false);
   const [isAutoMappingOpen, setIsAutoMappingOpen] = useState(false);
   const [selectedEntity, setSelectedEntity] = useState<BackstageEntity | null>(
     null,
   );
-  const [offset, setOffset] = useState(0);
-  const [pageSize, setPageSize] = useState(10);
-  const [sort, setSort] = 
-    useState<{ column: string; direction: 'ascending' | 'descending' } | undefined>(undefined);
-  
-  
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const changeSort: (s: any) => void = ((sortDescriptor: { column: string; direction: 'ascending' | 'descending' }) => {
-    if (sort?.column === sortDescriptor.column) {
-      const newDirection = sort.direction === 'ascending' ? 'descending' : 'ascending';
-      setSort({ column: sortDescriptor.column, direction: newDirection });
-    } else {
-      setSort(sortDescriptor);
-    }
-
-    setOffset(0);
-  });
-
-
-  const queryClient = useQueryClient();
   const [showFilters, setShowFilters] = useState(false);
 
   const [filters, setFilters] = useState({
@@ -84,40 +68,75 @@ export default function MappingsTable() {
   );
   const hasMatches = Object.keys(autoMatchResults).length > 0;
 
-  const clearMatches = () => {
+  const clearMatches = useCallback(() => {
     setAutoMatchResults({});
-  };
+  }, []);
 
   const setMatches = (results: AutoMatchResults) => {
     setAutoMatchResults(results);
   };
 
-  const removeMatch = (entityName: string) => {
+  const removeMatch = useCallback((entityName: string) => {
     setAutoMatchResults(prev => {
       const updated = { ...prev };
       delete updated[entityName];
       return updated;
     });
-  };
+  }, []);
 
   const handleFilterChange = useCallback(
     (key: keyof typeof filters, value: string) => {
       setFilters(prev => ({ ...prev, [key]: value }));
-      setOffset(0);
-    }, [],
+    },
+    [],
   );
 
-  const { mappings, entitiesWithScores } = useEntityMappings(
-    offset,
-    pageSize,
-    debouncedFilters,
-    sort,
-    autoMatchResults,
-  );
+  const { tableProps } = useTable<BackstageEntity, typeof filters>({
+    mode: 'offset',
+    filter: debouncedFilters,
+    getData: async ({ offset, pageSize, sort, filter }) => {
+      const response = await pagerDutyApi.getEntityMappingsWithPagination({
+        offset,
+        limit: pageSize,
+        filters: filter,
+        sort: sort
+          ? { column: String(sort.column), direction: sort.direction }
+          : undefined,
+      });
+
+      const entitiesWithScores = response.entities.map(
+        (entity: FormattedBackstageEntity): BackstageEntity => {
+          const matchResult = autoMatchResults[entity.name];
+
+          if (matchResult) {
+            return {
+              ...entity,
+              mappingScore: matchResult.score,
+              status: 'AutoMapped' as const,
+              serviceName: matchResult.serviceName,
+              autoMatchedServiceId: matchResult.serviceId,
+              autoMatchedServiceName: matchResult.serviceName,
+            };
+          }
+
+          return entity as BackstageEntity;
+        },
+      );
+
+      return {
+        data: entitiesWithScores,
+        totalCount: response.totalCount,
+      };
+    },
+    paginationOptions: {
+      pageSize: 10,
+      pageSizeOptions: [10, 25, 50, 100],
+    },
+  });
 
   const { confirmMappings, isConfirming } = useConfirmMappings({
     autoMatchResults,
-    mappingEntities: mappings?.entities,
+    mappingEntities: tableProps.data as FormattedBackstageEntity[],
     onSuccess: (successCount, totalCount, counts) => {
       queryClient.invalidateQueries({
         queryKey: ['pagerduty', 'enhancedEntityMappings'],
@@ -138,8 +157,110 @@ export default function MappingsTable() {
       setToastTotalMatches(0);
       setToastMappingCounts({});
     },
-
   });
+
+  const columnConfig: ColumnConfig<BackstageEntity>[] = useMemo(
+    () => [
+      {
+        id: 'name',
+        label: 'Name',
+        isRowHeader: true,
+        isSortable: true,
+        cell: entity => <CellText title={entity.name} />,
+      },
+      {
+        id: 'team',
+        label: 'Team',
+        isRowHeader: true,
+        isSortable: true,
+        cell: entity => <CellText title={entity.owner} />,
+      },
+      {
+        id: 'serviceName',
+        label: 'PagerDuty service',
+        isRowHeader: true,
+        isSortable: true,
+        cell: entity => <ServiceCell entity={entity} />,
+      },
+      {
+        id: 'status',
+        label: 'Status',
+        isRowHeader: true,
+        isSortable: true,
+        cell: entity => <StatusCell entity={entity} />,
+      },
+      {
+        id: 'account',
+        label: 'Account',
+        isRowHeader: true,
+        isSortable: true,
+        cell: entity => (
+          <CellText
+            title={entity.account === '' ? 'default' : entity.account!}
+          />
+        ),
+      },
+      {
+        id: 'mappingScore',
+        label: 'Mapping Score',
+        isRowHeader: true,
+        isSortable: false,
+        cell: entity => (
+          <CellText
+            title={
+              entity.mappingScore !== undefined
+                ? `${entity.mappingScore}%`
+                : '—'
+            }
+          />
+        ),
+      },
+      {
+        id: 'actions',
+        label: 'Actions',
+        isRowHeader: true,
+        isSortable: false,
+        cell: entity => (
+          <CellText
+            leadingIcon={
+              entity.mappingScore !== undefined ? (
+                <Delete fontSize="small" />
+              ) : (
+                <Edit fontSize="small" />
+              )
+            }
+            color="secondary"
+            style={{
+              paddingLeft: '25px',
+              cursor: 'pointer',
+              maxWidth: 'min-content',
+            }}
+            title=""
+            onClick={() => {
+              if (entity.mappingScore !== undefined) {
+                removeMatch(entity.name);
+              } else {
+                setIsOpen(true);
+                setSelectedEntity(entity);
+              }
+            }}
+          />
+        ),
+      },
+    ],
+    [removeMatch, setIsOpen, setSelectedEntity],
+  );
+
+  const isInitialLoad =
+    tableProps.loading && (!tableProps.data || tableProps.data.length === 0);
+
+  const hasActiveFilters =
+    showFilters &&
+    (!!filters.name ||
+      !!filters.serviceName ||
+      !!filters.status ||
+      !!filters.teamName ||
+      !!filters.account);
 
   return (
     <>
@@ -156,83 +277,26 @@ export default function MappingsTable() {
           icon={<FilterList />}
           aria-label="Toggle filters"
           onClick={() => setShowFilters(!showFilters)}
-          variant={showFilters ? 'primary' : 'secondary'} >
+          variant={showFilters ? 'primary' : 'secondary'}
+        >
           <FilterList />
         </ButtonIcon>
       </Flex>
 
-      <Table sortDescriptor={sort} onSortChange={changeSort} selectionMode="none">
-        <TableHeader>
-          <Column isRowHeader id='name' allowsSorting>Name</Column>
-          <Column isRowHeader id='team' allowsSorting>Team</Column>
-          <Column isRowHeader id='serviceName' allowsSorting>PagerDuty service</Column>
-          <Column isRowHeader id='status' allowsSorting>Status</Column>
-          <Column isRowHeader id='account' allowsSorting>Account</Column>
-          <Column isRowHeader>Mapping Score</Column>
-          <Column isRowHeader>Actions</Column>
-        </TableHeader>
+      {showFilters && (
+        <FilterRow filters={filters} onFilterChange={handleFilterChange} />
+      )}
 
-        <TableBody>
-          {showFilters && (<FilterRow filters={filters} onFilterChange={handleFilterChange} />)}
-          
-          {entitiesWithScores?.map((entity: BackstageEntity) => (
-            <Row key={entity.id}>
-              <CellText title={entity.name} />
-              <CellText title={entity.owner} />
-              <ServiceCell entity={entity} />
-              <StatusCell entity={entity} />
-              <CellText
-                title={entity.account === '' ? 'default' : entity.account!}
-              />
-              <CellText
-                title={
-                  entity.mappingScore !== undefined
-                    ? `${entity.mappingScore}%`
-                    : '—'
-                }
-              />
-              <CellText
-                leadingIcon={
-                  entity.mappingScore !== undefined ? (
-                    <Delete fontSize="small" />
-                  ) : (
-                    <Edit fontSize="small" />
-                  )
-                }
-                color="secondary"
-                style={{
-                  paddingLeft: '25px',
-                  cursor: 'pointer',
-                  maxWidth: 'min-content',
-                }}
-                title=""
-                onClick={() => {
-                  if (entity.mappingScore !== undefined) {
-                    removeMatch(entity.name);
-                  } else {
-                    setIsOpen(true);
-                    setSelectedEntity(entity);
-                  }
-                }}
-              />
-            </Row>
-          ))}
-        </TableBody>
-      </Table>
-      <TablePagination
-        offset={offset}
-        pageSize={pageSize}
-        setPageSize={setPageSize}
-        setOffset={setOffset}
-        rowCount={mappings?.totalCount || 0}
-        onNextPage={() => setOffset(offset + pageSize)}
-        onPreviousPage={() => setOffset(Math.max(0, offset - pageSize))}
-        onPageSizeChange={newPageSize => {
-          setPageSize(newPageSize);
-          setOffset(0);
-        }}
-        showPageSizeOptions
-      />
+      {isInitialLoad ? (
+        <TableSkeleton />
+      ) : (
+        <Table
+          columnConfig={columnConfig}
+          {...tableProps}
+          emptyState={<EmptyTableState hasActiveFilters={hasActiveFilters} />}
+        />
+      )}
+
       <MappingsDialog
         isOpen={isOpen}
         setIsOpen={setIsOpen}
