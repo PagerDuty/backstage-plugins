@@ -17,8 +17,8 @@ import {
   getServiceByIntegrationKey,
   getServiceMetrics,
   getServiceStandards,
-  insertEndpointConfig,
-  setFallbackEndpointConfig,
+  insertAccountConfig,
+  setFallbackAccountConfig,
 } from './pagerduty';
 
 import { mocked } from 'jest-mock';
@@ -53,8 +53,8 @@ describe('PagerDuty API', () => {
       },
     };
 
-    insertEndpointConfig(mockAccount);
-    setFallbackEndpointConfig(mockAccount);
+    insertAccountConfig(mockAccount);
+    setFallbackAccountConfig(mockAccount);
   });
 
   afterEach(() => {

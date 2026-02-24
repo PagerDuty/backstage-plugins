@@ -44,7 +44,7 @@ let isLegacyConfig = false;
 const SubdomainConfig: Record<string, string> = {};
 let fallbackSubdomain: string | undefined;
 
-export function setFallbackEndpointConfig(account: PagerDutyAccountConfig) {
+export function setFallbackAccountConfig(account: PagerDutyAccountConfig) {
   fallbackEndpointConfig = {
     eventsBaseUrl: account.eventsBaseUrl ?? 'https://events.pagerduty.com/v2',
     apiBaseUrl: account.apiBaseUrl ?? 'https://api.pagerduty.com',
@@ -55,7 +55,7 @@ export function setFallbackEndpointConfig(account: PagerDutyAccountConfig) {
   }
 }
 
-export function insertEndpointConfig(account: PagerDutyAccountConfig) {
+export function insertAccountConfig(account: PagerDutyAccountConfig) {
   EndpointConfig[account.id] = {
     eventsBaseUrl: account.eventsBaseUrl ?? 'https://events.pagerduty.com/v2',
     apiBaseUrl: account.apiBaseUrl ?? 'https://api.pagerduty.com',
@@ -102,17 +102,10 @@ export function loadPagerDutyEndpointsFromConfig(
       );
       accounts?.forEach(account => {
         if (account.isDefault) {
-          setFallbackEndpointConfig(account);
-          if (account.oauth?.subDomain) {
-            fallbackSubdomain = account.oauth.subDomain;
-          }
+          setFallbackAccountConfig(account);
         }
 
-        insertEndpointConfig(account);
-
-        if (account.oauth?.subDomain) {
-          SubdomainConfig[account.id] = account.oauth.subDomain;
-        }
+        insertAccountConfig(account);
       });
     }
   } else {
@@ -131,9 +124,9 @@ export function loadPagerDutyEndpointsFromConfig(
     };
 
     const legacySubdomain = config.getOptionalString('pagerDuty.oauth.subDomain');
+
     if (legacySubdomain) {
       SubdomainConfig.default = legacySubdomain;
-      fallbackSubdomain = legacySubdomain;
     }
   }
 }
