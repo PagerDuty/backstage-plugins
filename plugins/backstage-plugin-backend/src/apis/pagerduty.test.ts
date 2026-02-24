@@ -46,6 +46,11 @@ describe('PagerDuty API', () => {
       id: 'testaccount',
       apiBaseUrl: 'https://mock.api.pagerduty.com',
       eventsBaseUrl: 'https://mock.events.pagerduty.com',
+      oauth: {
+        clientId: 'mock-client-id',
+        clientSecret: 'mock-client-secret',
+        subDomain: 'testaccount',
+      },
     };
 
     insertEndpointConfig(mockAccount);
@@ -1502,5 +1507,101 @@ describe('PagerDuty API', () => {
         },
       );
     });
+  });
+
+  describe('X-PagerDuty-Client header', () => {
+    it.each(testInputs)(
+      'should include X-PagerDuty-Client header with correct format',
+      async () => {
+        mocked(fetch).mockReturnValue(
+          mockedResponse(200, {
+            escalation_policies: [{ id: 'P0L1CY1D', name: 'Test Policy' }],
+          }),
+        );
+
+        await getAllEscalationPolicies();
+
+        expect(fetch).toHaveBeenCalledWith(
+          expect.any(String),
+          expect.objectContaining({
+            headers: expect.objectContaining({
+              'X-PagerDuty-Client':
+                '"Backstage" <https://testaccount.backstage.com>',
+            }),
+          }),
+        );
+      },
+    );
+
+    it.each(testInputs)(
+      'should include X-PagerDuty-Client header in service requests',
+      async () => {
+        const serviceId = 'SERV1C31D';
+        mocked(fetch).mockReturnValue(
+          mockedResponse(200, {
+            service: {
+              id: serviceId,
+              name: 'Test Service',
+              status: 'active',
+              escalation_policy: {
+                id: 'P0L1CY1D',
+                name: 'Test Policy',
+                type: 'escalation_policy_reference',
+                html_url: 'https://example.com',
+              },
+              html_url: 'https://example.com',
+            },
+          }),
+        );
+
+        await getServiceById(serviceId);
+
+        expect(fetch).toHaveBeenCalledWith(
+          expect.any(String),
+          expect.objectContaining({
+            headers: expect.objectContaining({
+              'X-PagerDuty-Client':
+                '"Backstage" <https://testaccount.backstage.com>',
+            }),
+          }),
+        );
+      },
+    );
+
+    it.each(testInputs)(
+      'should include X-PagerDuty-Client header in oncall requests',
+      async () => {
+        const escalationPolicyId = '12345';
+        mocked(fetch).mockReturnValue(
+          mockedResponse(200, {
+            oncalls: [
+              {
+                user: {
+                  id: 'userId1',
+                  summary: 'John Doe',
+                  name: 'John Doe',
+                  email: 'john.doe@email.com',
+                  avatar_url: 'https://example.com/avatar',
+                  html_url: 'https://example.com/user',
+                },
+                escalation_level: 1,
+              },
+            ],
+          }),
+        );
+
+        await getOncallUsers(escalationPolicyId);
+
+        expect(fetch).toHaveBeenCalledWith(
+          expect.any(String),
+          expect.objectContaining({
+            headers: expect.objectContaining({
+              'X-PagerDuty-Client':
+                '"Backstage" <https://testaccount.backstage.com>',
+            }),
+          }),
+        );
+      },
+    );
   });
 });
