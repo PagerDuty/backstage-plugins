@@ -525,21 +525,17 @@ export async function getAllTeams(): Promise<PagerDutyTeam[]> {
   await Promise.all(
     Object.keys(EndpointConfig).map(async account => {
       try {
-        // reset offset value
         offset = 0;
 
         do {
           const res = await getTeams(offset, limit, account);
 
-          // set account for each team
           res[1].forEach(team => {
             team.account = account;
           });
 
-          // update results
           results = results.concat(res[1]);
 
-          // if more results exist
           if (res[0] === true) {
             moreResults = true;
             offset += limit;
@@ -1112,7 +1108,6 @@ export async function getFilteredServices(
       let response: Response;
       let params = `time_zone=UTC&limit=${limit}`;
 
-      // Add team_ids filter if provided
       if (teamIds && teamIds.length > 0) {
         const teamIdsParam = teamIds
           .map(id => `team_ids[]=${id}`)
@@ -1120,7 +1115,6 @@ export async function getFilteredServices(
         params += `&${teamIdsParam}`;
       }
 
-      // Add query filter if provided
       if (query && query.trim() !== '') {
         params += `&query=${encodeURIComponent(query.trim())}`;
       }

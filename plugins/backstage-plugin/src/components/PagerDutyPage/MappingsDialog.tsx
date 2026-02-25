@@ -18,6 +18,36 @@ import { BackstageEntity } from '../types';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { pagerDutyApiRef } from '../../api';
 import { useApi } from '@backstage/core-plugin-api';
+import { makeStyles } from '@material-ui/core';
+
+const useStyles = makeStyles(() => ({
+  radioListContainer: {
+    maxHeight: '300px',
+    overflowY: 'auto',
+    border: '1px solid var(--bui-border)',
+    borderRadius: 'var(--bui-radius-2)',
+    padding: 'var(--bui-spacing-3)',
+    '& label[data-rac]': {
+      padding: 'var(--bui-space-3)',
+      borderBottom: '1px solid var(--bui-gray-2)',
+      cursor: 'pointer',
+      transition: 'background-color 0.15s ease',
+      display: 'flex',
+      alignItems: 'center',
+      '&:last-child': {
+        borderBottom: 'none',
+      },
+      '&:hover': {
+        backgroundColor: 'var(--bui-gray-1)',
+      },
+      '&[data-selected="true"]': {
+        backgroundColor: 'var(--bui-blue-1)',
+        borderLeft: '3px solid var(--bui-blue-6)',
+        fontWeight: 'var(--bui-font-weight-bold)',
+      },
+    },
+  },
+}));
 
 interface MappingsDialogProps {
   isOpen: boolean;
@@ -30,6 +60,7 @@ export default function MappingsDialog({
   setIsOpen,
   entity,
 }: MappingsDialogProps) {
+  const classes = useStyles();
   const pagerDutyApi = useApi(pagerDutyApiRef);
   const queryClient = useQueryClient();
   const [selectedServiceId, setSelectedServiceId] = useState<string>('');
@@ -37,7 +68,6 @@ export default function MappingsDialog({
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState<string>('');
 
-  // Debounce search query (wait 500ms after user stops typing)
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearchQuery(searchQuery);
@@ -46,7 +76,6 @@ export default function MappingsDialog({
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Clean up state when dialog closes
   useEffect(() => {
     if (!isOpen) {
       setSelectedServiceId('');
@@ -56,14 +85,12 @@ export default function MappingsDialog({
     }
   }, [isOpen]);
 
-  // Fetch all teams
   const { data: teams, isLoading: isTeamsLoading } = useQuery({
     queryKey: ['pagerduty', 'getAllTeams'],
     queryFn: () => pagerDutyApi.getAllTeams(),
     enabled: isOpen,
   });
 
-  // Fetch filtered services based on selected teams and search query
   const { data: services, isLoading: isServicesLoading } = useQuery({
     queryKey: ['pagerduty', 'getFilteredServices', selectedTeamIds, debouncedSearchQuery],
     queryFn: async () => {
@@ -157,29 +184,6 @@ export default function MappingsDialog({
     <Dialog isOpen={isOpen} onOpenChange={setIsOpen}>
       <DialogHeader>Update Entity Mapping</DialogHeader>
       <DialogBody>
-        <style>
-          {`
-            .radio-list-container label[data-rac] {
-              padding: var(--bui-space-3);
-              border-bottom: 1px solid var(--bui-gray-2);
-              cursor: pointer;
-              transition: background-color 0.15s ease;
-              display: flex;
-              align-items: center;
-            }
-            .radio-list-container label[data-rac]:last-child {
-              border-bottom: none;
-            }
-            .radio-list-container label[data-rac]:hover {
-              background-color: var(--bui-gray-1);
-            }
-            .radio-list-container label[data-rac][data-selected="true"] {
-              background-color: var(--bui-blue-1);
-              border-left: 3px solid var(--bui-blue-6);
-              font-weight: var(--bui-font-weight-bold);
-            }
-          `}
-        </style>
         <Flex direction="column" gap="2" mb="4">
           <Text variant="body-medium" weight="bold">
             Backstage Component
@@ -241,14 +245,7 @@ export default function MappingsDialog({
         ) : (
           <>
             <Box
-              className="radio-list-container"
-              style={{
-                maxHeight: '300px',
-                overflowY: 'auto',
-                border: '1px solid var(--bui-border)',
-                borderRadius: 'var(--bui-radius-2)',
-                padding: 'var(--bui-spacing-3)'
-              }}
+              className={classes.radioListContainer}
               mb="2"
             >
               <RadioGroup
