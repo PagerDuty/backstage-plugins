@@ -5,6 +5,7 @@ import { pagerDutyApiRef } from '../../../../api';
 import { AutoMatchResults } from '../MappingsTable';
 import { MappingCounts } from '../MappingToast';
 import { FormattedBackstageEntity } from '@pagerduty/backstage-plugin-common';
+import { useAccountContext } from '../../AccountContext';
 
 interface UseConfirmMappingsParams {
   autoMatchResults: AutoMatchResults;
@@ -25,6 +26,7 @@ export function useConfirmMappings({
 }: UseConfirmMappingsParams) {
   const pagerDutyApi = useApi(pagerDutyApiRef);
   const queryClient = useQueryClient();
+  const { selectedAccount } = useAccountContext();
   const [isConfirming, setIsConfirming] = useState(false);
 
   const confirmMappings = async () => {
@@ -45,7 +47,7 @@ export function useConfirmMappings({
             serviceId: matchData.serviceId,
             integrationKey: '',
             entityRef: entityRef,
-            account: matchData.account || '',
+            account: selectedAccount || '',
           };
         },
       );

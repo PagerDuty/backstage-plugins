@@ -125,8 +125,26 @@ permission:
   enabled: true
 
 pagerDuty:
-  oauth:
-    clientId: ${PAGERDUTY_CLIENT_ID}
-    clientSecret: ${PAGERDUTY_CLIENT_SECRET}
-    subDomain: ${PAGERDUTY_SUBDOMAIN}
-    region: ${PAGERDUTY_OAUTH_REGION}
+  accounts:
+  - id: main
+    isDefault: true
+    oauth:
+      clientId: ${PD_CLIENT_ID_1}
+      clientSecret: ${PD_CLIENT_SECRET_1}
+      subDomain: ${PD_ACCOUNT_SUBDOMAIN_1}
+      region: ${PD_ACCOUNT_REGION_1}
+      identityUrl: https://identity.pagerduty.com/oauth/token
+  - id: staging
+    apiBaseUrl: ${PD_API_BASE_URL}
+    oauth:
+      clientId: ${PD_CLIENT_ID_2}
+      clientSecret: ${PD_CLIENT_SECRET_2}
+      subDomain: ${PD_ACCOUNT_SUBDOMAIN_2}
+      region: us
+      identityUrl: https://identity.pd-staging.com/oauth/token
+# pagerDuty:
+#   oauth:
+#     clientId: ${PAGERDUTY_CLIENT_ID}
+#     clientSecret: ${PAGERDUTY_CLIENT_SECRET}
+#     subDomain: ${PAGERDUTY_SUBDOMAIN}
+#     region: ${PAGERDUTY_OAUTH_REGION}

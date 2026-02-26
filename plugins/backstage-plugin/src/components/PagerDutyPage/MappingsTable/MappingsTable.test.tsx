@@ -6,6 +6,7 @@ import MappingsTable from './MappingsTable';
 import { ApiProvider } from '@backstage/core-app-api';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { catalogApiRef } from '@backstage/plugin-catalog-react';
+import { AccountProvider } from '../AccountContext';
 
 describe('MappingsTable', () => {
   beforeAll(() => {
@@ -25,8 +26,10 @@ describe('MappingsTable', () => {
   });
 
   const mockGetEntityMappingsWithPagination = jest.fn();
+  const mockGetAccounts = jest.fn();
   const mockPagerDutyApi = {
     getEntityMappingsWithPagination: mockGetEntityMappingsWithPagination,
+    getAccounts: mockGetAccounts,
   };
 
   const mockCatalogApi = {
@@ -44,6 +47,12 @@ describe('MappingsTable', () => {
         retry: false,
       },
     },
+  });
+
+  beforeEach(() => {
+    mockGetAccounts.mockResolvedValue([
+      { id: 'test-account', isDefault: true },
+    ]);
   });
 
   it('renders entities when API returns data', async () => {
@@ -96,7 +105,9 @@ describe('MappingsTable', () => {
     await renderInTestApp(
       <ApiProvider apis={apis}>
         <QueryClientProvider client={queryClient}>
-          <MappingsTable />
+          <AccountProvider>
+            <MappingsTable />
+          </AccountProvider>
         </QueryClientProvider>
       </ApiProvider>,
     );
@@ -175,7 +186,9 @@ describe('MappingsTable', () => {
     await renderInTestApp(
       <ApiProvider apis={apis}>
         <QueryClientProvider client={queryClient}>
-          <MappingsTable />
+          <AccountProvider>
+            <MappingsTable />
+          </AccountProvider>
         </QueryClientProvider>
       </ApiProvider>,
     );
@@ -198,7 +211,9 @@ describe('MappingsTable', () => {
     await renderInTestApp(
       <ApiProvider apis={apis}>
         <QueryClientProvider client={queryClient}>
-          <MappingsTable />
+          <AccountProvider>
+            <MappingsTable />
+          </AccountProvider>
         </QueryClientProvider>
       </ApiProvider>,
     );
@@ -220,9 +235,9 @@ describe('MappingsTable', () => {
           serviceName: '',
           status: '',
           teamName: '',
-          account: '',
         },
         sort: undefined,
+        account: 'test-account',
       });
     });
 
@@ -253,7 +268,9 @@ describe('MappingsTable', () => {
     await renderInTestApp(
       <ApiProvider apis={apis}>
         <QueryClientProvider client={queryClient}>
-          <MappingsTable />
+          <AccountProvider>
+            <MappingsTable />
+          </AccountProvider>
         </QueryClientProvider>
       </ApiProvider>,
     );
@@ -266,9 +283,9 @@ describe('MappingsTable', () => {
         serviceName: '',
         status: '',
         teamName: '',
-        account: '',
       },
       sort: undefined,
+      account: 'test-account',
     });
 
     expect(screen.getByText('1 - 10 of 25')).toBeInTheDocument();
@@ -285,9 +302,9 @@ describe('MappingsTable', () => {
           serviceName: '',
           status: '',
           teamName: '',
-          account: '',
-        },
+          },
         sort: undefined,
+        account: 'test-account',
       });
     });
 
@@ -303,9 +320,9 @@ describe('MappingsTable', () => {
           serviceName: '',
           status: '',
           teamName: '',
-          account: '',
-        },
+          },
         sort: undefined,
+        account: 'test-account',
       });
     });
   });
@@ -320,7 +337,9 @@ describe('MappingsTable', () => {
     await renderInTestApp(
       <ApiProvider apis={apis}>
         <QueryClientProvider client={queryClient}>
-          <MappingsTable />
+          <AccountProvider>
+            <MappingsTable />
+          </AccountProvider>
         </QueryClientProvider>
       </ApiProvider>,
     );
@@ -372,7 +391,9 @@ describe('MappingsTable', () => {
     await renderInTestApp(
       <ApiProvider apis={apis}>
         <QueryClientProvider client={queryClient}>
-          <MappingsTable />
+          <AccountProvider>
+            <MappingsTable />
+          </AccountProvider>
         </QueryClientProvider>
       </ApiProvider>,
     );
@@ -415,8 +436,7 @@ describe('MappingsTable', () => {
           offset: 0,
           filters: expect.objectContaining({
             serviceName: 'pagerduty-service',
-            account: '',
-          }),
+              }),
         }),
       );
     });
@@ -434,7 +454,9 @@ describe('MappingsTable', () => {
     await renderInTestApp(
       <ApiProvider apis={apis}>
         <QueryClientProvider client={queryClient}>
-          <MappingsTable />
+          <AccountProvider>
+            <MappingsTable />
+          </AccountProvider>
         </QueryClientProvider>
       </ApiProvider>,
     );
@@ -470,7 +492,9 @@ describe('MappingsTable', () => {
     await renderInTestApp(
       <ApiProvider apis={apis}>
         <QueryClientProvider client={queryClient}>
-          <MappingsTable />
+          <AccountProvider>
+            <MappingsTable />
+          </AccountProvider>
         </QueryClientProvider>
       </ApiProvider>,
     );
@@ -484,47 +508,8 @@ describe('MappingsTable', () => {
       screen.getByPlaceholderText('Filter by service'),
     ).toBeInTheDocument();
     expect(screen.getByLabelText('All Statuses')).toBeInTheDocument();
-    expect(
-      screen.getByPlaceholderText('Filter by account'),
-    ).toBeInTheDocument();
   });
 
-  it('calls API with correct account filter when account filter is applied', async () => {
-    jest.useFakeTimers();
-    mockGetEntityMappingsWithPagination.mockResolvedValue({
-      entities: [],
-      totalCount: 0,
-    });
-
-    await renderInTestApp(
-      <ApiProvider apis={apis}>
-        <QueryClientProvider client={queryClient}>
-          <MappingsTable />
-        </QueryClientProvider>
-      </ApiProvider>,
-    );
-
-    const filterButton = screen.getByRole('button', { name: 'Toggle filters' });
-    fireEvent.click(filterButton);
-
-    const accountFilter = screen.getByPlaceholderText('Filter by account');
-    fireEvent.change(accountFilter, { target: { value: 'my-account' } });
-
-    // wait because of the debounce
-    jest.advanceTimersByTime(500);
-
-    await waitFor(() => {
-      expect(mockGetEntityMappingsWithPagination).toHaveBeenCalledWith(
-        expect.objectContaining({
-          filters: expect.objectContaining({
-            account: 'my-account',
-          }),
-        }),
-      );
-    });
-
-    jest.useRealTimers();
-  });
 
   describe('sorting', () => {
     it('calls API with sort parameter when Name column header is clicked', async () => {
@@ -536,7 +521,9 @@ describe('MappingsTable', () => {
       await renderInTestApp(
         <ApiProvider apis={apis}>
           <QueryClientProvider client={queryClient}>
-            <MappingsTable />
+            <AccountProvider>
+              <MappingsTable />
+            </AccountProvider>
           </QueryClientProvider>
         </ApiProvider>,
       );
@@ -562,7 +549,9 @@ describe('MappingsTable', () => {
       await renderInTestApp(
         <ApiProvider apis={apis}>
           <QueryClientProvider client={queryClient}>
-            <MappingsTable />
+            <AccountProvider>
+              <MappingsTable />
+            </AccountProvider>
           </QueryClientProvider>
         </ApiProvider>,
       );
@@ -601,7 +590,9 @@ describe('MappingsTable', () => {
       await renderInTestApp(
         <ApiProvider apis={apis}>
           <QueryClientProvider client={queryClient}>
-            <MappingsTable />
+            <AccountProvider>
+              <MappingsTable />
+            </AccountProvider>
           </QueryClientProvider>
         </ApiProvider>,
       );
@@ -627,7 +618,9 @@ describe('MappingsTable', () => {
       await renderInTestApp(
         <ApiProvider apis={apis}>
           <QueryClientProvider client={queryClient}>
-            <MappingsTable />
+            <AccountProvider>
+              <MappingsTable />
+            </AccountProvider>
           </QueryClientProvider>
         </ApiProvider>,
       );
@@ -653,7 +646,9 @@ describe('MappingsTable', () => {
       await renderInTestApp(
         <ApiProvider apis={apis}>
           <QueryClientProvider client={queryClient}>
-            <MappingsTable />
+            <AccountProvider>
+              <MappingsTable />
+            </AccountProvider>
           </QueryClientProvider>
         </ApiProvider>,
       );
@@ -670,31 +665,6 @@ describe('MappingsTable', () => {
       });
     });
 
-    it('calls API with sort parameter when Account column header is clicked', async () => {
-      mockGetEntityMappingsWithPagination.mockResolvedValue({
-        entities: [],
-        totalCount: 0,
-      });
-
-      await renderInTestApp(
-        <ApiProvider apis={apis}>
-          <QueryClientProvider client={queryClient}>
-            <MappingsTable />
-          </QueryClientProvider>
-        </ApiProvider>,
-      );
-
-      const accountColumnHeader = screen.getByText('Account');
-      fireEvent.click(accountColumnHeader);
-
-      await waitFor(() => {
-        expect(mockGetEntityMappingsWithPagination).toHaveBeenCalledWith(
-          expect.objectContaining({
-            sort: { column: 'account', direction: 'ascending' },
-          }),
-        );
-      });
-    });
 
     it('switches sort column when clicking different column headers', async () => {
       mockGetEntityMappingsWithPagination.mockResolvedValue({
@@ -705,7 +675,9 @@ describe('MappingsTable', () => {
       await renderInTestApp(
         <ApiProvider apis={apis}>
           <QueryClientProvider client={queryClient}>
-            <MappingsTable />
+            <AccountProvider>
+              <MappingsTable />
+            </AccountProvider>
           </QueryClientProvider>
         </ApiProvider>,
       );
@@ -759,7 +731,9 @@ describe('MappingsTable', () => {
       await renderInTestApp(
         <ApiProvider apis={apis}>
           <QueryClientProvider client={queryClient}>
-            <MappingsTable />
+            <AccountProvider>
+              <MappingsTable />
+            </AccountProvider>
           </QueryClientProvider>
         </ApiProvider>,
       );
@@ -800,7 +774,9 @@ describe('MappingsTable', () => {
       await renderInTestApp(
         <ApiProvider apis={apis}>
           <QueryClientProvider client={queryClient}>
-            <MappingsTable />
+            <AccountProvider>
+              <MappingsTable />
+            </AccountProvider>
           </QueryClientProvider>
         </ApiProvider>,
       );
@@ -860,7 +836,9 @@ describe('MappingsTable', () => {
       await renderInTestApp(
         <ApiProvider apis={apis}>
           <QueryClientProvider client={queryClient}>
-            <MappingsTable />
+            <AccountProvider>
+              <MappingsTable />
+            </AccountProvider>
           </QueryClientProvider>
         </ApiProvider>,
       );
@@ -913,7 +891,9 @@ describe('MappingsTable', () => {
       await renderInTestApp(
         <ApiProvider apis={apis}>
           <QueryClientProvider client={queryClient}>
-            <MappingsTable />
+            <AccountProvider>
+              <MappingsTable />
+            </AccountProvider>
           </QueryClientProvider>
         </ApiProvider>,
       );

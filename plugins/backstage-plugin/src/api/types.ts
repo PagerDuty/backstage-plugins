@@ -78,9 +78,9 @@ export interface PagerDutyApi {
       serviceName?: string;
       status?: string;
       teamName?: string;
-      account?: string;
     };
     sort?: { column: string; direction: 'ascending' | 'descending' };
+    account?: string;
   }): Promise<PagerDutyEnhancedEntityMappingsResponse>;
 
   /**
@@ -190,7 +190,13 @@ export interface PagerDutyApi {
   autoMatchEntityMappings(options: {
     team?: string;
     threshold: number;
+    account?: string;
   }): Promise<AutoMatchEntityMappingsResponse>;
+
+  /**
+   * Fetches the list of configured PagerDuty accounts.
+   */
+  getAccounts(): Promise<Array<{ id: string; isDefault: boolean }>>;
 }
 
 /** @public */

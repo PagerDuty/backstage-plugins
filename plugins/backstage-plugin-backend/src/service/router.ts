@@ -876,6 +876,7 @@ export async function createRouter(
     try {
       // Default 100% threshold ensures only exact matches, customers can adjust if needed
       const threshold: number = request.body.threshold ?? 100;
+      const account: string | undefined = request.body.account;
 
       if (typeof threshold !== 'number' || threshold < 0 || threshold > 100) {
         response.status(400).json({
@@ -890,11 +891,16 @@ export async function createRouter(
       const { pdServices, bsComponents } = await loadBothSources({
         catalogApi: catalogApi!,
       });
+
+      const filteredPdServices = account
+        ? pdServices.filter(service => service.account === account)
+        : pdServices;
+
       const loadTime = Date.now() - loadStartTime;
 
       const matchStartTime = Date.now();
       const matchingConfig: MatchingConfig = { threshold };
-      let matches = findMatches(pdServices, bsComponents, matchingConfig);
+      let matches = findMatches(filteredPdServices, bsComponents, matchingConfig);
 
       if (bestOnly) {
         matches = filterToBestMatchPerService(matches);
@@ -902,7 +908,7 @@ export async function createRouter(
 
       const matchTime = Date.now() - matchStartTime;
 
-      const totalComparisons = pdServices.length * bsComponents.length;
+      const totalComparisons = filteredPdServices.length * bsComponents.length;
       const exactMatches = matches.filter(m => m.score === 100).length;
       const highConfidence = matches.filter(
         m => m.score >= 90 && m.score < 100,
@@ -938,7 +944,7 @@ export async function createRouter(
           scoreBreakdown: m.scoreBreakdown,
         })),
         statistics: {
-          totalPagerDutyServices: pdServices.length,
+          totalPagerDutyServices: filteredPdServices.length,
           totalBackstageComponents: bsComponents.length,
           totalPossibleComparisons: totalComparisons,
           matchesFound: matches.length,
@@ -1247,6 +1253,31 @@ export async function createRouter(
           errors: [`${error.message}`],
         });
       }
+    }
+  });
+
+  // GET /accounts
+  router.get('/accounts', async (_, response) => {
+    try {
+      const accountsConfig = config.getOptional('pagerDuty.accounts') as
+        | Array<{
+            id: string;
+            isDefault?: boolean;
+          }>
+        | undefined;
+
+      if (accountsConfig && accountsConfig.length > 0) {
+        const accounts = accountsConfig.map(account => ({
+          id: account.id,
+          isDefault: account.isDefault || false,
+        }));
+        response.status(200).json({ accounts });
+      } else {
+        response.status(200).json({ accounts: [] });
+      }
+    } catch (error) {
+      logger.error(`Failed to get accounts: ${error}`);
+      response.status(500).json({ error: 'Failed to get accounts' });
     }
   });
 

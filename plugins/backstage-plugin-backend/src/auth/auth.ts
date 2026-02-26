@@ -115,6 +115,8 @@ export async function loadAuthConfig(
             config.getString('pagerDuty.oauth.clientSecret'),
             config.getString('pagerDuty.oauth.subDomain'),
             config.getOptionalString('pagerDuty.oauth.region') ?? 'us',
+            config.getOptionalString('pagerDuty.oauth.identityUrl') ??
+              'https://identity.pagerduty.com/oauth/token',
           );
 
           authPersistence.accountTokens[defaultAccountId] = tokenInfo;
@@ -178,6 +180,8 @@ export async function loadAuthConfig(
                 account.oauth.clientSecret,
                 account.oauth.subDomain,
                 account.oauth.region ?? 'us',
+                account.oauth.identityUrl ??
+                  'https://identity.pagerduty.com/oauth/token',
               );
 
               authPersistence.accountTokens[account.id] = tokenInfo;
@@ -217,6 +221,7 @@ async function getOAuthToken(
   clientSecret: string,
   subDomain: string,
   region: string,
+  baseUrl: string,
 ): Promise<AccountTokenInfo> {
   // check if required parameters are provided
   if (!clientId || !clientSecret || !subDomain) {
@@ -255,7 +260,6 @@ async function getOAuthToken(
     },
     body: urlencoded,
   };
-  const baseUrl = 'https://identity.pagerduty.com/oauth/token';
 
   try {
     response = await fetch(baseUrl, options);

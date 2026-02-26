@@ -15,6 +15,7 @@ import { useApi } from '@backstage/core-plugin-api';
 import { catalogApiRef } from '@backstage/plugin-catalog-react';
 import { pagerDutyApiRef } from '../../api';
 import { Warning } from '@mui/icons-material';
+import { useAccountContext } from './AccountContext';
 
 interface AutomaticMappingsDialogProps {
   isOpen: boolean;
@@ -40,6 +41,7 @@ export default function AutomaticMappingsDialog({
   const catalogApi = useApi(catalogApiRef);
   const pagerDutyApi = useApi(pagerDutyApiRef);
   const queryClient = useQueryClient();
+  const { selectedAccount } = useAccountContext();
   const [selectedTeam, setSelectedTeam] = useState<string>('all');
   const [selectedThreshold, setSelectedThreshold] = useState<string>('');
 
@@ -57,7 +59,7 @@ export default function AutomaticMappingsDialog({
   });
 
   const { mutateAsync: autoMatch, isPending: isAutoMatching } = useMutation({
-    mutationFn: async (params: { team?: string; threshold: number }) =>
+    mutationFn: async (params: { team?: string; threshold: number; account?: string }) =>
       pagerDutyApi.autoMatchEntityMappings(params),
     onSuccess: data => {
       const matchMap: Record<
@@ -119,6 +121,7 @@ export default function AutomaticMappingsDialog({
     await autoMatch({
       team: selectedTeam,
       threshold: parseInt(selectedThreshold, 10),
+      account: selectedAccount,
     });
   };
 
