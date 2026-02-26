@@ -124,6 +124,7 @@ permission:
   # setting this to `false` will disable permissions
   enabled: true
 
+pagerDuty:
   oauth:
     clientId: ${PAGERDUTY_CLIENT_ID}
     clientSecret: ${PAGERDUTY_CLIENT_SECRET}
