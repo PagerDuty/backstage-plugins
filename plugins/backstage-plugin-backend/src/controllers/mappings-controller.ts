@@ -276,16 +276,7 @@ export function getMappingEntities(store: PagerDutyBackendStore, catalogApi: Cat
             mapping => mapping.entityRef === entityRef
           );
 
-          if (entityMapping) {
-            if (entityMapping.account && entityMapping.account !== account) {
-              return false;
-            }
-            if (entityMapping.account === account) {
-              return true;
-            }
-          }
-
-          return true;
+          return entityMapping ? entityMapping.account === account : true;
         });
       }
 
