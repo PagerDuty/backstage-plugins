@@ -22,8 +22,6 @@ type CustomField = {
   entityPath: string;
 };
 
-const MAX_MAPPINGS = 15;
-
 const useStyles = makeStyles<BackstageTheme>(theme => {
   return createStyles({
     root: {
@@ -98,8 +96,6 @@ export const CustomFieldsTab = () => {
   const classes = useStyles();
   const [customFields, setCustomFields] = useState<CustomField[]>([]);
 
-  const availableCount = MAX_MAPPINGS - customFields.length;
-
   const handleAddCustomField = () => {
     const id = window.crypto.randomUUID();
     setCustomFields(prev => [
@@ -129,9 +125,9 @@ export const CustomFieldsTab = () => {
         </Button>
       </Box>
 
-      <Typography className={classes.explanation} variant="body2">
-        Explanation of what this is and does...
-      </Typography>
+      {/* TODO: <Typography className={classes.explanation} variant="body2">
+        //Explanation of what this is and does...
+      </Typography> */}
 
       <Divider />
 
@@ -146,9 +142,6 @@ export const CustomFieldsTab = () => {
             </Typography>
           </Box>
           <Box className={classes.sectionMeta}>
-            <Typography className={classes.availableMappings}>
-              {availableCount}/{MAX_MAPPINGS} Available Mappings
-            </Typography>
             <Link
               className={classes.addLink}
               onClick={handleAddCustomField}
