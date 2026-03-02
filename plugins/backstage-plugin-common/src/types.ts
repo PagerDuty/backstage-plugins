@@ -264,6 +264,7 @@ export type PagerDutyOAuthConfig = {
   clientSecret: string;
   region?: string;
   subDomain: string;
+  identityUrl?: string;
 };
 
 /** @public */

@@ -4,8 +4,7 @@ type FilterableFields =
   | 'name'
   | 'serviceName'
   | 'status'
-  | 'teamName'
-  | 'account';
+  | 'teamName';
 
 interface FilterRowProps {
   filters: {
@@ -13,7 +12,6 @@ interface FilterRowProps {
     serviceName: string;
     status: string;
     teamName: string;
-    account: string;
   };
   onFilterChange: (key: FilterableFields, value: string) => void;
 }
@@ -57,13 +55,6 @@ export function FilterRow({ filters, onFilterChange }: FilterRowProps) {
         onChange={value => onFilterChange('status', value?.toString() || '')}
         placeholder="All statuses"
         options={statusOptions}
-      />
-
-      <SearchField
-        size="small"
-        placeholder="Filter by account"
-        value={filters.account}
-        onChange={value => onFilterChange('account', value)}
       />
     </Flex>
   );

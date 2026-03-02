@@ -6,6 +6,7 @@ import AutomaticMappingsDialog from './AutomaticMappingsDialog';
 import { ApiProvider } from '@backstage/core-app-api';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { catalogApiRef } from '@backstage/plugin-catalog-react';
+import { AccountProvider } from './AccountContext';
 
 describe('AutomaticMappingsDialog', () => {
   beforeAll(() => {
@@ -26,6 +27,7 @@ describe('AutomaticMappingsDialog', () => {
 
   const mockGetEntities = jest.fn();
   const mockAutoMatchEntityMappings = jest.fn();
+  const mockGetAccounts = jest.fn();
   const mockOnAutoMatchComplete = jest.fn();
   const mockSetIsOpen = jest.fn();
 
@@ -35,6 +37,7 @@ describe('AutomaticMappingsDialog', () => {
 
   const mockPagerDutyApi = {
     autoMatchEntityMappings: mockAutoMatchEntityMappings,
+    getAccounts: mockGetAccounts,
   };
 
   const apis = TestApiRegistry.from(
@@ -56,6 +59,10 @@ describe('AutomaticMappingsDialog', () => {
       },
     });
     jest.clearAllMocks();
+
+    mockGetAccounts.mockResolvedValue([
+      { id: 'test-account', isDefault: true },
+    ]);
   });
 
   it('renders dialog when isOpen is true', async () => {
@@ -66,11 +73,13 @@ describe('AutomaticMappingsDialog', () => {
     await renderInTestApp(
       <ApiProvider apis={apis}>
         <QueryClientProvider client={queryClient}>
-          <AutomaticMappingsDialog
-            isOpen
-            setIsOpen={mockSetIsOpen}
-            onAutoMatchComplete={mockOnAutoMatchComplete}
-          />
+          <AccountProvider>
+            <AutomaticMappingsDialog
+              isOpen
+              setIsOpen={mockSetIsOpen}
+              onAutoMatchComplete={mockOnAutoMatchComplete}
+            />
+          </AccountProvider>
         </QueryClientProvider>
       </ApiProvider>,
     );
@@ -82,11 +91,13 @@ describe('AutomaticMappingsDialog', () => {
     await renderInTestApp(
       <ApiProvider apis={apis}>
         <QueryClientProvider client={queryClient}>
-          <AutomaticMappingsDialog
-            isOpen
-            setIsOpen={mockSetIsOpen}
-            onAutoMatchComplete={mockOnAutoMatchComplete}
-          />
+          <AccountProvider>
+            <AutomaticMappingsDialog
+              isOpen
+              setIsOpen={mockSetIsOpen}
+              onAutoMatchComplete={mockOnAutoMatchComplete}
+            />
+          </AccountProvider>
         </QueryClientProvider>
       </ApiProvider>,
     );
@@ -108,11 +119,13 @@ describe('AutomaticMappingsDialog', () => {
     await renderInTestApp(
       <ApiProvider apis={apis}>
         <QueryClientProvider client={queryClient}>
-          <AutomaticMappingsDialog
-            isOpen
-            setIsOpen={mockSetIsOpen}
-            onAutoMatchComplete={mockOnAutoMatchComplete}
-          />
+          <AccountProvider>
+            <AutomaticMappingsDialog
+              isOpen
+              setIsOpen={mockSetIsOpen}
+              onAutoMatchComplete={mockOnAutoMatchComplete}
+            />
+          </AccountProvider>
         </QueryClientProvider>
       </ApiProvider>,
     );
