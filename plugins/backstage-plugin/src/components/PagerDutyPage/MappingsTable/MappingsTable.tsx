@@ -6,7 +6,7 @@ import {
   ButtonIcon,
   type ColumnConfig,
 } from '@backstage/ui';
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useApi } from '@backstage/core-plugin-api';
 import MappingsDialog from '../MappingsDialog';
 import AutomaticMappingsDialog from '../AutomaticMappingsDialog';
@@ -24,6 +24,7 @@ import { useConfirmMappings } from './hooks/useConfirmMappings';
 import { useQueryClient } from '@tanstack/react-query';
 import { pagerDutyApiRef } from '../../../api';
 import { FormattedBackstageEntity } from '@pagerduty/backstage-plugin-common';
+import { useAccountContext } from '../AccountContext';
 
 export interface AutoMatchResult {
   score: number;
@@ -37,6 +38,7 @@ export type AutoMatchResults = Record<string, AutoMatchResult>;
 export default function MappingsTable() {
   const pagerDutyApi = useApi(pagerDutyApiRef);
   const queryClient = useQueryClient();
+  const { selectedAccount } = useAccountContext();
 
   const [isOpen, setIsOpen] = useState(false);
   const [isAutoMappingOpen, setIsAutoMappingOpen] = useState(false);
@@ -50,7 +52,6 @@ export default function MappingsTable() {
     serviceName: '',
     status: '',
     teamName: '',
-    account: '',
   });
 
   const debouncedFilters = useDebounce(filters);
@@ -102,6 +103,7 @@ export default function MappingsTable() {
         sort: sort
           ? { column: String(sort.column), direction: sort.direction }
           : undefined,
+        account: selectedAccount,
       });
 
       const entitiesWithScores = response.entities.map(
@@ -190,17 +192,6 @@ export default function MappingsTable() {
         cell: entity => <StatusCell entity={entity} />,
       },
       {
-        id: 'account',
-        label: 'Account',
-        isRowHeader: true,
-        isSortable: true,
-        cell: entity => (
-          <CellText
-            title={entity.account === '' ? 'default' : entity.account!}
-          />
-        ),
-      },
-      {
         id: 'mappingScore',
         label: 'Mapping Score',
         isRowHeader: true,
@@ -259,8 +250,7 @@ export default function MappingsTable() {
     (!!filters.name ||
       !!filters.serviceName ||
       !!filters.status ||
-      !!filters.teamName ||
-      !!filters.account);
+      !!filters.teamName);
 
   return (
     <>
