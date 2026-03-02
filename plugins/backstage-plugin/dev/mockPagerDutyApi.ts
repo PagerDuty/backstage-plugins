@@ -44,6 +44,7 @@ export const mockPagerDutyApi: PagerDutyApi = {
   async autoMatchEntityMappings(options: {
     team?: string;
     threshold: number;
+    account?: string;
   }): Promise<AutoMatchEntityMappingsResponse> {
     return {
       matches: [
@@ -445,7 +446,20 @@ export const mockPagerDutyApi: PagerDutyApi = {
     };
   },
 
+  async getAccounts() {
+    return [
+      {
+        id: 'account1',
+        isDefault: true,
+      },
+      {
+        id: 'account2',
+        isDefault: false,
+      },
+    ];
+  },
+
   async removeServiceMapping(_entityRef: string) {
     return true;
-  },
+  }
 };

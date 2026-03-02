@@ -31,7 +31,6 @@ function compareEntities(
     team: 'owner',
     serviceName: 'serviceName',
     status: 'status',
-    account: 'account',
   };
 
   const field = fieldMap[column];
@@ -59,7 +58,7 @@ function compareEntities(
 export function getMappingEntities(store: PagerDutyBackendStore, catalogApi: CatalogApi) {
   return async function getMappingEntitiesFunction(request: Request, response: Response) {
     try {
-      const { offset = 0, limit = 10, filters = {}, sort } = request.body;
+      const { offset = 0, limit = 10, filters = {}, sort, account } = request.body;
 
       if (typeof offset !== 'number' || typeof limit !== 'number' || offset < 0 || limit <= 0) {
         response
@@ -69,7 +68,7 @@ export function getMappingEntities(store: PagerDutyBackendStore, catalogApi: Cat
         return;
       }
 
-      const validSortColumns = ['name', 'team', 'serviceName', 'status', 'account'];
+      const validSortColumns = ['name', 'team', 'serviceName', 'status'];
       const validSortDirections = ['ascending', 'descending'];
 
       if (sort !== undefined) {
@@ -98,11 +97,10 @@ export function getMappingEntities(store: PagerDutyBackendStore, catalogApi: Cat
       const hasStatusFilter = filters?.status?.trim();
       const hasNameFilter = filters?.name?.trim();
       const hasTeamNameFilter = filters?.teamName?.trim();
-      const hasAccountFilter = filters?.account?.trim();
       const needsBothFullTextFilters = hasNameFilter && hasTeamNameFilter;
       const needsSortPostProcessing = !!sort;
 
-      const needsPostProcessing = hasStatusFilter || needsBothFullTextFilters || hasAccountFilter || needsSortPostProcessing;
+      const needsPostProcessing = hasStatusFilter || needsBothFullTextFilters || needsSortPostProcessing;
 
       const queryOptions: {
         filter: Array<{
@@ -218,10 +216,10 @@ export function getMappingEntities(store: PagerDutyBackendStore, catalogApi: Cat
             service = currentPagePagerDutyServices.find(s => s.id === serviceId);
           } else if (annotations['pagerduty.com/integration-key']) {
             const integrationKey = annotations['pagerduty.com/integration-key'];
-            const account = entity.metadata?.annotations?.['pagerduty.com/account'] || '';
+            const entityAccount = entity.metadata?.annotations?.['pagerduty.com/account'] || '';
 
             try {
-              service = await getServiceByIntegrationKey(integrationKey, account);
+              service = await getServiceByIntegrationKey(integrationKey, entityAccount);
             } catch (e) {
               if (e instanceof HttpError && e.status !== 404) {
                 isServiceError = true;
@@ -267,10 +265,19 @@ export function getMappingEntities(store: PagerDutyBackendStore, catalogApi: Cat
         formattedEntities = formattedEntities.filter(entity => entity.status === filters.status.trim());
       }
 
-      if (hasAccountFilter) {
-        formattedEntities = formattedEntities.filter(entity =>
-          entity.account?.toLowerCase().includes(filters.account.trim().toLowerCase())
-        );
+      if (account) {
+        formattedEntities = formattedEntities.filter(entity => {
+          const entityRef = CatalogEntityUtils.entityRef({
+            kind: entity.type,
+            metadata: { name: entity.name, namespace: entity.namespace }
+          }).toLowerCase();
+
+          const entityMapping = allEntityMappings.find(
+            mapping => mapping.entityRef === entityRef
+          );
+
+          return entityMapping ? entityMapping.account === account : true;
+        });
       }
 
       if (sort) {
