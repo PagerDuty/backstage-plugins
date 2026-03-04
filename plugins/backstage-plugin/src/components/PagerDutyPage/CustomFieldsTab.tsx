@@ -26,18 +26,8 @@ import CloseIcon from '@material-ui/icons/Close';
 import { useApi } from '@backstage/core-plugin-api';
 import { pagerDutyApiRef } from '../../api';
 import { Alert } from '@material-ui/lab';
+import { BackstageCustomField } from '@pagerduty/backstage-plugin-common';
 
-type CustomField = {
-  id: number;
-  pagerdutyCustomFieldId: string;
-  pagerdutyCustomFieldDisplayName: string;
-  pagerdutyCustomFieldEnabled: boolean;
-  backstageEntityMappingPath: string;
-  pagerdutySubdomain: string;
-  description?: string;
-  createdAt: Date;
-  updatedAt: Date;
-};
 
 const useStyles = makeStyles<BackstageTheme>(theme => {
   return createStyles({
@@ -143,7 +133,7 @@ const useStyles = makeStyles<BackstageTheme>(theme => {
 export const CustomFieldsTab = () => {
   const classes = useStyles();
   const pagerDutyApi = useApi(pagerDutyApiRef);
-  const [customFields, setCustomFields] = useState<CustomField[]>([]);
+  const [customFields, setCustomFields] = useState<BackstageCustomField[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
