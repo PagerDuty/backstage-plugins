@@ -20,6 +20,9 @@ import {
   PagerDutyClientApiDependencies,
   PagerDutyClientApiConfig,
   RequestOptions,
+  BackstageCustomFieldCreateRequest,
+  BackstageCustomField,
+  BackstageCustomFieldsResponse,
 } from './types';
 import {
   PagerDutyChangeEventsResponse,
@@ -31,9 +34,6 @@ import {
   PagerDutyServiceMetricsResponse,
   PagerDutyEntityMappingsResponse,
   PagerDutySetting,
-  BackstageCustomFieldCreateRequest,
-  BackstageCustomField,
-  BackstageCustomFieldsResponse,
 } from '@pagerduty/backstage-plugin-common';
 import { createApiRef, ConfigApi } from '@backstage/core-plugin-api';
 import { NotFoundError } from '@backstage/errors';
@@ -373,8 +373,27 @@ export class PagerDutyClient implements PagerDutyApi {
 
     if (!response.ok) {
       const payload = await response.json();
-      const errors = payload.errors.map((error: string) => error).join(' ');
-      const message = `Request failed with ${response.status}, ${errors}`;
+      let errorMessage = 'Unknown error';
+      
+      if (payload.error) {
+        if (typeof payload.error === 'string') {
+          errorMessage = payload.error;
+        } else if (payload.error.message) {
+          // Handle nested error object with message property
+          errorMessage = payload.error.message;
+          // If there are specific error details, append them
+          if (payload.error.errors && Array.isArray(payload.error.errors)) {
+            const details = payload.error.errors.join(', ');
+            errorMessage += `: ${details}`;
+          }
+        } else {
+          errorMessage = JSON.stringify(payload.error);
+        }
+      } else if (payload.errors && Array.isArray(payload.errors)) {
+        errorMessage = payload.errors.map((error: string) => error).join(' ');
+      }
+      
+      const message = `Request failed with ${response.status}: ${errorMessage}`;
       throw new Error(message);
     }
     return response;

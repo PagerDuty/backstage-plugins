@@ -207,12 +207,16 @@ export const CustomFieldsTab = () => {
     } catch (err) {
       if (err instanceof Error) {
         // Handle specific error cases
-        if (err.message.includes('409')) {
+        if (err.message.includes('already been taken') || err.message.includes('409')) {
           setError('A custom field with this name already exists');
-        } else if (err.message.includes('413')) {
+        } else if (err.message.includes('413') || err.message.toLowerCase().includes('limit reached') || err.message.toLowerCase().includes('limit exceeded')) {
           setError(
             'Custom field limit reached. Maximum number of custom fields has been exceeded.',
           );
+        } else if (err.message.includes('400')) {
+          // Extract just the meaningful part from 400 errors
+          const match = err.message.match(/:\s*(.+)$/);
+          setError(match ? match[1] : err.message);
         } else {
           setError(err.message);
         }
