@@ -30,7 +30,7 @@ export class CustomFieldsController {
       // Validate input
       if (!name || !entityPath) {
         response.status(400).json({
-          error: 'Missing required fields: name and entityPath are required',
+          errors: ['Missing required fields: name and entityPath are required'],
         });
         return;
       }
@@ -61,14 +61,20 @@ export class CustomFieldsController {
         if (error instanceof HttpError) {
           if (error.status === 409) {
             response.status(409).json({
-              error: 'A custom field with this name already exists in PagerDuty',
+              errors: ['A custom field with this name already exists in PagerDuty'],
             });
             return;
           } else if (
             error.status === 400 && 
             (error.message.toLowerCase().includes('product limit reached'))) {
             response.status(400).json({
-              error: 'PagerDuty custom field limit reached. Maximum number of custom fields (15 or 30) has been exceeded.',
+              errors: ['PagerDuty custom field limit reached. Maximum number of custom fields (15 or 30) has been exceeded.'],
+            });
+            return;
+          } else if (error.status === 400) {
+            // Pass through other 400 errors with clean message
+            response.status(400).json({
+              errors: [error.message],
             });
             return;
           }
@@ -98,11 +104,11 @@ export class CustomFieldsController {
       
       if (error instanceof HttpError) {
         response.status(error.status).json({
-          error: error.message,
+          errors: [error.message],
         });
       } else {
         response.status(500).json({
-          error: 'An unexpected error occurred while creating the custom field',
+          errors: ['An unexpected error occurred while creating the custom field'],
         });
       }
     }
@@ -121,7 +127,7 @@ export class CustomFieldsController {
     } catch (error) {
       this.logger.error(`Failed to get custom fields: ${error}`);
       response.status(500).json({
-        error: 'An unexpected error occurred while fetching custom fields',
+        errors: ['An unexpected error occurred while fetching custom fields'],
       });
     }
   }

@@ -2279,15 +2279,29 @@ describe('createRouter', () => {
       async () => {
         const customFieldData = {
           name: 'Test Field',
+          entityPath: 'spec.owner',
           description: 'A test custom field',
-          dataType: 'string',
         };
+
+        // Mock successful PagerDuty API response
+        const mockPagerDutyResponse = {
+          field: {
+            id: 'PTEST123',
+            display_name: 'Test Field',
+            name: 'test_field',
+            data_type: 'string',
+            field_type: 'single_value',
+            description: 'A test custom field',
+            enabled: true,
+          },
+        };
+        mocked(fetch).mockReturnValue(mockedResponse(201, mockPagerDutyResponse));
 
         const response = await request(app)
           .post('/custom-fields')
           .send(customFieldData);
 
-        expect(response.status).toEqual(200);
+        expect(response.status).toEqual(201);
       },
     );
 
@@ -2311,9 +2325,18 @@ describe('createRouter', () => {
       async () => {
         const customFieldData = {
           name: 'Existing Field',
+          entityPath: 'spec.owner',
           description: 'A custom field that already exists',
-          dataType: 'string',
         };
+
+        // Mock PagerDuty API 409 conflict response
+        const mockErrorResponse = {
+          error: {
+            message: 'Custom field with this name already exists',
+            code: 2009,
+          },
+        };
+        mocked(fetch).mockReturnValue(mockedResponse(409, mockErrorResponse));
 
         const response = await request(app)
           .post('/custom-fields')
@@ -2328,15 +2351,15 @@ describe('createRouter', () => {
       async () => {
         const customFieldData = {
           name: 'Test Field',
+          entityPath: 'spec.owner',
           description: 'A test custom field',
-          dataType: 'string',
         };
 
         const response = await request(app)
           .post('/custom-fields')
           .send(customFieldData);
 
-        expect([200, 400, 409, 500]).toContain(response.status);
+        expect([201, 400, 409, 500]).toContain(response.status);
       },
     );
   });
@@ -2348,17 +2371,18 @@ describe('createRouter', () => {
         const response = await request(app).get('/custom-fields');
 
         expect(response.status).toEqual(200);
-        expect(Array.isArray(response.body)).toBe(true);
+        expect(response.body).toHaveProperty('customFields');
+        expect(Array.isArray(response.body.customFields)).toBe(true);
       },
     );
 
     it.each(testInputs)(
       'returns empty array when no custom fields exist',
       async () => {
-        const response = await request(app).get('/custom-fields');
+        const response = await request(app).get('/custom-fields?account=empty-test-account');
 
         expect(response.status).toEqual(200);
-        expect(response.body).toEqual([]);
+        expect(response.body).toEqual({"customFields": []});
       },
     );
 
