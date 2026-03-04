@@ -205,12 +205,10 @@ export const CustomFieldsTab = () => {
           setError(
             'Custom field limit reached. Maximum number of custom fields has been exceeded.',
           );
-        } else if (err.message.includes('400')) {
-          // Extract just the meaningful part from 400 errors
-          const match = err.message.match(/:\s*(.+)$/);
-          setError(match ? match[1] : err.message);
         } else {
-          setError(err.message);
+          // Strip "Request failed with XXX," prefix from error messages
+          const match = err.message.match(/^Request failed with \d+,\s*(.+)$/);
+          setError(match ? match[1] : err.message);
         }
       } else {
         setError('Failed to create custom field');

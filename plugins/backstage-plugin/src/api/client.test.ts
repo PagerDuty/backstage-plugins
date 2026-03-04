@@ -552,7 +552,7 @@ describe('createCustomField', () => {
         ok: false,
         json: () =>
           Promise.resolve({
-            error: 'Internal server error',
+            errors: ['Internal server error'],
           }),
       });
     });
@@ -669,7 +669,7 @@ describe('getCustomFields', () => {
         ok: false,
         json: () =>
           Promise.resolve({
-            error: 'Internal server error',
+            errors: ['Internal server error'],
           }),
       });
     });
