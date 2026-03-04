@@ -28,6 +28,11 @@ interface AutomaticMappingsDialogProps {
         serviceId: string;
         account: string;
         serviceName: string;
+        entity?: {
+          name: string;
+          entityRef: string;
+          owner: string;
+        };
       }
     >,
   ) => void;
@@ -69,6 +74,11 @@ export default function AutomaticMappingsDialog({
           serviceId: string;
           account: string;
           serviceName: string;
+          entity?: {
+            name: string;
+            entityRef: string;
+            owner: string;
+          };
         }
       > = {};
 
@@ -82,6 +92,8 @@ export default function AutomaticMappingsDialog({
           const serviceId = match.pagerDutyService?.serviceId;
           const serviceName = match.pagerDutyService?.name;
           const account = match.pagerDutyService?.account || '';
+          const entityRef = match.backstageComponent?.entityRef;
+          const owner = match.backstageComponent?.owner;
 
           if (entityName && score !== undefined && serviceId) {
             matchMap[entityName] = {
@@ -89,6 +101,11 @@ export default function AutomaticMappingsDialog({
               serviceId,
               account,
               serviceName,
+              entity: {
+                name: entityName,
+                entityRef: entityRef || '',
+                owner: owner || '',
+              },
             };
           }
         });
