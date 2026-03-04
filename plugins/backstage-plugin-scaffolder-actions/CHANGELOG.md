@@ -1,5 +1,13 @@
 # @pagerduty/backstage-plugin-scaffolder-actions
 
+## 0.2.8
+
+### Patch Changes
+
+- 47afbbc: Make changesets mandatory for all the packages
+- Updated dependencies [47afbbc]
+  - @pagerduty/backstage-plugin-common@0.2.6
+
 ## 0.2.7
 
 ### Patch Changes
