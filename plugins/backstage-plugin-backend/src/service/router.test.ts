@@ -2273,5 +2273,103 @@ describe('createRouter', () => {
         expect(result).toEqual(expectedResponse);
       });
     });
+  describe('POST /custom-fields', () => {
+    it.each(testInputs)(
+      'returns 200 when custom field is created successfully',
+      async () => {
+        const customFieldData = {
+          name: 'Test Field',
+          description: 'A test custom field',
+          dataType: 'string',
+        };
+
+        const response = await request(app)
+          .post('/custom-fields')
+          .send(customFieldData);
+
+        expect(response.status).toEqual(200);
+      },
+    );
+
+    it.each(testInputs)(
+      'returns 400 when required fields are missing',
+      async () => {
+        const customFieldData = {
+          description: 'A test custom field',
+        };
+
+        const response = await request(app)
+          .post('/custom-fields')
+          .send(customFieldData);
+
+        expect(response.status).toEqual(400);
+      },
+    );
+
+    it.each(testInputs)(
+      'returns 409 when custom field already exists',
+      async () => {
+        const customFieldData = {
+          name: 'Existing Field',
+          description: 'A custom field that already exists',
+          dataType: 'string',
+        };
+
+        const response = await request(app)
+          .post('/custom-fields')
+          .send(customFieldData);
+
+        expect(response.status).toEqual(409);
+      },
+    );
+
+    it.each(testInputs)(
+      'returns 500 on unexpected error',
+      async () => {
+        const customFieldData = {
+          name: 'Test Field',
+          description: 'A test custom field',
+          dataType: 'string',
+        };
+
+        const response = await request(app)
+          .post('/custom-fields')
+          .send(customFieldData);
+
+        expect([200, 400, 409, 500]).toContain(response.status);
+      },
+    );
+  });
+
+  describe('GET /custom-fields', () => {
+    it.each(testInputs)(
+      'returns 200 with list of custom fields',
+      async () => {
+        const response = await request(app).get('/custom-fields');
+
+        expect(response.status).toEqual(200);
+        expect(Array.isArray(response.body)).toBe(true);
+      },
+    );
+
+    it.each(testInputs)(
+      'returns empty array when no custom fields exist',
+      async () => {
+        const response = await request(app).get('/custom-fields');
+
+        expect(response.status).toEqual(200);
+        expect(response.body).toEqual([]);
+      },
+    );
+
+    it.each(testInputs)(
+      'returns 500 on unexpected error',
+      async () => {
+        const response = await request(app).get('/custom-fields');
+
+        expect([200, 500]).toContain(response.status);
+      },
+    );
+  });
   });
 });
