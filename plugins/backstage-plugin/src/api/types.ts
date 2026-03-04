@@ -25,35 +25,13 @@ import {
   PagerDutyServiceMetrics,
   PagerDutyEntityMappingsResponse,
   PagerDutySetting,
+  BackstageCustomField,
+  BackstageCustomFieldCreateRequest,
+  BackstageCustomFieldsResponse,
 } from '@pagerduty/backstage-plugin-common';
 import { DiscoveryApi, FetchApi } from '@backstage/core-plugin-api';
 import { Entity } from '@backstage/catalog-model';
 import { PagerDutyEntity } from '../types';
-
-/** @public */
-export type BackstageCustomField = {
-  id: number;
-  pagerdutyCustomFieldId: string;
-  pagerdutyCustomFieldDisplayName: string;
-  pagerdutyCustomFieldEnabled: boolean;
-  backstageEntityMappingPath: string;
-  pagerdutySubdomain: string;
-  description?: string;
-  createdAt: Date;
-  updatedAt: Date;
-};
-
-/** @public */
-export type BackstageCustomFieldCreateRequest = {
-  name: string;
-  entityPath: string;
-  description?: string;
-};
-
-/** @public */
-export type BackstageCustomFieldsResponse = {
-  customFields: BackstageCustomField[];
-};
 
 /** @public */
 export type PagerDutyTriggerAlarmRequest = {

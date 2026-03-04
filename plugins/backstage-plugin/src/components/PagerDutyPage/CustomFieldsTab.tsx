@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, ChangeEvent } from 'react';
 import {
   Box,
   Button,
@@ -186,7 +186,7 @@ export const CustomFieldsTab = () => {
   };
 
   const handleFormChange = (field: string) => (
-    event: React.ChangeEvent<HTMLInputElement>
+    event: ChangeEvent<HTMLInputElement>
   ) => {
     setFormData(prev => ({ ...prev, [field]: event.target.value }));
   };
