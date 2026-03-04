@@ -559,7 +559,7 @@ describe('createCustomField', () => {
 
     it('throws error with status and message', async () => {
       await expect(client.createCustomField(customFieldRequest)).rejects.toThrow(
-        'Request failed with 500: Internal server error',
+        'Request failed with 500, Internal server error',
       );
     });
   });
@@ -676,7 +676,7 @@ describe('getCustomFields', () => {
 
     it('throws error with status and message', async () => {
       await expect(client.getCustomFields()).rejects.toThrow(
-        'Request failed with 500: Internal server error',
+        'Request failed with 500, Internal server error',
       );
     });
   });

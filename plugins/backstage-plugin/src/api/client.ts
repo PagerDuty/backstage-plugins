@@ -393,7 +393,7 @@ export class PagerDutyClient implements PagerDutyApi {
         errorMessage = payload.errors.map((error: string) => error).join(' ');
       }
       
-      const message = `Request failed with ${response.status}: ${errorMessage}`;
+      const message = `Request failed with ${response.status}, ${errorMessage}`;
       throw new Error(message);
     }
     return response;
