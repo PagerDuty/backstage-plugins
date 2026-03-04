@@ -1,5 +1,11 @@
 # @pagerduty/backstage-plugin-common
 
+## 0.2.6
+
+### Patch Changes
+
+- 47afbbc: Make changesets mandatory for all the packages
+
 ## 0.2.5
 
 ### Patch Changes

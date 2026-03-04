@@ -1,5 +1,18 @@
 # @pagerduty/backstage-plugin-backend
 
+## 0.11.0
+
+### Minor Changes
+
+- dae278a: Add auto-matching algorithm for mapping PagerDuty services to Backstage components
+
+### Patch Changes
+
+- 821f4e2: Include x-pagerduty-client header in PagerDuty API requests
+- 47afbbc: Make changesets mandatory for all the packages
+- Updated dependencies [47afbbc]
+  - @pagerduty/backstage-plugin-common@0.2.6
+
 ## 0.10.3
 
 ### Patch Changes
