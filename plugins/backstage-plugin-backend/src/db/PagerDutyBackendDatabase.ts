@@ -43,8 +43,6 @@ export interface PagerDutyBackendStore {
   getAllSettings(): Promise<PagerDutySetting[]>;
   insertCustomField(customField: Omit<BackstageCustomField, 'id' | 'createdAt' | 'updatedAt'>): Promise<BackstageCustomField>;
   getAllCustomFields(subdomain: string): Promise<BackstageCustomField[]>;
-  getCustomFieldById(id: number): Promise<BackstageCustomField | undefined>;
-  getCustomFieldCount(subdomain: string): Promise<number>;
 }
 
 type Options = {
@@ -211,40 +209,5 @@ export class PagerDutyBackendDatabase implements PagerDutyBackendStore {
       createdAt: field.createdAt,
       updatedAt: field.updatedAt,
     }));
-  }
-
-  async getCustomFieldById(id: number): Promise<BackstageCustomField | undefined> {
-    const rawField = await this.db<RawDbCustomFieldRow>(
-      'pagerduty_custom_fields',
-    )
-      .where('id', id)
-      .first();
-
-    if (!rawField) {
-      return undefined;
-    }
-
-    return {
-      id: rawField.id,
-      pagerdutyCustomFieldId: rawField.pagerdutyCustomFieldId,
-      pagerdutyCustomFieldDisplayName: rawField.pagerdutyCustomFieldDisplayName,
-      pagerdutyCustomFieldEnabled: rawField.pagerdutyCustomFieldEnabled,
-      backstageEntityMappingPath: rawField.backstageEntityMappingPath,
-      pagerdutySubdomain: rawField.pagerdutySubdomain,
-      description: rawField.description,
-      createdAt: rawField.createdAt,
-      updatedAt: rawField.updatedAt,
-    };
-  }
-
-  async getCustomFieldCount(subdomain: string): Promise<number> {
-    const result = await this.db<RawDbCustomFieldRow>(
-      'pagerduty_custom_fields',
-    )
-      .where('pagerdutySubdomain', subdomain)
-      .count('id as count')
-      .first();
-
-    return result ? Number((result as { count?: string | number }).count) : 0;
   }
 }

@@ -1,7 +1,7 @@
 import { LoggerService } from '@backstage/backend-plugin-api';
 import { Request, Response } from 'express';
 import { PagerDutyBackendStore } from '../db/PagerDutyBackendDatabase';
-import { createCustomField, getCustomFields } from '../apis/pagerduty';
+import { createCustomField } from '../apis/pagerduty';
 import {
   BackstageCustomFieldCreateRequest,
   BackstageCustomFieldsResponse,
@@ -13,8 +13,6 @@ export interface CustomFieldsControllerOptions {
   logger: LoggerService;
   store: PagerDutyBackendStore;
 }
-
-const BACKSTAGE_CUSTOM_FIELD_LIMIT = 15;
 
 export class CustomFieldsController {
   private readonly logger: LoggerService;
@@ -39,23 +37,6 @@ export class CustomFieldsController {
 
       // Get subdomain from config (or use 'default' for single account setup)
       const subdomain = this.getSubdomainFromRequest(request);
-
-      // Check Backstage custom field limit
-      const currentCount = await this.store.getCustomFieldCount(subdomain);
-      if (currentCount >= BACKSTAGE_CUSTOM_FIELD_LIMIT) {
-        response.status(413).json({
-          error: `Backstage custom field limit reached. Maximum of ${BACKSTAGE_CUSTOM_FIELD_LIMIT} custom fields allowed.`,
-        });
-        return;
-      }
-
-      // Get existing PagerDuty custom fields to check the count
-      const existingFields = await getCustomFields({ account: subdomain });
-      const pagerDutyFieldCount = existingFields.fields.length;
-
-      // PagerDuty has different limits based on plan (15 for Professional, 30 for Business)
-      // We'll handle the error from PagerDuty API if limit is reached
-      this.logger.info(`Creating custom field. PagerDuty currently has ${pagerDutyFieldCount} custom fields`);
 
       // Create the custom field on PagerDuty
       const pagerDutyRequest: PagerDutyCustomFieldCreateRequest = {
