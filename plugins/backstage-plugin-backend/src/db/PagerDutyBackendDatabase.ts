@@ -163,18 +163,30 @@ export class PagerDutyBackendDatabase implements PagerDutyBackendStore {
   async insertCustomField(
     customField: Omit<BackstageCustomField, 'id' | 'createdAt' | 'updatedAt'>,
   ): Promise<BackstageCustomField> {
-    const [result] = await this.db<RawDbCustomFieldRow>(
+    await this.db<RawDbCustomFieldRow>('pagerduty_custom_fields').insert({
+      pagerdutyCustomFieldId: customField.pagerdutyCustomFieldId,
+      pagerdutyCustomFieldDisplayName: customField.pagerdutyCustomFieldDisplayName,
+      pagerdutyCustomFieldEnabled: customField.pagerdutyCustomFieldEnabled,
+      backstageEntityMappingPath: customField.backstageEntityMappingPath,
+      pagerdutySubdomain: customField.pagerdutySubdomain,
+      description: customField.description,
+    });
+
+    const result = await this.db<RawDbCustomFieldRow>(
       'pagerduty_custom_fields',
     )
-      .insert({
+      .where({
         pagerdutyCustomFieldId: customField.pagerdutyCustomFieldId,
-        pagerdutyCustomFieldDisplayName: customField.pagerdutyCustomFieldDisplayName,
-        pagerdutyCustomFieldEnabled: customField.pagerdutyCustomFieldEnabled,
-        backstageEntityMappingPath: customField.backstageEntityMappingPath,
         pagerdutySubdomain: customField.pagerdutySubdomain,
-        description: customField.description,
       })
-      .returning('*');
+      .orderBy('createdAt', 'desc')
+      .first();
+
+    if (!result) {
+      throw new Error(
+        'Failed to retrieve custom field after insert into pagerduty_custom_fields',
+      );
+    }
 
     return {
       id: result.id,
