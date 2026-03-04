@@ -1283,11 +1283,6 @@ export async function createCustomField({
         409,
       );
     }
-    case 413:
-      throw new HttpError(
-        `Custom field limit reached. Maximum number of custom fields (15 or 30) has been exceeded.`,
-        413,
-      );
     case 429:
       throw new HttpError(`Rate limit exceeded.`, 429);
     default: // 201

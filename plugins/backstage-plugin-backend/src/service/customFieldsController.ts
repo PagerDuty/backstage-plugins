@@ -64,8 +64,10 @@ export class CustomFieldsController {
               error: 'A custom field with this name already exists in PagerDuty',
             });
             return;
-          } else if (error.status === 413) {
-            response.status(413).json({
+          } else if (
+            error.status === 400 && 
+            (error.message.toLowerCase().includes('product limit reached'))) {
+            response.status(400).json({
               error: 'PagerDuty custom field limit reached. Maximum number of custom fields (15 or 30) has been exceeded.',
             });
             return;

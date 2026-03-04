@@ -207,9 +207,11 @@ export const CustomFieldsTab = () => {
     } catch (err) {
       if (err instanceof Error) {
         // Handle specific error cases
-        if (err.message.includes('already been taken') || err.message.includes('409')) {
+        if (err.message.includes('already been taken')) {
           setError('A custom field with this name already exists');
-        } else if (err.message.includes('413') || err.message.toLowerCase().includes('limit reached') || err.message.toLowerCase().includes('limit exceeded')) {
+        } else if (
+          err.message.toLowerCase().includes('product limit reached')
+        ) {
           setError(
             'Custom field limit reached. Maximum number of custom fields has been exceeded.',
           );
