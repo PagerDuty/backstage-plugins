@@ -320,3 +320,62 @@ export type PagerDutySetting = {
 export type PagerDutySettings = {
   settings: PagerDutySetting[];
 };
+
+/** @public */
+export type PagerDutyCustomField = {
+  id: string;
+  data_type: string;
+  description?: string;
+  display_name: string;
+  enabled: boolean;
+  field_type: string;
+  name: string;
+  backstageEntityMappingPath?: string;
+};
+
+/** @public */
+export type PagerDutyCustomFieldCreateRequest = {
+  field: {
+    data_type: 'string';
+    description?: string;
+    display_name: string;
+    enabled: boolean;
+    field_type: 'single_value';
+    name: string;
+  };
+};
+
+/** @public */
+export type PagerDutyCustomFieldResponse = {
+  field: PagerDutyCustomField;
+};
+
+/** @public */
+export type PagerDutyCustomFieldsResponse = {
+  fields: PagerDutyCustomField[];
+};
+
+/** @public */
+export type BackstageCustomField = {
+  id: number;
+  pagerdutyCustomFieldId: string;
+  pagerdutyCustomFieldDisplayName: string;
+  pagerdutyCustomFieldEnabled: boolean;
+  backstageEntityMappingPath: string;
+  pagerdutySubdomain: string;
+  description?: string;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+/** @public */
+export type BackstageCustomFieldCreateRequest = {
+  name: string;
+  entityPath: string;
+  description?: string;
+};
+
+/** @public */
+export type BackstageCustomFieldsResponse = {
+  customFields: BackstageCustomField[];
+};

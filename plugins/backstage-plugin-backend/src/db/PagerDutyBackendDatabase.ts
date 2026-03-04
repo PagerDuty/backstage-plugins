@@ -1,6 +1,7 @@
 import {
   PagerDutyEntityMapping,
   PagerDutySetting,
+  BackstageCustomField,
 } from '@pagerduty/backstage-plugin-common';
 import { resolvePackagePath } from '@backstage/backend-plugin-api';
 import { Knex } from 'knex';
@@ -13,6 +14,18 @@ export type RawDbEntityResultRow = {
   integrationKey: string;
   account?: string;
   processedDate?: Date;
+};
+
+export type RawDbCustomFieldRow = {
+  id: number;
+  pagerdutyCustomFieldId: string;
+  pagerdutyCustomFieldDisplayName: string;
+  pagerdutyCustomFieldEnabled: boolean;
+  backstageEntityMappingPath: string;
+  pagerdutySubdomain: string;
+  description?: string;
+  createdAt: Date;
+  updatedAt: Date;
 };
 
 /** @public */
@@ -28,6 +41,10 @@ export interface PagerDutyBackendStore {
   updateSetting(setting: PagerDutySetting): Promise<string>;
   findSetting(settingId: string): Promise<PagerDutySetting | undefined>;
   getAllSettings(): Promise<PagerDutySetting[]>;
+  insertCustomField(customField: Omit<BackstageCustomField, 'id' | 'createdAt' | 'updatedAt'>): Promise<BackstageCustomField>;
+  getAllCustomFields(subdomain: string): Promise<BackstageCustomField[]>;
+  getCustomFieldById(id: number): Promise<BackstageCustomField | undefined>;
+  getCustomFieldCount(subdomain: string): Promise<number>;
 }
 
 type Options = {
@@ -143,5 +160,91 @@ export class PagerDutyBackendDatabase implements PagerDutyBackendStore {
     }
 
     return rawEntities;
+  }
+
+  async insertCustomField(
+    customField: Omit<BackstageCustomField, 'id' | 'createdAt' | 'updatedAt'>,
+  ): Promise<BackstageCustomField> {
+    const [result] = await this.db<RawDbCustomFieldRow>(
+      'pagerduty_custom_fields',
+    )
+      .insert({
+        pagerdutyCustomFieldId: customField.pagerdutyCustomFieldId,
+        pagerdutyCustomFieldDisplayName: customField.pagerdutyCustomFieldDisplayName,
+        pagerdutyCustomFieldEnabled: customField.pagerdutyCustomFieldEnabled,
+        backstageEntityMappingPath: customField.backstageEntityMappingPath,
+        pagerdutySubdomain: customField.pagerdutySubdomain,
+        description: customField.description,
+      })
+      .returning('*');
+
+    return {
+      id: result.id,
+      pagerdutyCustomFieldId: result.pagerdutyCustomFieldId,
+      pagerdutyCustomFieldDisplayName: result.pagerdutyCustomFieldDisplayName,
+      pagerdutyCustomFieldEnabled: result.pagerdutyCustomFieldEnabled,
+      backstageEntityMappingPath: result.backstageEntityMappingPath,
+      pagerdutySubdomain: result.pagerdutySubdomain,
+      description: result.description,
+      createdAt: result.createdAt,
+      updatedAt: result.updatedAt,
+    };
+  }
+
+  async getAllCustomFields(subdomain: string): Promise<BackstageCustomField[]> {
+    const rawFields = await this.db<RawDbCustomFieldRow>(
+      'pagerduty_custom_fields',
+    ).where('pagerdutySubdomain', subdomain);
+
+    if (!rawFields) {
+      return [];
+    }
+
+    return rawFields.map(field => ({
+      id: field.id,
+      pagerdutyCustomFieldId: field.pagerdutyCustomFieldId,
+      pagerdutyCustomFieldDisplayName: field.pagerdutyCustomFieldDisplayName,
+      pagerdutyCustomFieldEnabled: field.pagerdutyCustomFieldEnabled,
+      backstageEntityMappingPath: field.backstageEntityMappingPath,
+      pagerdutySubdomain: field.pagerdutySubdomain,
+      description: field.description,
+      createdAt: field.createdAt,
+      updatedAt: field.updatedAt,
+    }));
+  }
+
+  async getCustomFieldById(id: number): Promise<BackstageCustomField | undefined> {
+    const rawField = await this.db<RawDbCustomFieldRow>(
+      'pagerduty_custom_fields',
+    )
+      .where('id', id)
+      .first();
+
+    if (!rawField) {
+      return undefined;
+    }
+
+    return {
+      id: rawField.id,
+      pagerdutyCustomFieldId: rawField.pagerdutyCustomFieldId,
+      pagerdutyCustomFieldDisplayName: rawField.pagerdutyCustomFieldDisplayName,
+      pagerdutyCustomFieldEnabled: rawField.pagerdutyCustomFieldEnabled,
+      backstageEntityMappingPath: rawField.backstageEntityMappingPath,
+      pagerdutySubdomain: rawField.pagerdutySubdomain,
+      description: rawField.description,
+      createdAt: rawField.createdAt,
+      updatedAt: rawField.updatedAt,
+    };
+  }
+
+  async getCustomFieldCount(subdomain: string): Promise<number> {
+    const result = await this.db<RawDbCustomFieldRow>(
+      'pagerduty_custom_fields',
+    )
+      .where('pagerdutySubdomain', subdomain)
+      .count('id as count')
+      .first();
+
+    return result ? Number((result as { count?: string | number }).count) : 0;
   }
 }

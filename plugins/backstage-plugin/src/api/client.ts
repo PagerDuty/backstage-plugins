@@ -31,6 +31,9 @@ import {
   PagerDutyServiceMetricsResponse,
   PagerDutyEntityMappingsResponse,
   PagerDutySetting,
+  BackstageCustomFieldCreateRequest,
+  BackstageCustomField,
+  BackstageCustomFieldsResponse,
 } from '@pagerduty/backstage-plugin-common';
 import { createApiRef, ConfigApi } from '@backstage/core-plugin-api';
 import { NotFoundError } from '@backstage/errors';
@@ -302,6 +305,37 @@ export class PagerDutyClient implements PagerDutyApi {
     const url = this.config.eventsBaseUrl ?? 'https://events.pagerduty.com/v2';
 
     return this.request(`${url}/enqueue`, options);
+  }
+
+  async createCustomField(
+    request: BackstageCustomFieldCreateRequest,
+  ): Promise<BackstageCustomField> {
+    const body = JSON.stringify(request);
+
+    const options = {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json; charset=UTF-8',
+        Accept: 'application/json, text/plain, */*',
+      },
+      body,
+    };
+
+    const url = `${await this.config.discoveryApi.getBaseUrl(
+      'pagerduty',
+    )}/custom-fields`;
+
+    const response = await this.request(url, options);
+    const result = await response.json();
+    return result.customField;
+  }
+
+  async getCustomFields(): Promise<BackstageCustomFieldsResponse> {
+    const url = `${await this.config.discoveryApi.getBaseUrl(
+      'pagerduty',
+    )}/custom-fields`;
+
+    return await this.findByUrl<BackstageCustomFieldsResponse>(url);
   }
 
   private async findByUrl<T>(url: string): Promise<T> {

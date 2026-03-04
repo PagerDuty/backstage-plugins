@@ -25,6 +25,9 @@ import {
   PagerDutyServiceMetrics,
   PagerDutyEntityMappingsResponse,
   PagerDutySetting,
+  BackstageCustomFieldCreateRequest,
+  BackstageCustomField,
+  BackstageCustomFieldsResponse,
 } from '@pagerduty/backstage-plugin-common';
 import { DiscoveryApi, FetchApi } from '@backstage/core-plugin-api';
 import { Entity } from '@backstage/catalog-model';
@@ -153,6 +156,18 @@ export interface PagerDutyApi {
    * Triggers an incident to whoever is on-call.
    */
   triggerAlarm(request: PagerDutyTriggerAlarmRequest): Promise<Response>;
+
+  /**
+   * Creates a custom field in PagerDuty and stores the mapping.
+   */
+  createCustomField(
+    request: BackstageCustomFieldCreateRequest,
+  ): Promise<BackstageCustomField>;
+
+  /**
+   * Fetches all custom fields.
+   */
+  getCustomFields(): Promise<BackstageCustomFieldsResponse>;
 }
 
 /** @public */

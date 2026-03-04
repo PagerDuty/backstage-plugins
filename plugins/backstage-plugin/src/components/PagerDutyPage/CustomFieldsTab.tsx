@@ -1,8 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Button,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Divider,
+  IconButton,
   Link,
   Paper,
   Table,
@@ -11,15 +17,26 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TextField,
   Typography,
 } from '@material-ui/core';
 import { createStyles, makeStyles } from '@material-ui/core/styles';
 import { BackstageTheme } from '@backstage/theme';
+import CloseIcon from '@material-ui/icons/Close';
+import { useApi } from '@backstage/core-plugin-api';
+import { pagerDutyApiRef } from '../../api';
+import { Alert } from '@material-ui/lab';
 
 type CustomField = {
-  id: string;
-  customField: string;
-  entityPath: string;
+  id: number;
+  pagerdutyCustomFieldId: string;
+  pagerdutyCustomFieldDisplayName: string;
+  pagerdutyCustomFieldEnabled: boolean;
+  backstageEntityMappingPath: string;
+  pagerdutySubdomain: string;
+  description?: string;
+  createdAt: Date;
+  updatedAt: Date;
 };
 
 const useStyles = makeStyles<BackstageTheme>(theme => {
@@ -88,20 +105,123 @@ const useStyles = makeStyles<BackstageTheme>(theme => {
         backgroundColor: theme.palette.primary.dark,
       },
     },
+    dialogTitle: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingRight: theme.spacing(1),
+    },
+    dialogContent: {
+      minWidth: 500,
+      paddingTop: theme.spacing(2),
+    },
+    formField: {
+      marginBottom: theme.spacing(2),
+    },
+    dialogActions: {
+      padding: theme.spacing(2, 3),
+    },
+    addButton: {
+      backgroundColor: theme.palette.primary.main,
+      color: theme.palette.primary.contrastText,
+      '&:hover': {
+        backgroundColor: theme.palette.primary.dark,
+      },
+    },
+    error: {
+      marginBottom: theme.spacing(2),
+    },
+    loading: {
+      display: 'flex',
+      justifyContent: 'center',
+      padding: theme.spacing(4),
+    },
   });
 });
 
 /** @public */
 export const CustomFieldsTab = () => {
   const classes = useStyles();
+  const pagerDutyApi = useApi(pagerDutyApiRef);
   const [customFields, setCustomFields] = useState<CustomField[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [formData, setFormData] = useState({
+    name: '',
+    entityPath: '',
+    description: '',
+  });
+
+  // Fetch custom fields on mount
+  useEffect(() => {
+    const fetchCustomFields = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await pagerDutyApi.getCustomFields();
+        setCustomFields(response.customFields);
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : 'Failed to load custom fields',
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCustomFields();
+  }, [pagerDutyApi]);
 
   const handleAddCustomField = () => {
-    const id = window.crypto.randomUUID();
-    setCustomFields(prev => [
-      ...prev,
-      { id, customField: '', entityPath: '' },
-    ]);
+    setIsModalOpen(true);
+    setError(null);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setFormData({ name: '', entityPath: '', description: '' });
+    setError(null);
+  };
+
+  const handleFormChange = (field: string) => (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    setFormData(prev => ({ ...prev, [field]: event.target.value }));
+  };
+
+  const handleSaveCustomField = async () => {
+    setSaving(true);
+    setError(null);
+    
+    try {
+      const newCustomField = await pagerDutyApi.createCustomField({
+        name: formData.name,
+        entityPath: formData.entityPath,
+        description: formData.description,
+      });
+
+      setCustomFields(prev => [...prev, newCustomField]);
+      handleCloseModal();
+    } catch (err) {
+      if (err instanceof Error) {
+        // Handle specific error cases
+        if (err.message.includes('409')) {
+          setError('A custom field with this name already exists');
+        } else if (err.message.includes('413')) {
+          setError(
+            'Custom field limit reached. Maximum number of custom fields has been exceeded.',
+          );
+        } else {
+          setError(err.message);
+        }
+      } else {
+        setError('Failed to create custom field');
+      }
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleStartDataSync = () => {
@@ -152,36 +272,42 @@ export const CustomFieldsTab = () => {
           </Box>
         </Box>
 
-        <TableContainer component={Paper} variant="outlined">
-          <Table size="small">
-            <TableHead className={classes.tableHeader}>
-              <TableRow>
-                <TableCell className={classes.tableHeaderCell}>
-                  Custom Field
-                </TableCell>
-                <TableCell className={classes.tableHeaderCell}>
-                  Entity Path
-                </TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {customFields.length === 0 ? (
+        {loading ? (
+          <Box className={classes.loading}>
+            <CircularProgress />
+          </Box>
+        ) : (
+          <TableContainer component={Paper} variant="outlined">
+            <Table size="small">
+              <TableHead className={classes.tableHeader}>
                 <TableRow>
-                  <TableCell colSpan={2} className={classes.emptyState}>
-                    No custom fields have been added
+                  <TableCell className={classes.tableHeaderCell}>
+                    Custom Field
+                  </TableCell>
+                  <TableCell className={classes.tableHeaderCell}>
+                    Entity Path
                   </TableCell>
                 </TableRow>
-              ) : (
-                customFields.map(field => (
-                  <TableRow key={field.id}>
-                    <TableCell>{field.customField}</TableCell>
-                    <TableCell>{field.entityPath}</TableCell>
+              </TableHead>
+              <TableBody>
+                {customFields.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={2} className={classes.emptyState}>
+                      No custom fields have been added
+                    </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
+                ) : (
+                  customFields.map(field => (
+                    <TableRow key={field.id}>
+                      <TableCell>{field.pagerdutyCustomFieldDisplayName}</TableCell>
+                      <TableCell>{field.backstageEntityMappingPath}</TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
       </Box>
 
       <Box className={classes.footer}>
@@ -189,6 +315,75 @@ export const CustomFieldsTab = () => {
           Save
         </Button>
       </Box>
+
+      <Dialog
+        open={isModalOpen}
+        onClose={handleCloseModal}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle disableTypography>
+          <Box className={classes.dialogTitle}>
+            <Typography variant="h6">Add New Custom Field</Typography>
+            <IconButton
+              aria-label="close"
+              onClick={handleCloseModal}
+              size="small"
+            >
+              <CloseIcon />
+            </IconButton>
+          </Box>
+        </DialogTitle>
+        <DialogContent className={classes.dialogContent}>
+          {error && (
+            <Alert severity="error" className={classes.error}>
+              {error}
+            </Alert>
+          )}
+          <TextField
+            label="Name"
+            value={formData.name}
+            onChange={handleFormChange('name')}
+            fullWidth
+            variant="outlined"
+            className={classes.formField}
+            disabled={saving}
+          />
+          <TextField
+            label="Entity Path"
+            value={formData.entityPath}
+            onChange={handleFormChange('entityPath')}
+            fullWidth
+            variant="outlined"
+            className={classes.formField}
+            disabled={saving}
+          />
+          <TextField
+            label="Description"
+            value={formData.description}
+            onChange={handleFormChange('description')}
+            fullWidth
+            variant="outlined"
+            multiline
+            rows={3}
+            className={classes.formField}
+            disabled={saving}
+          />
+        </DialogContent>
+        <DialogActions className={classes.dialogActions}>
+          <Button onClick={handleCloseModal} disabled={saving}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            className={classes.addButton}
+            onClick={handleSaveCustomField}
+            disabled={!formData.name || !formData.entityPath || saving}
+          >
+            {saving ? 'Adding...' : 'Add'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Paper>
   );
 };

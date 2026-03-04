@@ -24,6 +24,9 @@ import {
   PagerDutyIntegrationResponse,
   PagerDutyServiceDependency,
   PagerDutyServiceDependencyResponse,
+  PagerDutyCustomFieldCreateRequest,
+  PagerDutyCustomFieldResponse,
+  PagerDutyCustomFieldsResponse,
 } from '@pagerduty/backstage-plugin-common';
 
 import { DateTime } from 'luxon';
@@ -1216,3 +1219,145 @@ export async function fetchWithRetries(
     `Failed to fetch data after ${maxRetries} retries. Last error: ${error}`,
   );
 }
+
+export type CreateCustomFieldProps = {
+  request: PagerDutyCustomFieldCreateRequest;
+  account?: string;
+};
+
+export async function createCustomField({
+  request,
+  account,
+}: CreateCustomFieldProps): Promise<PagerDutyCustomFieldResponse> {
+  let response: Response;
+
+  const apiBaseUrl = getApiBaseUrl(account);
+  const baseUrl = `${apiBaseUrl}/services/custom_fields`;
+  const token = await getAuthToken(account);
+
+  const options: RequestInit = {
+    method: 'POST',
+    body: JSON.stringify(request),
+    headers: {
+      Authorization: token,
+      Accept: 'application/vnd.pagerduty+json;version=2',
+      'Content-Type': 'application/json',
+    },
+  };
+
+  try {
+    response = await fetchWithRetries(baseUrl, options);
+  } catch (error) {
+    throw new Error(`Failed to create custom field: ${error}`);
+  }
+
+  if (response.status >= 500) {
+    throw new HttpError(
+      `Failed to create custom field. PagerDuty API returned a server error.`,
+      response.status,
+    );
+  }
+
+  switch (response.status) {
+    case 400: {
+      const errorData = await response.json().catch(() => ({}));
+      throw new HttpError(
+        `Failed to create custom field. Invalid arguments: ${JSON.stringify(errorData)}`,
+        400,
+      );
+    }
+    case 401:
+      throw new HttpError(
+        `Failed to create custom field. Invalid credentials provided.`,
+        401,
+      );
+    case 403:
+      throw new HttpError(
+        `Failed to create custom field. Not authorized to perform this action.`,
+        403,
+      );
+    case 409: {
+      const errorData = await response.json().catch(() => ({}));
+      throw new HttpError(
+        `Custom field with this name already exists: ${JSON.stringify(errorData)}`,
+        409,
+      );
+    }
+    case 413:
+      throw new HttpError(
+        `Custom field limit reached. Maximum number of custom fields (15 or 30) has been exceeded.`,
+        413,
+      );
+    case 429:
+      throw new HttpError(`Rate limit exceeded.`, 429);
+    default: // 201
+      break;
+  }
+
+  try {
+    const result = (await response.json()) as PagerDutyCustomFieldResponse;
+    return result;
+  } catch (error) {
+    throw new Error(`Failed to parse custom field response: ${error}`);
+  }
+}
+
+export type GetCustomFieldsProps = {
+  account?: string;
+};
+
+export async function getCustomFields({
+  account,
+}: GetCustomFieldsProps = {}): Promise<PagerDutyCustomFieldsResponse> {
+  let response: Response;
+
+  const apiBaseUrl = getApiBaseUrl(account);
+  const baseUrl = `${apiBaseUrl}/services/custom_fields`;
+  const token = await getAuthToken(account);
+
+  const options: RequestInit = {
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      Accept: 'application/vnd.pagerduty+json;version=2',
+    },
+  };
+
+  try {
+    response = await fetchWithRetries(baseUrl, options);
+  } catch (error) {
+    throw new Error(`Failed to get custom fields: ${error}`);
+  }
+
+  if (response.status >= 500) {
+    throw new HttpError(
+      `Failed to get custom fields. PagerDuty API returned a server error.`,
+      response.status,
+    );
+  }
+
+  switch (response.status) {
+    case 401:
+      throw new HttpError(
+        `Failed to get custom fields. Invalid credentials provided.`,
+        401,
+      );
+    case 403:
+      throw new HttpError(
+        `Failed to get custom fields. Not authorized to perform this action.`,
+        403,
+      );
+    case 429:
+      throw new HttpError(`Rate limit exceeded.`, 429);
+    default: // 200
+      break;
+  }
+
+  try {
+    const result = (await response.json()) as PagerDutyCustomFieldsResponse;
+    return result;
+  } catch (error) {
+    throw new Error(`Failed to parse custom fields response: ${error}`);
+  }
+}
+
