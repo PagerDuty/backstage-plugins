@@ -20,9 +20,6 @@ import {
   PagerDutyClientApiDependencies,
   PagerDutyClientApiConfig,
   RequestOptions,
-  BackstageCustomFieldCreateRequest,
-  BackstageCustomField,
-  BackstageCustomFieldsResponse,
 } from './types';
 import {
   PagerDutyChangeEventsResponse,
@@ -34,6 +31,9 @@ import {
   PagerDutyServiceMetricsResponse,
   PagerDutyEntityMappingsResponse,
   PagerDutySetting,
+  BackstageCustomFieldCreateRequest,
+  BackstageCustomField,
+  BackstageCustomFieldsResponse,
 } from '@pagerduty/backstage-plugin-common';
 import { createApiRef, ConfigApi } from '@backstage/core-plugin-api';
 import { NotFoundError } from '@backstage/errors';
