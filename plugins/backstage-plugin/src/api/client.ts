@@ -185,10 +185,9 @@ export class PagerDutyClient implements PagerDutyApi {
     return await this.findByUrl<PagerDutyService[]>(url);
   }
 
-  async getAllTeams(): Promise<PagerDutyTeam[]> {
-    const url = `${await this.config.discoveryApi.getBaseUrl(
-      'pagerduty',
-    )}/teams`;
+  async getAllTeams(account: string): Promise<PagerDutyTeam[]> {
+    const baseUrl = await this.config.discoveryApi.getBaseUrl('pagerduty');
+    const url = `${baseUrl}/teams?account=${encodeURIComponent(account)}`;
 
     return await this.findByUrl<PagerDutyTeam[]>(url);
   }
@@ -197,6 +196,7 @@ export class PagerDutyClient implements PagerDutyApi {
     teamIds?: string[],
     query?: string,
     limit?: number,
+    account?: string,
   ): Promise<PagerDutyService[]> {
     const baseUrl = await this.config.discoveryApi.getBaseUrl('pagerduty');
     const params = new URLSearchParams();
@@ -211,6 +211,10 @@ export class PagerDutyClient implements PagerDutyApi {
 
     if (limit) {
       params.append('limit', limit.toString());
+    }
+
+    if (account) {
+      params.append('account', account);
     }
 
     const queryString = params.toString();

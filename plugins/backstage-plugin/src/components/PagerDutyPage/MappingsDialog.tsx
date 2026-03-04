@@ -19,6 +19,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { pagerDutyApiRef } from '../../api';
 import { useApi } from '@backstage/core-plugin-api';
 import { makeStyles } from '@material-ui/core';
+import { useAccountContext } from './AccountContext';
 
 const useStyles = makeStyles(() => ({
   radioListContainer: {
@@ -29,6 +30,7 @@ const useStyles = makeStyles(() => ({
     padding: 'var(--bui-spacing-3)',
     '& label[data-rac]': {
       padding: 'var(--bui-space-3)',
+      minHeight: '44px',
       borderBottom: '1px solid var(--bui-gray-2)',
       cursor: 'pointer',
       transition: 'background-color 0.15s ease',
@@ -63,6 +65,7 @@ export default function MappingsDialog({
   const classes = useStyles();
   const pagerDutyApi = useApi(pagerDutyApiRef);
   const queryClient = useQueryClient();
+  const { selectedAccount } = useAccountContext();
   const [selectedServiceId, setSelectedServiceId] = useState<string>('');
   const [selectedTeamIds, setSelectedTeamIds] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -86,13 +89,13 @@ export default function MappingsDialog({
   }, [isOpen]);
 
   const { data: teams, isLoading: isTeamsLoading } = useQuery({
-    queryKey: ['pagerduty', 'getAllTeams'],
-    queryFn: () => pagerDutyApi.getAllTeams(),
-    enabled: isOpen,
+    queryKey: ['pagerduty', 'getAllTeams', selectedAccount],
+    queryFn: () => pagerDutyApi.getAllTeams(selectedAccount),
+    enabled: isOpen && !!selectedAccount,
   });
 
   const { data: services, isLoading: isServicesLoading } = useQuery({
-    queryKey: ['pagerduty', 'getFilteredServices', selectedTeamIds, debouncedSearchQuery],
+    queryKey: ['pagerduty', 'getFilteredServices', selectedTeamIds, debouncedSearchQuery, selectedAccount],
     queryFn: async () => {
       const teamIdsToSend = selectedTeamIds.length > 0 ? selectedTeamIds : undefined;
       const queryToSend = debouncedSearchQuery || undefined;
@@ -100,10 +103,11 @@ export default function MappingsDialog({
         teamIdsToSend,
         queryToSend,
         10,
+        selectedAccount,
       );
       return result;
     },
-    enabled: isOpen,
+    enabled: isOpen && !!selectedAccount,
   });
 
   const { mutateAsync: createMapping, isPending: isCreatingMapping } =
@@ -257,11 +261,13 @@ export default function MappingsDialog({
                     (None)
                   </Radio>
                 )}
-                {services && services.map(service => (
-                  <Radio key={service.id} value={service.id}>
-                    {service.name}
-                  </Radio>
-                ))}
+                {services && services
+                  .filter(service => service.id !== entity?.annotations?.['pagerduty.com/service-id'])
+                  .map(service => (
+                    <Radio key={service.id} value={service.id}>
+                      {service.name}
+                    </Radio>
+                  ))}
               </RadioGroup>
             </Box>
             {services && services.length > 0 ? (

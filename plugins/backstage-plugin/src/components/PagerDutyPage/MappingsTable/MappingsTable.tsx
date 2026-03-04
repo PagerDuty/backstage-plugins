@@ -6,7 +6,7 @@ import {
   ButtonIcon,
   type ColumnConfig,
 } from '@backstage/ui';
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useApi } from '@backstage/core-plugin-api';
 import MappingsDialog from '../MappingsDialog';
 import AutomaticMappingsDialog from '../AutomaticMappingsDialog';

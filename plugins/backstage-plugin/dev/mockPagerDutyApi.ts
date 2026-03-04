@@ -415,7 +415,7 @@ export const mockPagerDutyApi: PagerDutyApi = {
     return users;
   },
 
-  async getAllTeams() {
+  async getAllTeams(_account: string) {
     return [
       {
         id: 'team1',
@@ -430,7 +430,7 @@ export const mockPagerDutyApi: PagerDutyApi = {
     ];
   },
 
-  async getFilteredServices(_teamIds?: string[], _query?: string, _limit?: number) {
+  async getFilteredServices(_teamIds?: string[], _query?: string, _limit?: number, _account?: string) {
     return [
       {
         name: 'SERV1CENAME',

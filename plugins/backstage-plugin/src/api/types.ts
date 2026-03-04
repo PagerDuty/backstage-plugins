@@ -156,8 +156,9 @@ export interface PagerDutyApi {
   /**
    * Fetches a list of PagerDuty teams.
    *
+   * @param account - The account ID to filter teams by
    */
-  getAllTeams(): Promise<PagerDutyTeam[]>;
+  getAllTeams(account: string): Promise<PagerDutyTeam[]>;
 
   /**
    * Fetches a filtered list of PagerDuty services.
@@ -165,11 +166,13 @@ export interface PagerDutyApi {
    * @param teamIds - Optional array of team IDs to filter by
    * @param query - Optional search query for service name or ID
    * @param limit - Optional maximum number of results (default: 100)
+   * @param account - The account ID to filter services by
    */
   getFilteredServices(
     teamIds?: string[],
     query?: string,
     limit?: number,
+    account?: string,
   ): Promise<PagerDutyService[]>;
 
   /**

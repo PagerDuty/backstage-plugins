@@ -516,22 +516,24 @@ async function getTeams(
   }
 }
 
-export async function getAllTeams(): Promise<PagerDutyTeam[]> {
+export async function getAllTeams(account?: string): Promise<PagerDutyTeam[]> {
   const limit = 50;
   let offset = 0;
   let moreResults = false;
   let results: PagerDutyTeam[] = [];
 
+  const accountsToFetch = account ? [account] : Object.keys(EndpointConfig);
+
   await Promise.all(
-    Object.keys(EndpointConfig).map(async account => {
+    accountsToFetch.map(async acc => {
       try {
         offset = 0;
 
         do {
-          const res = await getTeams(offset, limit, account);
+          const res = await getTeams(offset, limit, acc);
 
           res[1].forEach(team => {
-            team.account = account;
+            team.account = acc;
           });
 
           results = results.concat(res[1]);
@@ -1099,12 +1101,15 @@ export async function getFilteredServices(
   teamIds?: string[],
   query?: string,
   maxLimit?: number,
+  account?: string,
 ): Promise<PagerDutyService[]> {
   const allServices: PagerDutyService[] = [];
   const limit = maxLimit || 100;
 
+  const accountsToFetch = account ? [account] : Object.keys(EndpointConfig);
+
   await Promise.all(
-    Object.entries(EndpointConfig).map(async ([account, _]) => {
+    accountsToFetch.map(async (acc) => {
       let response: Response;
       let params = `time_zone=UTC&limit=${limit}`;
 
@@ -1119,7 +1124,7 @@ export async function getFilteredServices(
         params += `&query=${encodeURIComponent(query.trim())}`;
       }
 
-      const token = await getAuthToken(account);
+      const token = await getAuthToken(acc);
 
       const options: RequestInit = {
         method: 'GET',
@@ -1130,7 +1135,7 @@ export async function getFilteredServices(
         },
       };
 
-      const apiBaseUrl = getApiBaseUrl(account);
+      const apiBaseUrl = getApiBaseUrl(acc);
       const baseUrl = `${apiBaseUrl}/services`;
 
       try {
@@ -1168,7 +1173,7 @@ export async function getFilteredServices(
 
         // set account for each service
         result.services.forEach(service => {
-          service.account = account;
+          service.account = acc;
         });
 
         allServices.push(...result.services);

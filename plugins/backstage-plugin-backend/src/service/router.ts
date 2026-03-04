@@ -609,6 +609,13 @@ export async function createRouter(
         response.status(error.status).json({
           errors: [`${error.message}`],
         });
+      } else {
+        logger.error(
+          `Unexpected error occurred while processing request: ${error}`,
+        );
+        response.status(500).json({
+          errors: [error instanceof Error ? error.message : String(error)],
+        });
       }
     }
   });
@@ -1093,10 +1100,11 @@ export async function createRouter(
     }
   });
 
-  // GET /teams
-  router.get('/teams', async (_, response) => {
+  // GET /teams?account=:account
+  router.get('/teams', async (request, response) => {
     try {
-      const teams = await getAllTeams();
+      const account = request.query.account as string | undefined;
+      const teams = await getAllTeams(account);
       response.json(teams);
     } catch (error) {
       if (error instanceof HttpError) {
@@ -1107,7 +1115,7 @@ export async function createRouter(
     }
   });
 
-  // GET /filtered-services?team_id=:teamId&query=:query&limit=:limit
+  // GET /filtered-services?team_id=:teamId&query=:query&limit=:limit&account=:account
   router.get('/filtered-services', async (request, response) => {
     try {
       const teamId = request.query.team_id as string | undefined;
@@ -1115,10 +1123,11 @@ export async function createRouter(
       const limit = request.query.limit
         ? parseInt(request.query.limit as string, 10)
         : 100;
+      const account = request.query.account as string | undefined;
 
       const teamIdsArray: string[] | undefined = teamId ? [teamId] : undefined;
 
-      const services = await getFilteredServices(teamIdsArray, query, limit);
+      const services = await getFilteredServices(teamIdsArray, query, limit, account);
 
       response.json(services);
     } catch (error) {
