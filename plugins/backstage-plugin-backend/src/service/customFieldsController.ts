@@ -35,6 +35,17 @@ export class CustomFieldsController {
         return;
       }
 
+      const sanitizedName = this.sanitizeFieldName(name);
+      if (!sanitizedName) {
+        response.status(400).json({
+          errors: ['Field name must contain at least one alphanumeric character'],
+        });
+        return;
+      }
+
+      const normalizedDescription =
+        (description ?? '').trim() || `Backstage entity field: ${entityPath}`;
+
       // Get subdomain from config (or use 'default' for single account setup)
       const subdomain = this.getSubdomainFromRequest(request);
 
@@ -42,11 +53,11 @@ export class CustomFieldsController {
       const pagerDutyRequest: PagerDutyCustomFieldCreateRequest = {
         field: {
           data_type: 'string',
-          description: description || `Backstage entity field: ${entityPath}`,
+          description: normalizedDescription,
           display_name: name,
           enabled: true,
           field_type: 'single_value',
-          name: this.sanitizeFieldName(name),
+          name: sanitizedName,
         },
       };
 
@@ -89,7 +100,7 @@ export class CustomFieldsController {
         pagerdutyCustomFieldEnabled: pagerDutyField.enabled,
         backstageEntityMappingPath: entityPath,
         pagerdutySubdomain: subdomain,
-        description: description,
+        description: normalizedDescription,
       });
 
       this.logger.info(

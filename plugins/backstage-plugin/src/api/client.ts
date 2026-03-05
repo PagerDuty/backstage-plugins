@@ -309,6 +309,7 @@ export class PagerDutyClient implements PagerDutyApi {
 
   async createCustomField(
     request: BackstageCustomFieldCreateRequest,
+    account?: string,
   ): Promise<BackstageCustomField> {
     const body = JSON.stringify(request);
 
@@ -321,19 +322,27 @@ export class PagerDutyClient implements PagerDutyApi {
       body,
     };
 
-    const url = `${await this.config.discoveryApi.getBaseUrl(
+    let url = `${await this.config.discoveryApi.getBaseUrl(
       'pagerduty',
     )}/custom-fields`;
+
+    if (account) {
+      url = url.concat(`?account=${account}`);
+    }
 
     const response = await this.request(url, options);
     const result = await response.json();
     return result.customField;
   }
 
-  async getCustomFields(): Promise<BackstageCustomFieldsResponse> {
-    const url = `${await this.config.discoveryApi.getBaseUrl(
+  async getCustomFields(account?: string): Promise<BackstageCustomFieldsResponse> {
+    let url = `${await this.config.discoveryApi.getBaseUrl(
       'pagerduty',
     )}/custom-fields`;
+
+    if (account) {
+      url = url.concat(`?account=${account}`);
+    }
 
     return await this.findByUrl<BackstageCustomFieldsResponse>(url);
   }

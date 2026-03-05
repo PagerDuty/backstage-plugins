@@ -162,12 +162,13 @@ export interface PagerDutyApi {
    */
   createCustomField(
     request: BackstageCustomFieldCreateRequest,
+    account?: string,
   ): Promise<BackstageCustomField>;
 
   /**
    * Fetches all custom fields.
    */
-  getCustomFields(): Promise<BackstageCustomFieldsResponse>;
+  getCustomFields(account?: string): Promise<BackstageCustomFieldsResponse>;
 }
 
 /** @public */
