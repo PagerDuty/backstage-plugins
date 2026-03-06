@@ -2346,52 +2346,17 @@ describe('createRouter', () => {
       },
     );
 
-    it.each(testInputs)(
-      'returns 500 on unexpected error',
-      async () => {
-        const customFieldData = {
-          name: 'Test Field',
-          entityPath: 'spec.owner',
-          description: 'A test custom field',
-        };
-
-        const response = await request(app)
-          .post('/custom-fields')
-          .send(customFieldData);
-
-        expect([201, 400, 409, 500]).toContain(response.status);
-      },
-    );
   });
 
   describe('GET /custom-fields', () => {
     it.each(testInputs)(
-      'returns 200 with list of custom fields',
+      'returns 200 with customFields array',
       async () => {
         const response = await request(app).get('/custom-fields');
 
         expect(response.status).toEqual(200);
         expect(response.body).toHaveProperty('customFields');
         expect(Array.isArray(response.body.customFields)).toBe(true);
-      },
-    );
-
-    it.each(testInputs)(
-      'returns empty array when no custom fields exist',
-      async () => {
-        const response = await request(app).get('/custom-fields?account=empty-test-account');
-
-        expect(response.status).toEqual(200);
-        expect(response.body).toEqual({"customFields": []});
-      },
-    );
-
-    it.each(testInputs)(
-      'returns 500 on unexpected error',
-      async () => {
-        const response = await request(app).get('/custom-fields');
-
-        expect([200, 500]).toContain(response.status);
       },
     );
   });

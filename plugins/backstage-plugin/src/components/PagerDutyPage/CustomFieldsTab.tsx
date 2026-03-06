@@ -1,14 +1,9 @@
-import { useState, useEffect, ChangeEvent } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Button,
   CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   Divider,
-  IconButton,
   Link,
   Paper,
   Table,
@@ -17,16 +12,14 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  TextField,
   Typography,
 } from '@material-ui/core';
 import { createStyles, makeStyles } from '@material-ui/core/styles';
 import { BackstageTheme } from '@backstage/theme';
-import CloseIcon from '@material-ui/icons/Close';
 import { useApi } from '@backstage/core-plugin-api';
 import { pagerDutyApiRef } from '../../api';
-import { Alert } from '@material-ui/lab';
 import { BackstageCustomField } from '@pagerduty/backstage-plugin-common';
+import { AddCustomFieldModal } from './AddCustomFieldModal';
 
 
 const useStyles = makeStyles<BackstageTheme>(theme => {
@@ -95,32 +88,6 @@ const useStyles = makeStyles<BackstageTheme>(theme => {
         backgroundColor: theme.palette.primary.dark,
       },
     },
-    dialogTitle: {
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingRight: theme.spacing(1),
-    },
-    dialogContent: {
-      minWidth: 500,
-      paddingTop: theme.spacing(2),
-    },
-    formField: {
-      marginBottom: theme.spacing(2),
-    },
-    dialogActions: {
-      padding: theme.spacing(2, 3),
-    },
-    addButton: {
-      backgroundColor: theme.palette.primary.main,
-      color: theme.palette.primary.contrastText,
-      '&:hover': {
-        backgroundColor: theme.palette.primary.dark,
-      },
-    },
-    error: {
-      marginBottom: theme.spacing(2),
-    },
     loading: {
       display: 'flex',
       justifyContent: 'center',
@@ -138,15 +105,10 @@ export const CustomFieldsTab = () => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
-    name: '',
-    entityPath: '',
-    description: '',
-  });
 
   // Fetch custom fields on mount
   useEffect(() => {
-    const fetchCustomFields = async () => {
+    (async () => {
       setLoading(true);
       setError(null);
       try {
@@ -159,9 +121,7 @@ export const CustomFieldsTab = () => {
       } finally {
         setLoading(false);
       }
-    };
-
-    fetchCustomFields();
+    })();
   }, [pagerDutyApi]);
 
   const handleAddCustomField = () => {
@@ -171,20 +131,17 @@ export const CustomFieldsTab = () => {
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
-    setFormData({ name: '', entityPath: '', description: '' });
     setError(null);
   };
 
-  const handleFormChange = (field: string) => (
-    event: ChangeEvent<HTMLInputElement>
-  ) => {
-    setFormData(prev => ({ ...prev, [field]: event.target.value }));
-  };
-
-  const handleSaveCustomField = async () => {
+  const handleSaveCustomField = async (formData: {
+    name: string;
+    entityPath: string;
+    description: string;
+  }) => {
     setSaving(true);
     setError(null);
-    
+
     try {
       const newCustomField = await pagerDutyApi.createCustomField({
         name: formData.name,
@@ -193,7 +150,7 @@ export const CustomFieldsTab = () => {
       });
 
       setCustomFields(prev => [...prev, newCustomField]);
-      handleCloseModal();
+      setIsModalOpen(false);
     } catch (err) {
       if (err instanceof Error) {
         // Handle specific error cases
@@ -206,9 +163,7 @@ export const CustomFieldsTab = () => {
             'Custom field limit reached. Maximum number of custom fields has been exceeded.',
           );
         } else {
-          // Strip "Request failed with XXX," prefix from error messages
-          const match = err.message.match(/^Request failed with \d+,\s*(.+)$/);
-          setError(match ? match[1] : err.message);
+          setError(err.message);
         }
       } else {
         setError('Failed to create custom field');
@@ -310,74 +265,13 @@ export const CustomFieldsTab = () => {
         </Button>
       </Box>
 
-      <Dialog
+      <AddCustomFieldModal
         open={isModalOpen}
+        saving={saving}
+        error={error}
         onClose={handleCloseModal}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle disableTypography>
-          <Box className={classes.dialogTitle}>
-            <Typography variant="h6">Add New Custom Field</Typography>
-            <IconButton
-              aria-label="close"
-              onClick={handleCloseModal}
-              size="small"
-            >
-              <CloseIcon />
-            </IconButton>
-          </Box>
-        </DialogTitle>
-        <DialogContent className={classes.dialogContent}>
-          {error && (
-            <Alert severity="error" className={classes.error}>
-              {error}
-            </Alert>
-          )}
-          <TextField
-            label="Name"
-            value={formData.name}
-            onChange={handleFormChange('name')}
-            fullWidth
-            variant="outlined"
-            className={classes.formField}
-            disabled={saving}
-          />
-          <TextField
-            label="Entity Path"
-            value={formData.entityPath}
-            onChange={handleFormChange('entityPath')}
-            fullWidth
-            variant="outlined"
-            className={classes.formField}
-            disabled={saving}
-          />
-          <TextField
-            label="Description"
-            value={formData.description}
-            onChange={handleFormChange('description')}
-            fullWidth
-            variant="outlined"
-            multiline
-            rows={3}
-            className={classes.formField}
-            disabled={saving}
-          />
-        </DialogContent>
-        <DialogActions className={classes.dialogActions}>
-          <Button onClick={handleCloseModal} disabled={saving}>
-            Cancel
-          </Button>
-          <Button
-            variant="contained"
-            className={classes.addButton}
-            onClick={handleSaveCustomField}
-            disabled={!formData.name || !formData.entityPath || saving}
-          >
-            {saving ? 'Adding...' : 'Add'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+        onSave={handleSaveCustomField}
+      />
     </Paper>
   );
 };

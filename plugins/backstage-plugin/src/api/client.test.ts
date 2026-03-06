@@ -686,14 +686,18 @@ describe('getCustomFields', () => {
       mockFetch.mockResolvedValueOnce({
         status: 200,
         ok: true,
-        json: () => Promise.resolve({}),
+        json: () => Promise.resolve({
+          customFields: []
+        }),
       });
     });
 
-    it('returns response with undefined customFields', async () => {
+    it('returns response with empty customFields array', async () => {
       const result = await client.getCustomFields();
 
-      expect(result).toEqual({});
+      expect(result).toEqual({
+        customFields: []
+      });
     });
   });
 });

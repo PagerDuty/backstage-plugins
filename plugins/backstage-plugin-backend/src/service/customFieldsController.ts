@@ -44,7 +44,7 @@ export class CustomFieldsController {
       }
 
       const normalizedDescription =
-        (description ?? '').trim() || `Backstage entity field: ${entityPath}`;
+        (description ?? '').trim() || `Backstage custom field: ${entityPath}`;
 
       // Get subdomain from config (or use 'default' for single account setup)
       const subdomain = this.getSubdomainFromRequest(request);
