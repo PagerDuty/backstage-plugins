@@ -142,35 +142,20 @@ export const CustomFieldsTab = () => {
     setSaving(true);
     setError(null);
 
-    try {
-      const newCustomField = await pagerDutyApi.createCustomField({
-        name: formData.name,
-        entityPath: formData.entityPath,
-        description: formData.description,
-      });
+    const result = await pagerDutyApi.createCustomField({
+      name: formData.name,
+      entityPath: formData.entityPath,
+      description: formData.description,
+    });
 
-      setCustomFields(prev => [...prev, newCustomField]);
+    if (result.status === 'ok') {
+      setCustomFields(prev => [...prev, result.data]);
       setIsModalOpen(false);
-    } catch (err) {
-      if (err instanceof Error) {
-        // Handle specific error cases
-        if (err.message.includes('already been taken')) {
-          setError('A custom field with this name already exists');
-        } else if (
-          err.message.toLowerCase().includes('product limit reached')
-        ) {
-          setError(
-            'Custom field limit reached. Maximum number of custom fields has been exceeded.',
-          );
-        } else {
-          setError(err.message);
-        }
-      } else {
-        setError('Failed to create custom field');
-      }
-    } finally {
-      setSaving(false);
+    } else {
+      setError(result.error);
     }
+
+    setSaving(false);
   };
 
   const handleStartDataSync = () => {

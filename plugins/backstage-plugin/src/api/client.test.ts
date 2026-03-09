@@ -483,7 +483,9 @@ describe('createCustomField', () => {
 
     const result = await client.createCustomField(customFieldRequest);
 
-    expect(result).toEqual(customFieldResponse);
+    expect(result.status).toEqual('ok');
+    expect(result.data).toEqual(customFieldResponse);
+    expect(result.error).toBeNull();
     expect(mockFetch).toHaveBeenCalledWith(
       'http://localhost:7007/pagerduty/custom-fields',
       {
@@ -506,10 +508,12 @@ describe('createCustomField', () => {
       });
     });
 
-    it('throws UnauthorizedError', async () => {
-      await expect(client.createCustomField(customFieldRequest)).rejects.toThrow(
-        UnauthorizedError,
-      );
+    it('returns error result with unauthorized message', async () => {
+      const result = await client.createCustomField(customFieldRequest);
+
+      expect(result.status).toEqual('error');
+      expect(result.data).toBeNull();
+      expect(result.error).toContain("Unauthorized");
     });
   });
 
@@ -522,10 +526,12 @@ describe('createCustomField', () => {
       });
     });
 
-    it('throws ForbiddenError', async () => {
-      await expect(client.createCustomField(customFieldRequest)).rejects.toThrow(
-        ForbiddenError,
-      );
+    it('returns error result with forbidden message', async () => {
+      const result = await client.createCustomField(customFieldRequest);
+
+      expect(result.status).toEqual('error');
+      expect(result.data).toBeNull();
+      expect(result.error).toContain("Forbidden");
     });
   });
 
@@ -538,10 +544,12 @@ describe('createCustomField', () => {
       });
     });
 
-    it('throws NotFoundError', async () => {
-      await expect(client.createCustomField(customFieldRequest)).rejects.toThrow(
-        NotFoundError,
-      );
+    it('returns error result with not found message', async () => {
+      const result = await client.createCustomField(customFieldRequest);
+
+      expect(result.status).toEqual('error');
+      expect(result.data).toBeNull();
+      expect(result.error).toContain("Not Found");
     });
   });
 
@@ -557,10 +565,12 @@ describe('createCustomField', () => {
       });
     });
 
-    it('throws error with status and message', async () => {
-      await expect(client.createCustomField(customFieldRequest)).rejects.toThrow(
-        'Request failed with 500, Internal server error',
-      );
+    it('returns error result with error message', async () => {
+      const result = await client.createCustomField(customFieldRequest);
+
+      expect(result.status).toEqual('error');
+      expect(result.data).toBeNull();
+      expect(result.error).toContain('Internal server error');
     });
   });
 });

@@ -163,7 +163,7 @@ export interface PagerDutyApi {
   createCustomField(
     request: BackstageCustomFieldCreateRequest,
     account?: string,
-  ): Promise<BackstageCustomField>;
+  ): Promise<Result<BackstageCustomField>>;
 
   /**
    * Fetches all custom fields.
@@ -187,3 +187,8 @@ export type RequestOptions = {
   headers: HeadersInit;
   body?: BodyInit;
 };
+
+/** @public */
+export type Result<T> =
+  | { status: 'ok'; data: T; error: null }
+  | { status: 'error'; data: null; error: string };
