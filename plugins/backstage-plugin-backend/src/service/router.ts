@@ -1084,22 +1084,6 @@ export async function createRouter(
     }
   });
 
-  // GET /services
-  router.get('/all-pd-services', async (_, response) => {
-    try {
-      const services = await getAllServices();
-      const serviceResponse: PagerDutyService[] = services;
-
-      response.json(serviceResponse);
-    } catch (error) {
-      if (error instanceof HttpError) {
-        response.status(error.status).json({
-          errors: [`${error.message}`],
-        });
-      }
-    }
-  });
-
   // GET /teams?account=:account
   router.get('/teams', async (request, response) => {
     try {
@@ -1115,60 +1099,65 @@ export async function createRouter(
     }
   });
 
-  // GET /filtered-services?team_id=:teamId&query=:query&limit=:limit&account=:account
-  router.get('/filtered-services', async (request, response) => {
+
+  // GET /services - Unified endpoint for all service queries
+  // Query params:
+  //   - integration_key: fetch service by integration key
+  //   - team_id, query, limit, account: fetch filtered services
+  //   - no params: fetch all services
+  router.get('/services', async (request, response) => {
     try {
+      const integrationKey = request.query.integration_key as string | undefined;
       const teamId = request.query.team_id as string | undefined;
       const query = request.query.query as string | undefined;
       const limit = request.query.limit
         ? parseInt(request.query.limit as string, 10)
-        : 100;
+        : undefined;
       const account = request.query.account as string | undefined;
 
-      const teamIdsArray: string[] | undefined = teamId ? [teamId] : undefined;
+      // Case 1: Fetch by integration key
+      if (integrationKey) {
+        const service = await getServiceByIntegrationKey(
+          integrationKey,
+          account || '',
+        );
+        const serviceResponse: PagerDutyServiceResponse = {
+          service: service,
+        };
+        response.json(serviceResponse);
+        return;
+      }
 
-      const services = await getFilteredServices(teamIdsArray, query, limit, account);
+      // Case 2: Fetch filtered services (if team_id, query, or limit provided)
+      if (teamId || query || limit) {
+        const teamIdsArray: string[] | undefined = teamId ? [teamId] : undefined;
+        const services = await getFilteredServices(
+          teamIdsArray,
+          query,
+          limit || 100,
+          account,
+        );
+        response.json(services);
+        return;
+      }
 
-      response.json(services);
+      // Case 3: Fetch all services (default)
+      const services = await getAllServices();
+      const servicesResponse: PagerDutyServicesResponse = {
+        services: services,
+      };
+      response.json(servicesResponse);
     } catch (error) {
       if (error instanceof HttpError) {
         response.status(error.status).json({
           errors: [`${error.message}`],
         });
-      }
-    }
-  });
-
-  // GET /services?integration_key=:integrationKey
-  router.get('/services', async (request, response) => {
-    try {
-      // Get the serviceId from the request parameters
-      const integrationKey: string =
-        (request.query.integration_key as string) || '';
-      const account = (request.query.account as string) || '';
-
-      if (integrationKey !== '') {
-        const service = await getServiceByIntegrationKey(
-          integrationKey,
-          account,
-        );
-        const serviceResponse: PagerDutyServiceResponse = {
-          service: service,
-        };
-
-        response.json(serviceResponse);
       } else {
-        const services = await getAllServices();
-        const servicesResponse: PagerDutyServicesResponse = {
-          services: services,
-        };
-
-        response.json(servicesResponse);
-      }
-    } catch (error) {
-      if (error instanceof HttpError) {
-        response.status(error.status).json({
-          errors: [`${error.message}`],
+        logger.error(
+          `Unexpected error occurred while processing request: ${error}`,
+        );
+        response.status(500).json({
+          errors: [error instanceof Error ? error.message : String(error)],
         });
       }
     }

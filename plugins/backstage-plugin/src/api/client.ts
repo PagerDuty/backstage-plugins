@@ -219,8 +219,8 @@ export class PagerDutyClient implements PagerDutyApi {
 
     const queryString = params.toString();
     const url = queryString
-      ? `${baseUrl}/filtered-services?${queryString}`
-      : `${baseUrl}/filtered-services`;
+      ? `${baseUrl}/services?${queryString}`
+      : `${baseUrl}/services`;
 
     return await this.findByUrl<PagerDutyService[]>(url);
   }

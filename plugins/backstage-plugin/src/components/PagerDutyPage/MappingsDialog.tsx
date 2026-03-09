@@ -20,6 +20,7 @@ import { pagerDutyApiRef } from '../../api';
 import { useApi } from '@backstage/core-plugin-api';
 import { makeStyles } from '@material-ui/core';
 import { useAccountContext } from './AccountContext';
+import useDebounce from '../../hooks/useDebounce';
 
 const useStyles = makeStyles(() => ({
   radioListContainer: {
@@ -27,11 +28,16 @@ const useStyles = makeStyles(() => ({
     overflowY: 'auto',
     border: '1px solid var(--bui-border)',
     borderRadius: 'var(--bui-radius-2)',
-    padding: 'var(--bui-spacing-3)',
+    padding: 0,
+    '& > div > div': {
+      gap: 0,
+    },
     '& label[data-rac]': {
-      padding: 'var(--bui-space-3)',
-      minHeight: '44px',
+      margin: 0,
+      padding: 'var(--bui-spacing-2) var(--bui-spacing-3)',
+      minHeight: '32px',
       borderBottom: '1px solid var(--bui-gray-2)',
+      borderLeft: '3px solid transparent',
       cursor: 'pointer',
       transition: 'background-color 0.15s ease',
       display: 'flex',
@@ -67,24 +73,15 @@ export default function MappingsDialog({
   const queryClient = useQueryClient();
   const { selectedAccount } = useAccountContext();
   const [selectedServiceId, setSelectedServiceId] = useState<string>('');
-  const [selectedTeamIds, setSelectedTeamIds] = useState<string[]>([]);
+  const [selectedTeamId, setSelectedTeamId] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState<string>('');
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearchQuery(searchQuery);
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
+  const debouncedSearchQuery = useDebounce(searchQuery);
 
   useEffect(() => {
     if (!isOpen) {
       setSelectedServiceId('');
-      setSelectedTeamIds([]);
+      setSelectedTeamId('');
       setSearchQuery('');
-      setDebouncedSearchQuery('');
     }
   }, [isOpen]);
 
@@ -95,9 +92,9 @@ export default function MappingsDialog({
   });
 
   const { data: services, isLoading: isServicesLoading } = useQuery({
-    queryKey: ['pagerduty', 'getFilteredServices', selectedTeamIds, debouncedSearchQuery, selectedAccount],
+    queryKey: ['pagerduty', 'getFilteredServices', selectedTeamId, debouncedSearchQuery, selectedAccount],
     queryFn: async () => {
-      const teamIdsToSend = selectedTeamIds.length > 0 ? selectedTeamIds : undefined;
+      const teamIdsToSend = selectedTeamId ? [selectedTeamId] : undefined;
       const queryToSend = debouncedSearchQuery || undefined;
       const result = await pagerDutyApi.getFilteredServices(
         teamIdsToSend,
@@ -221,10 +218,9 @@ export default function MappingsDialog({
             label="PagerDuty Team (Optional)"
             placeholder="All Teams"
             options={teamOptions}
-            value={selectedTeamIds[0] || ''}
+            value={selectedTeamId}
             onChange={value => {
-              const teamId = String(value || '');
-              setSelectedTeamIds(teamId ? [teamId] : []);
+              setSelectedTeamId(String(value || ''));
               setSelectedServiceId('');
             }}
           />
