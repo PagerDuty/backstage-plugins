@@ -1,5 +1,5 @@
 import { CellText } from '@backstage/ui';
-import { makeStyles } from '@material-ui/core';
+import { makeStyles, useTheme } from '@material-ui/core';
 import { BackstageTheme } from '@backstage/theme';
 import { BackstageEntity } from '../../types';
 
@@ -10,41 +10,83 @@ const statusDictionary = {
   AutoMapped: 'Auto Mapped',
   ErrorWhenFetchingService: 'Error occured while fetching service',
 } as const;
-const colourDictionary = {
-  InSync: '#00875A',
-  OutOfSync: '#fff',
-  NotMapped: '#B88A00',
-  AutoMapped: '#1565C0',
-  ErrorWhenFetchingService: '#fff',
-} as const;
-const borderColorDictionary = {
-  InSync: '#57D9A3',
-  OutOfSync: 'red',
-  NotMapped: '#E8C547',
-  AutoMapped: '#64B5F6',
-  ErrorWhenFetchingService: 'red',
-} as const;
-const backgroundColorDictionary = {
-  InSync: '#E3FCEF',
-  OutOfSync: 'red',
-  NotMapped: '#FFF8E6',
-  AutoMapped: '#E3F2FD',
-  ErrorWhenFetchingService: 'red',
-} as const;
 
 type StatusKey = keyof typeof statusDictionary;
 
 function getStatusName(status: string) {
   return statusDictionary[status as StatusKey] || 'Refresh to Update';
 }
-function getColorFromStatus(status: string) {
-  return colourDictionary[status as StatusKey] || 'gray';
-}
-function getBorderColorFromStatus(status: string) {
-  return borderColorDictionary[status as StatusKey] || 'gray';
-}
-function getBackgroundColorFromStatus(status: string) {
-  return backgroundColorDictionary[status as StatusKey] || '#f0f0f0';
+
+function getStatusColors(status: string, isDarkTheme: boolean) {
+  const statusKey = status as StatusKey;
+
+  if (isDarkTheme) {
+    const darkColors = {
+      InSync: {
+        color: '#4CAF50',
+        backgroundColor: 'rgba(76, 175, 80, 0.15)',
+        borderColor: 'rgba(76, 175, 80, 0.4)',
+      },
+      OutOfSync: {
+        color: '#f44336',
+        backgroundColor: 'rgba(244, 67, 54, 0.15)',
+        borderColor: 'rgba(244, 67, 54, 0.4)',
+      },
+      NotMapped: {
+        color: '#FFA726',
+        backgroundColor: 'rgba(255, 167, 38, 0.15)',
+        borderColor: 'rgba(255, 167, 38, 0.4)',
+      },
+      AutoMapped: {
+        color: '#42A5F5',
+        backgroundColor: 'rgba(66, 165, 245, 0.15)',
+        borderColor: 'rgba(66, 165, 245, 0.4)',
+      },
+      ErrorWhenFetchingService: {
+        color: '#f44336',
+        backgroundColor: 'rgba(244, 67, 54, 0.15)',
+        borderColor: 'rgba(244, 67, 54, 0.4)',
+      },
+    };
+    return darkColors[statusKey] || {
+      color: '#999',
+      backgroundColor: 'rgba(153, 153, 153, 0.15)',
+      borderColor: 'rgba(153, 153, 153, 0.4)',
+    };
+  }
+
+  const lightColors = {
+    InSync: {
+      color: '#00875A',
+      backgroundColor: '#E3FCEF',
+      borderColor: '#57D9A3',
+    },
+    OutOfSync: {
+      color: '#fff',
+      backgroundColor: 'red',
+      borderColor: 'red',
+    },
+    NotMapped: {
+      color: '#B88A00',
+      backgroundColor: '#FFF8E6',
+      borderColor: '#E8C547',
+    },
+    AutoMapped: {
+      color: '#1565C0',
+      backgroundColor: '#E3F2FD',
+      borderColor: '#64B5F6',
+    },
+    ErrorWhenFetchingService: {
+      color: '#fff',
+      backgroundColor: 'red',
+      borderColor: 'red',
+    },
+  };
+  return lightColors[statusKey] || {
+    color: 'gray',
+    backgroundColor: '#f0f0f0',
+    borderColor: 'gray',
+  };
 }
 
 interface StyleProps {
@@ -72,10 +114,10 @@ const useStyles = makeStyles<BackstageTheme, StyleProps>(() => {
 });
 
 export default function StatusCell({ entity }: { entity: BackstageEntity }) {
+  const theme = useTheme<BackstageTheme>();
+  const isDarkTheme = theme.palette.type === 'dark';
   const statusValue = entity.status || 'NotMapped';
-  const color = getColorFromStatus(statusValue);
-  const backgroundColor = getBackgroundColorFromStatus(statusValue);
-  const borderColor = getBorderColorFromStatus(statusValue);
+  const { color, backgroundColor, borderColor } = getStatusColors(statusValue, isDarkTheme);
   const classes = useStyles({ color, backgroundColor, borderColor });
 
   const statusName = getStatusName(statusValue);

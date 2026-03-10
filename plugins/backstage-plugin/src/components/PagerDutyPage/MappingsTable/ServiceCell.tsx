@@ -3,14 +3,14 @@ import { makeStyles } from '@material-ui/core';
 import { BackstageTheme } from '@backstage/theme';
 import { BackstageEntity } from '../../types';
 
-const useStyles = makeStyles<BackstageTheme>(() => ({
+const useStyles = makeStyles<BackstageTheme>(theme => ({
   underlinedCell: {
     '& .bui-Text': {
       textDecoration: 'underline',
-      color: '#0066cc',
+      color: theme.palette.link,
       transition: 'color 0.15s',
       '&:hover': {
-        color: '#0052a3',
+        opacity: 0.8,
       },
     },
   },

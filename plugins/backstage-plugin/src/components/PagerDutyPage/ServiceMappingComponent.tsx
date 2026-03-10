@@ -5,14 +5,11 @@ import { AccountProvider, useAccountContext } from './AccountContext';
 import { makeStyles } from '@material-ui/core';
 import { BackstageTheme } from '@backstage/theme';
 
-const useStyles = makeStyles<BackstageTheme>(() => ({
+const useStyles = makeStyles<BackstageTheme>(theme => ({
   accountCard: {
     marginBottom: '16px',
     width: 'fit-content',
-    background: 'white',
     borderRadius: '8px',
-    boxShadow: '0 2px 4px rgba(0, 102, 204, 0.1)',
-    border: '1px solid #e0e0e0',
   },
   accountCardBody: {
     padding: '16px 20px !important',
@@ -20,7 +17,7 @@ const useStyles = makeStyles<BackstageTheme>(() => ({
   accountLabel: {
     fontSize: '15px',
     fontWeight: 600,
-    color: '#333',
+    color: theme.palette.text.primary,
     marginBottom: '8px',
   },
   requiredIndicator: {
@@ -33,13 +30,11 @@ const useStyles = makeStyles<BackstageTheme>(() => ({
     minWidth: '200px',
   },
   mainCard: {
-    background: 'white',
     borderRadius: '8px',
-    border: '1px solid #e0e0e0',
   },
   helpText: {
     fontSize: '13px',
-    color: '#666',
+    color: theme.palette.text.secondary,
     fontStyle: 'italic',
     marginTop: '6px',
   },

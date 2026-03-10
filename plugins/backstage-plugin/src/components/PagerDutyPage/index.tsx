@@ -28,7 +28,7 @@ enum StoreSettings {
 const SERVICE_DEPENDENCY_SYNC_STRATEGY =
   'settings::service-dependency-sync-strategy';
 
-const useStyles = makeStyles<BackstageTheme>(() =>
+const useStyles = makeStyles<BackstageTheme>(theme =>
   createStyles({
     cardStyles: {
       padding: '15px',
@@ -42,18 +42,17 @@ const useStyles = makeStyles<BackstageTheme>(() =>
     },
     descriptionCard: {
       marginBottom: '24px',
-      background: 'white',
       borderRadius: '8px',
     },
     descriptionText: {
       fontSize: '16px',
-      color: '#333',
+      color: theme.palette.text.primary,
       lineHeight: 1.5,
       marginBottom: '4px',
     },
     warningText: {
       fontSize: '16px',
-      color: '#333',
+      color: theme.palette.text.primary,
       lineHeight: 1.5,
     },
   }),
