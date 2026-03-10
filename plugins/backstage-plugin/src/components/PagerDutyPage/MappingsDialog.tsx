@@ -7,12 +7,55 @@ import {
   Select,
   Flex,
   Text,
+  SearchField,
+  RadioGroup,
+  Radio,
+  Box,
+  TextField,
 } from '@backstage/ui';
-import { Dispatch, useState } from 'react';
+import { Dispatch, useState, useEffect } from 'react';
 import { BackstageEntity } from '../types';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { pagerDutyApiRef } from '../../api';
 import { useApi } from '@backstage/core-plugin-api';
+import { makeStyles } from '@material-ui/core';
+import { useAccountContext } from './AccountContext';
+import useDebounce from '../../hooks/useDebounce';
+
+const useStyles = makeStyles(() => ({
+  radioListContainer: {
+    maxHeight: '300px',
+    overflowY: 'auto',
+    border: '1px solid var(--bui-border)',
+    borderRadius: 'var(--bui-radius-2)',
+    padding: 0,
+    '& > div > div': {
+      gap: 0,
+    },
+    '& label[data-rac]': {
+      margin: 0,
+      padding: 'var(--bui-spacing-2) var(--bui-spacing-3)',
+      minHeight: '32px',
+      borderBottom: '1px solid var(--bui-gray-2)',
+      borderLeft: '3px solid transparent',
+      cursor: 'pointer',
+      transition: 'background-color 0.15s ease',
+      display: 'flex',
+      alignItems: 'center',
+      '&:last-child': {
+        borderBottom: 'none',
+      },
+      '&:hover': {
+        backgroundColor: 'var(--bui-gray-1)',
+      },
+      '&[data-selected="true"]': {
+        backgroundColor: 'var(--bui-blue-1)',
+        borderLeft: '3px solid var(--bui-blue-6)',
+        fontWeight: 'var(--bui-font-weight-bold)',
+      },
+    },
+  },
+}));
 
 interface MappingsDialogProps {
   isOpen: boolean;
@@ -25,13 +68,43 @@ export default function MappingsDialog({
   setIsOpen,
   entity,
 }: MappingsDialogProps) {
+  const classes = useStyles();
   const pagerDutyApi = useApi(pagerDutyApiRef);
   const queryClient = useQueryClient();
+  const { selectedAccount } = useAccountContext();
   const [selectedServiceId, setSelectedServiceId] = useState<string>('');
+  const [selectedTeamId, setSelectedTeamId] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const debouncedSearchQuery = useDebounce(searchQuery);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setSelectedServiceId('');
+      setSelectedTeamId('');
+      setSearchQuery('');
+    }
+  }, [isOpen]);
+
+  const { data: teams, isLoading: isTeamsLoading } = useQuery({
+    queryKey: ['pagerduty', 'getAllTeams', selectedAccount],
+    queryFn: () => pagerDutyApi.getAllTeams(selectedAccount),
+    enabled: isOpen && !!selectedAccount,
+  });
 
   const { data: services, isLoading: isServicesLoading } = useQuery({
-    queryKey: ['pagerduty', 'getAllServices'],
-    queryFn: () => pagerDutyApi.getAllServices(),
+    queryKey: ['pagerduty', 'getFilteredServices', selectedTeamId, debouncedSearchQuery, selectedAccount],
+    queryFn: async () => {
+      const teamIdsToSend = selectedTeamId ? [selectedTeamId] : undefined;
+      const queryToSend = debouncedSearchQuery || undefined;
+      const result = await pagerDutyApi.getFilteredServices(
+        teamIdsToSend,
+        queryToSend,
+        10,
+        selectedAccount,
+      );
+      return result;
+    },
+    enabled: isOpen && !!selectedAccount,
   });
 
   const { mutateAsync: createMapping, isPending: isCreatingMapping } =
@@ -66,6 +139,22 @@ export default function MappingsDialog({
   const handleSaveMapping = () => {
     if (!entity || !selectedServiceId) return;
 
+    if (selectedServiceId === 'none') {
+      const currentServiceId = entity.annotations?.['pagerduty.com/service-id'];
+      const currentIntegrationKey = entity.annotations?.['pagerduty.com/integration-key'] || '';
+      const account = entity.account || '';
+
+      if (!currentServiceId) return;
+
+      createMapping({
+        serviceId: currentServiceId,
+        integrationKey: currentIntegrationKey,
+        entityRef: '',
+        account: account,
+      });
+      return;
+    }
+
     const selectedService = services?.find(
       service => service.id === selectedServiceId,
     );
@@ -83,46 +172,109 @@ export default function MappingsDialog({
     });
   };
 
-  const serviceOptions = services?.map(service => ({
-    value: service.id,
-    label: service.name,
-  }));
+  // Prepare team options for Select
+  const teamOptions = [
+    { value: '', label: 'All Teams' },
+    ...(teams?.map(team => ({
+      value: team.id,
+      label: team.name,
+    })) || []),
+  ];
 
   return (
     <Dialog isOpen={isOpen} onOpenChange={setIsOpen}>
       <DialogHeader>Update Entity Mapping</DialogHeader>
       <DialogBody>
-        <Flex>
-          <Text variant="body-medium" weight="regular">
-            Name:
-          </Text>
+        <Flex direction="column" gap="2" mb="4">
           <Text variant="body-medium" weight="bold">
-            {entity?.name}
+            Backstage Component
           </Text>
+          <TextField
+            value={entity?.name || ''}
+            isReadOnly
+          />
         </Flex>
 
-        <Flex mb="3">
-          <Text variant="body-medium" weight="regular">
-            Team:
-          </Text>
+        <Flex direction="column" gap="2" mb="4">
           <Text variant="body-medium" weight="bold">
-            {entity?.owner}
+            Team
           </Text>
+          <TextField
+            value={entity?.owner || ''}
+            isReadOnly
+          />
         </Flex>
 
-        <Select
-          name="service"
-          isDisabled={isServicesLoading || isCreatingMapping}
-          label="PagerDuty service"
-          placeholder={
-            isServicesLoading
-              ? 'PagerDuty services loading...'
-              : 'Select a PagerDuty service'
-          }
-          options={serviceOptions}
-          value={selectedServiceId}
-          onChange={value => setSelectedServiceId(value as string)}
-        />
+        <Box mb="3">
+          <Text variant="body-medium" weight="bold">
+            Map to Service
+          </Text>
+        </Box>
+
+        <Box mb="3">
+          <Select
+            name="team"
+            isDisabled={isTeamsLoading || isCreatingMapping}
+            label="PagerDuty Team (Optional)"
+            placeholder="All Teams"
+            options={teamOptions}
+            value={selectedTeamId}
+            onChange={value => {
+              setSelectedTeamId(String(value || ''));
+              setSelectedServiceId('');
+            }}
+          />
+        </Box>
+
+        <Flex direction="column" gap="2" mb="3">
+          <Text variant="body-medium" weight="bold">
+            PagerDuty Services
+          </Text>
+          <Text variant="body-small">
+            Search by service name or service ID
+          </Text>
+          <SearchField
+            value={searchQuery}
+            onChange={setSearchQuery}
+            placeholder="Search"
+          />
+        </Flex>
+
+        {isServicesLoading ? (
+          <Text>Loading services...</Text>
+        ) : (
+          <>
+            <Box
+              className={classes.radioListContainer}
+              mb="2"
+            >
+              <RadioGroup
+                value={selectedServiceId}
+                onChange={setSelectedServiceId}
+              >
+                {entity?.annotations?.['pagerduty.com/service-id'] && (
+                  <Radio key="none" value="none">
+                    (None)
+                  </Radio>
+                )}
+                {services && services
+                  .filter(service => service.id !== entity?.annotations?.['pagerduty.com/service-id'])
+                  .map(service => (
+                    <Radio key={service.id} value={service.id}>
+                      {service.name}
+                    </Radio>
+                  ))}
+              </RadioGroup>
+            </Box>
+            {services && services.length > 0 ? (
+              <Text variant="body-small">
+                Showing {services.length} result{services.length !== 1 ? 's' : ''}
+              </Text>
+            ) : (
+              <Text variant="body-small">No services found</Text>
+            )}
+          </>
+        )}
       </DialogBody>
       <DialogFooter>
         <Button variant="secondary" slot="close">

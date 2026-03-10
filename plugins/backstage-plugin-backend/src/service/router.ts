@@ -18,6 +18,8 @@ import {
   getServiceStandards,
   getServiceMetrics,
   getAllServices,
+  getAllTeams,
+  getFilteredServices,
   loadPagerDutyEndpointsFromConfig,
   createServiceIntegration,
   getServiceRelationshipsById,
@@ -607,6 +609,13 @@ export async function createRouter(
         response.status(error.status).json({
           errors: [`${error.message}`],
         });
+      } else {
+        logger.error(
+          `Unexpected error occurred while processing request: ${error}`,
+        );
+        response.status(500).json({
+          errors: [error instanceof Error ? error.message : String(error)],
+        });
       }
     }
   });
@@ -1075,13 +1084,12 @@ export async function createRouter(
     }
   });
 
-  // GET /services
-  router.get('/all-pd-services', async (_, response) => {
+  // GET /teams?account=:account
+  router.get('/teams', async (request, response) => {
     try {
-      const services = await getAllServices();
-      const serviceResponse: PagerDutyService[] = services;
-
-      response.json(serviceResponse);
+      const account = request.query.account as string | undefined;
+      const teams = await getAllTeams(account);
+      response.json(teams);
     } catch (error) {
       if (error instanceof HttpError) {
         response.status(error.status).json({
@@ -1091,36 +1099,65 @@ export async function createRouter(
     }
   });
 
-  // GET /services?integration_key=:integrationKey
+
+  // GET /services - Unified endpoint for all service queries
+  // Query params:
+  //   - integration_key: fetch service by integration key
+  //   - team_id, query, limit, account: fetch filtered services
+  //   - no params: fetch all services
   router.get('/services', async (request, response) => {
     try {
-      // Get the serviceId from the request parameters
-      const integrationKey: string =
-        (request.query.integration_key as string) || '';
-      const account = (request.query.account as string) || '';
+      const integrationKey = request.query.integration_key as string | undefined;
+      const teamId = request.query.team_id as string | undefined;
+      const query = request.query.query as string | undefined;
+      const limit = request.query.limit
+        ? parseInt(request.query.limit as string, 10)
+        : undefined;
+      const account = request.query.account as string | undefined;
 
-      if (integrationKey !== '') {
+      // Case 1: Fetch by integration key
+      if (integrationKey) {
         const service = await getServiceByIntegrationKey(
           integrationKey,
-          account,
+          account || '',
         );
         const serviceResponse: PagerDutyServiceResponse = {
           service: service,
         };
-
         response.json(serviceResponse);
-      } else {
-        const services = await getAllServices();
-        const servicesResponse: PagerDutyServicesResponse = {
-          services: services,
-        };
-
-        response.json(servicesResponse);
+        return;
       }
+
+      // Case 2: Fetch filtered services (if team_id, query, or limit provided)
+      if (teamId || query || limit) {
+        const teamIdsArray: string[] | undefined = teamId ? [teamId] : undefined;
+        const services = await getFilteredServices(
+          teamIdsArray,
+          query,
+          limit || 100,
+          account,
+        );
+        response.json(services);
+        return;
+      }
+
+      // Case 3: Fetch all services (default)
+      const services = await getAllServices();
+      const servicesResponse: PagerDutyServicesResponse = {
+        services: services,
+      };
+      response.json(servicesResponse);
     } catch (error) {
       if (error instanceof HttpError) {
         response.status(error.status).json({
           errors: [`${error.message}`],
+        });
+      } else {
+        logger.error(
+          `Unexpected error occurred while processing request: ${error}`,
+        );
+        response.status(500).json({
+          errors: [error instanceof Error ? error.message : String(error)],
         });
       }
     }
