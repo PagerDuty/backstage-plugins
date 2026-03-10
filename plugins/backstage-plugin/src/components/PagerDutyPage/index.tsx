@@ -40,12 +40,28 @@ const useStyles = makeStyles<BackstageTheme>(() =>
     linkStyles: {
       color: 'cadetblue',
     },
+    descriptionCard: {
+      marginBottom: '24px',
+      background: 'white',
+      borderRadius: '8px',
+    },
+    descriptionText: {
+      fontSize: '16px',
+      color: '#333',
+      lineHeight: 1.5,
+      marginBottom: '4px',
+    },
+    warningText: {
+      fontSize: '16px',
+      color: '#333',
+      lineHeight: 1.5,
+    },
   }),
 );
 
 /** @public */
 export const PagerDutyPage = () => {
-  const { cardStyles, textContainerStyles, linkStyles } = useStyles();
+  const { cardStyles, textContainerStyles, linkStyles, descriptionCard, descriptionText, warningText } = useStyles();
   const pagerDutyApi = useApi(pagerDutyApiRef);
   const [
     selectedServiceDependencyStrategy,
@@ -89,16 +105,16 @@ export const PagerDutyPage = () => {
         <TabbedLayout>
           <TabbedLayout.Route path="/service-mapping" title="Service Mapping">
             <>
-              <Card style={{ marginBottom: 4 }}>
+              <Card className={descriptionCard}>
                 <CardContent>
                   <Flex direction="column">
-                    <Text variant="body-medium" weight="regular">
+                    <Text className={descriptionText}>
                       Easily map your existing PagerDuty services to entities in
                       Backstage without the need to add anotations to all your
                       projects.
                     </Text>
-                    <Text variant="body-medium" weight="bold">
-                      <b>Warning: </b>Only 1:1 mapping is allowed at this time.
+                    <Text className={warningText}>
+                      <strong>Warning:</strong> Only 1:1 mapping is allowed at this time.
                     </Text>
                   </Flex>
                 </CardContent>

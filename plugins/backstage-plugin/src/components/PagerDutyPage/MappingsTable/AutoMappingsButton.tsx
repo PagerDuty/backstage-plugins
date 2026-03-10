@@ -1,6 +1,7 @@
 import { Button, Flex } from '@backstage/ui';
 import { Rocket, Check, Close } from '@mui/icons-material';
 import { CircularProgress, makeStyles } from '@material-ui/core';
+import { BackstageTheme } from '@backstage/theme';
 
 interface AutoMappingsButtonProps {
   hasMatches: boolean;
@@ -10,14 +11,31 @@ interface AutoMappingsButtonProps {
   isConfirming?: boolean;
 }
 
-const useStyles = makeStyles(() => ({
+const useStyles = makeStyles<BackstageTheme>(() => ({
   newBadge: {
-    backgroundColor: 'var(--bui-bg-solid)',
+    display: 'inline-block',
+    backgroundColor: '#00A67E',
     color: 'white',
-    fontSize: '11px',
-    fontWeight: 'bold',
-    padding: '2px 6px',
-    borderRadius: '4px',
+    fontSize: '9px',
+    fontWeight: 600,
+    textTransform: 'uppercase',
+    padding: '2px 5px',
+    borderRadius: '3px',
+    letterSpacing: '0.3px',
+    marginLeft: '6px',
+  },
+  confirmButton: {
+    backgroundColor: '#00875A',
+    '&:hover': {
+      backgroundColor: '#006644',
+    },
+  },
+  clearButton: {
+    border: '1px solid #d0d0d0',
+    '&:hover': {
+      backgroundColor: '#f5f5f5',
+      borderColor: '#999',
+    },
   },
 }));
 
@@ -38,6 +56,7 @@ export default function AutoMappingsButton({
           onClick={onClearMappings}
           iconStart={<Close />}
           isDisabled={isConfirming}
+          className={classes.clearButton}
         >
           Clear Mappings
         </Button>
@@ -52,6 +71,7 @@ export default function AutoMappingsButton({
             )
           }
           isDisabled={isConfirming}
+          className={classes.confirmButton}
         >
           {isConfirming ? 'Saving mappings...' : 'Confirm Mappings'}
         </Button>

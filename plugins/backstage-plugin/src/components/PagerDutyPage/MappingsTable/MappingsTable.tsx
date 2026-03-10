@@ -30,9 +30,6 @@ export interface AutoMatchResult {
 
 export type AutoMatchResults = Record<string, AutoMatchResult>;
 
-
-
-
 export default function MappingsTable() {
   const queryClient = useQueryClient();
   const { selectedAccount } = useAccountContext();
