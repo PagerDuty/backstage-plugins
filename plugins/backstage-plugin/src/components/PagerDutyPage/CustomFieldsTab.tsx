@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Button,
+  CircularProgress,
   Divider,
   Link,
   Paper,
@@ -15,12 +16,11 @@ import {
 } from '@material-ui/core';
 import { createStyles, makeStyles } from '@material-ui/core/styles';
 import { BackstageTheme } from '@backstage/theme';
+import { useApi } from '@backstage/core-plugin-api';
+import { pagerDutyApiRef } from '../../api';
+import { BackstageCustomField } from '@pagerduty/backstage-plugin-common';
+import { AddCustomFieldModal } from './AddCustomFieldModal';
 
-type CustomField = {
-  id: string;
-  customField: string;
-  entityPath: string;
-};
 
 const useStyles = makeStyles<BackstageTheme>(theme => {
   return createStyles({
@@ -88,20 +88,74 @@ const useStyles = makeStyles<BackstageTheme>(theme => {
         backgroundColor: theme.palette.primary.dark,
       },
     },
+    loading: {
+      display: 'flex',
+      justifyContent: 'center',
+      padding: theme.spacing(4),
+    },
   });
 });
 
 /** @public */
 export const CustomFieldsTab = () => {
   const classes = useStyles();
-  const [customFields, setCustomFields] = useState<CustomField[]>([]);
+  const pagerDutyApi = useApi(pagerDutyApiRef);
+  const [customFields, setCustomFields] = useState<BackstageCustomField[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch custom fields on mount
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await pagerDutyApi.getCustomFields();
+        setCustomFields(response.customFields);
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : 'Failed to load custom fields',
+        );
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [pagerDutyApi]);
 
   const handleAddCustomField = () => {
-    const id = window.crypto.randomUUID();
-    setCustomFields(prev => [
-      ...prev,
-      { id, customField: '', entityPath: '' },
-    ]);
+    setIsModalOpen(true);
+    setError(null);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setError(null);
+  };
+
+  const handleSaveCustomField = async (formData: {
+    name: string;
+    entityPath: string;
+    description: string;
+  }) => {
+    setSaving(true);
+    setError(null);
+
+    const result = await pagerDutyApi.createCustomField({
+      name: formData.name,
+      entityPath: formData.entityPath,
+      description: formData.description,
+    });
+
+    if (result.status === 'ok') {
+      setCustomFields(prev => [...prev, result.data]);
+      setIsModalOpen(false);
+    } else {
+      setError(result.error);
+    }
+
+    setSaving(false);
   };
 
   const handleStartDataSync = () => {
@@ -152,36 +206,42 @@ export const CustomFieldsTab = () => {
           </Box>
         </Box>
 
-        <TableContainer component={Paper} variant="outlined">
-          <Table size="small">
-            <TableHead className={classes.tableHeader}>
-              <TableRow>
-                <TableCell className={classes.tableHeaderCell}>
-                  Custom Field
-                </TableCell>
-                <TableCell className={classes.tableHeaderCell}>
-                  Entity Path
-                </TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {customFields.length === 0 ? (
+        {loading ? (
+          <Box className={classes.loading}>
+            <CircularProgress />
+          </Box>
+        ) : (
+          <TableContainer component={Paper} variant="outlined">
+            <Table size="small">
+              <TableHead className={classes.tableHeader}>
                 <TableRow>
-                  <TableCell colSpan={2} className={classes.emptyState}>
-                    No custom fields have been added
+                  <TableCell className={classes.tableHeaderCell}>
+                    Custom Field
+                  </TableCell>
+                  <TableCell className={classes.tableHeaderCell}>
+                    Entity Path
                   </TableCell>
                 </TableRow>
-              ) : (
-                customFields.map(field => (
-                  <TableRow key={field.id}>
-                    <TableCell>{field.customField}</TableCell>
-                    <TableCell>{field.entityPath}</TableCell>
+              </TableHead>
+              <TableBody>
+                {customFields.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={2} className={classes.emptyState}>
+                      No custom fields have been added
+                    </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
+                ) : (
+                  customFields.map(field => (
+                    <TableRow key={field.id}>
+                      <TableCell>{field.pagerdutyCustomFieldDisplayName}</TableCell>
+                      <TableCell>{field.backstageEntityMappingPath}</TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
       </Box>
 
       <Box className={classes.footer}>
@@ -189,6 +249,14 @@ export const CustomFieldsTab = () => {
           Save
         </Button>
       </Box>
+
+      <AddCustomFieldModal
+        open={isModalOpen}
+        saving={saving}
+        error={error}
+        onClose={handleCloseModal}
+        onSave={handleSaveCustomField}
+      />
     </Paper>
   );
 };

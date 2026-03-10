@@ -3455,5 +3455,90 @@ describe('createRouter', () => {
         expect(response.body).toHaveProperty('errorCount');
       });
     });
+
+  describe('POST /custom-fields', () => {
+    it.each(testInputs)(
+      'returns 200 when custom field is created successfully',
+      async () => {
+        const customFieldData = {
+          name: 'Test Field',
+          entityPath: 'spec.owner',
+          description: 'A test custom field',
+        };
+
+        const mockPagerDutyResponse = {
+          field: {
+            id: 'PTEST123',
+            display_name: 'Test Field',
+            name: 'test_field',
+            data_type: 'string',
+            field_type: 'single_value',
+            description: 'A test custom field',
+            enabled: true,
+          },
+        };
+        mocked(fetch).mockReturnValue(mockedResponse(201, mockPagerDutyResponse));
+
+        const response = await request(app)
+          .post('/custom-fields')
+          .send(customFieldData);
+
+        expect(response.status).toEqual(201);
+      },
+    );
+
+    it.each(testInputs)(
+      'returns 400 when required fields are missing',
+      async () => {
+        const customFieldData = {
+          description: 'A test custom field',
+        };
+
+        const response = await request(app)
+          .post('/custom-fields')
+          .send(customFieldData);
+
+        expect(response.status).toEqual(400);
+      },
+    );
+
+    it.each(testInputs)(
+      'returns 409 when custom field already exists',
+      async () => {
+        const customFieldData = {
+          name: 'Existing Field',
+          entityPath: 'spec.owner',
+          description: 'A custom field that already exists',
+        };
+
+        const mockErrorResponse = {
+          error: {
+            message: 'Custom field with this name already exists',
+            code: 2009,
+          },
+        };
+        mocked(fetch).mockReturnValue(mockedResponse(409, mockErrorResponse));
+
+        const response = await request(app)
+          .post('/custom-fields')
+          .send(customFieldData);
+
+        expect(response.status).toEqual(409);
+      },
+    );
+  });
+
+  describe('GET /custom-fields', () => {
+    it.each(testInputs)(
+      'returns 200 with customFields array',
+      async () => {
+        const response = await request(app).get('/custom-fields');
+
+        expect(response.status).toEqual(200);
+        expect(response.body).toHaveProperty('customFields');
+        expect(Array.isArray(response.body.customFields)).toBe(true);
+      },
+    );
+  });
   });
 });
