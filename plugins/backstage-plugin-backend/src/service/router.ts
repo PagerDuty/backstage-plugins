@@ -45,6 +45,7 @@ import {
   PagerDutyBackendStore,
   RawDbEntityResultRow,
 } from '../db/PagerDutyBackendDatabase';
+import { CustomFieldsController } from './customFieldsController';
 import * as express from 'express';
 import Router from 'express-promise-router';
 import type { CatalogApi, GetEntitiesResponse } from '@backstage/catalog-client';
@@ -264,6 +265,12 @@ export async function createRouter(
 
   const runAutoMatch = createAutoMatchRunner(catalogApi);
   const autoMatchJobs = new AutoMatchJobRegistry(cache, runAutoMatch);
+
+  // Initialize controllers
+  const customFieldsController = new CustomFieldsController({
+    logger,
+    store,
+  });
 
   // DELETE /dependencies/service/:serviceId
   router.delete(
@@ -527,6 +534,16 @@ export async function createRouter(
 
     return false;
   }
+
+  // POST /custom-fields
+  router.post('/custom-fields', async (request, response) => {
+    await customFieldsController.createCustomField(request, response);
+  });
+
+  // GET /custom-fields
+  router.get('/custom-fields', async (request, response) => {
+    await customFieldsController.getCustomFields(request, response);
+  });
 
   // POST /mapping/entity
   router.post('/mapping/entity', async (request, response) => {

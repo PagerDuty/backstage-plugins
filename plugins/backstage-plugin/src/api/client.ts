@@ -20,6 +20,7 @@ import {
   PagerDutyClientApiDependencies,
   PagerDutyClientApiConfig,
   RequestOptions,
+  Result,
 } from './types';
 import {
   PagerDutyChangeEventsResponse,
@@ -35,6 +36,9 @@ import {
   AutoMatchStartResponse,
   AutoMatchStatusResponse,
   PagerDutyTeam,
+  BackstageCustomFieldCreateRequest,
+  BackstageCustomField,
+  BackstageCustomFieldsResponse,
 } from '@pagerduty/backstage-plugin-common';
 import { createApiRef, ConfigApi } from '@backstage/core-plugin-api';
 import { NotFoundError } from '@backstage/errors';
@@ -496,6 +500,79 @@ export class PagerDutyClient implements PagerDutyApi {
       accounts: Array<{ id: string; isDefault: boolean }>;
     }>(url);
     return response.accounts;
+  }
+
+  async createCustomField(
+    request: BackstageCustomFieldCreateRequest,
+    account?: string,
+  ): Promise<Result<BackstageCustomField>> {
+    const body = JSON.stringify(request);
+
+    const options = {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json; charset=UTF-8',
+        Accept: 'application/json, text/plain, */*',
+      },
+      body,
+    };
+
+    let url = `${await this.config.discoveryApi.getBaseUrl(
+      'pagerduty',
+    )}/custom-fields`;
+
+    if (account) {
+      url = url.concat(`?account=${account}`);
+    }
+
+    try {
+      const response = await this.request(url, options);
+      const result = await response.json();
+      return {
+        status: 'ok',
+        data: result.customField,
+        error: null,
+      };
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.message.includes('already been taken')) {
+          return {
+            status: 'error',
+            data: null,
+            error: 'A custom field with this name already exists',
+          };
+        }
+        if (error.message.toLowerCase().includes('product limit reached')) {
+          return {
+            status: 'error',
+            data: null,
+            error: 'Custom field limit reached. Maximum number of custom fields has been exceeded.',
+          };
+        }
+        return {
+          status: 'error',
+          data: null,
+          error: error.message,
+        };
+      }
+      return {
+        status: 'error',
+        data: null,
+        error: 'Failed to create custom field',
+      };
+    }
+  }
+
+  async getCustomFields(account?: string): Promise<BackstageCustomFieldsResponse> {
+    let url = `${await this.config.discoveryApi.getBaseUrl(
+      'pagerduty',
+    )}/custom-fields`;
+
+    if (account) {
+      url = url.concat(`?account=${account}`);
+    }
+
+    return await this.findByUrl<BackstageCustomFieldsResponse>(url);
   }
 
   private async findByUrl<T>(url: string): Promise<T> {
