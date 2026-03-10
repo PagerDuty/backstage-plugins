@@ -22,6 +22,7 @@ import {
   PagerDutyChangeEvent,
   PagerDutyIncident,
   PagerDutyUser,
+  BackstageCustomFieldCreateRequest
 } from '@pagerduty/backstage-plugin-common';
 import { Entity } from '@backstage/catalog-model';
 import { v4 as uuidv4 } from 'uuid';
@@ -250,5 +251,26 @@ export const mockPagerDutyApi: PagerDutyApi = {
 
   async triggerAlarm(request: PagerDutyTriggerAlarmRequest) {
     return new Response(request.description);
+  },
+
+  async getCustomFields() {
+    return {
+      customFields: [],
+    };
+  },
+
+  async createCustomField(request: BackstageCustomFieldCreateRequest) {
+    const now = new Date();
+    return {
+      id: Math.floor(Math.random() * 10000),
+      pagerdutyCustomFieldId: `cf_${uuidv4()}`,
+      pagerdutyCustomFieldDisplayName: request.name || 'Custom Field',
+      pagerdutyCustomFieldEnabled: true,
+      backstageEntityMappingPath: request.entityPath || '',
+      pagerdutySubdomain: 'test-subdomain',
+      description: request.description,
+      createdAt: now,
+      updatedAt: now,
+    };
   },
 };
