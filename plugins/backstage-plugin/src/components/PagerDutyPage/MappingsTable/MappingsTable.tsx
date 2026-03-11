@@ -6,7 +6,7 @@ import { useState, useCallback } from 'react';
 import MappingsDialog from '../MappingsDialog';
 import AutomaticMappingsDialog from '../AutomaticMappingsDialog';
 import AutoMappingsButton from './AutoMappingsButton';
-import {  FilterList } from '@mui/icons-material';
+import { FilterList, Refresh } from '@mui/icons-material';
 import { BackstageEntity } from '../../types';
 import MappingToast, { MappingCounts, ToastSeverity } from './MappingToast';
 import { useConfirmMappings } from './hooks/useConfirmMappings';
@@ -29,9 +29,6 @@ export interface AutoMatchResult {
 }
 
 export type AutoMatchResults = Record<string, AutoMatchResult>;
-
-
-
 
 export default function MappingsTable() {
   const queryClient = useQueryClient();
@@ -62,8 +59,9 @@ export default function MappingsTable() {
   const [autoMatchResults, setAutoMatchResults] = useState<AutoMatchResults>(
     {},
   );
+  const [refreshKey, setRefreshKey] = useState(0);
   const hasMatches = Object.keys(autoMatchResults).length > 0;
-  const tableKey = `${selectedAccount}-${hasMatches ? `matches-${Object.keys(autoMatchResults).length}` : 'no-matches'}`;
+  const tableKey = `${selectedAccount}-${hasMatches ? `matches-${Object.keys(autoMatchResults).length}` : 'no-matches'}-${refreshKey}`;
 
   const clearMatches = useCallback(() => {
     setAutoMatchResults({});
@@ -92,6 +90,23 @@ export default function MappingsTable() {
     setIsOpen(true);
     setSelectedEntity(entity);
   }, []);
+
+  const handleMappingSuccess = useCallback((isUnmapping: boolean) => {
+    setToastOpen(true);
+    setToastSeverity('info');
+    setToastMessage(
+      `Mapping ${isUnmapping ? 'removed' : 'created'} successfully. The catalog sync runs approximately every 30 seconds. Please wait a bit and refresh the page to see the updated status.`
+    );
+    setToastTotalMatches(0);
+    setToastMappingCounts({});
+  }, []);
+
+  const handleRefresh = useCallback(() => {
+    setRefreshKey(prev => prev + 1);
+    queryClient.invalidateQueries({
+      queryKey: ['pagerduty', 'enhancedEntityMappings'],
+    });
+  }, [queryClient]);
 
   const { confirmMappings, isConfirming } = useConfirmMappings({
     autoMatchResults,
@@ -142,6 +157,15 @@ export default function MappingsTable() {
         />
 
         <ButtonIcon
+          icon={<Refresh />}
+          aria-label="Refresh table"
+          onClick={handleRefresh}
+          variant="secondary"
+        >
+          <Refresh />
+        </ButtonIcon>
+
+        <ButtonIcon
           icon={<FilterList />}
           aria-label="Toggle filters"
           onClick={() => setShowFilters(!showFilters)}
@@ -166,6 +190,7 @@ export default function MappingsTable() {
         isOpen={isOpen}
         setIsOpen={setIsOpen}
         entity={selectedEntity}
+        onMappingSuccess={handleMappingSuccess}
       />
       <AutomaticMappingsDialog
         isOpen={isAutoMappingOpen}
