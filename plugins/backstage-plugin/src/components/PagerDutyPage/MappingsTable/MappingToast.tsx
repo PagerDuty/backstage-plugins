@@ -1,6 +1,6 @@
 import { Alert } from '@material-ui/lab';
 import Snackbar from '@mui/material/Snackbar';
-import { CheckCircle, Error as ErrorIcon } from '@mui/icons-material';
+import { CheckCircle, Error as ErrorIcon, Info as InfoIcon } from '@mui/icons-material';
 
 export interface MappingCounts {
   created?: number;
@@ -8,7 +8,7 @@ export interface MappingCounts {
   errored?: number;
 }
 
-export type ToastSeverity = 'success' | 'error';
+export type ToastSeverity = 'success' | 'error' | 'info';
 
 interface MappingToastProps {
   open: boolean;
@@ -31,7 +31,16 @@ export default function MappingToast({
     if (severity === 'error') {
       return 'Error';
     }
+    if (severity === 'info') {
+      return 'Mapping Updated';
+    }
     return totalMatches > 0 ? 'Mapping Calculation Complete' : 'Mappings Saved';
+  };
+
+  const getIcon = () => {
+    if (severity === 'success') return <CheckCircle />;
+    if (severity === 'error') return <ErrorIcon />;
+    return <InfoIcon />;
   };
 
   const hasDetailedCounts =
@@ -42,14 +51,14 @@ export default function MappingToast({
   return (
     <Snackbar
       open={open}
-      autoHideDuration={3000}
+      autoHideDuration={severity === 'info' ? 8000 : 3000}
       onClose={onClose}
       anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
     >
       <Alert
         onClose={onClose}
         severity={severity}
-        icon={severity === 'success' ? <CheckCircle /> : <ErrorIcon />}
+        icon={getIcon()}
       >
         <strong>{getTitle()}</strong>
         <br />

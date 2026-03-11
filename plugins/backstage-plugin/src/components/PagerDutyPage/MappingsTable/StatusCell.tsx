@@ -114,7 +114,7 @@ const useStyles = makeStyles<BackstageTheme, StyleProps>(() => {
 });
 
 export default function StatusCell({ entity }: { entity: BackstageEntity }) {
-  const theme = useTheme<BackstageTheme>();
+  const theme = useTheme();
   const isDarkTheme = theme.palette.type === 'dark';
   const statusValue = entity.status || 'NotMapped';
   const { color, backgroundColor, borderColor } = getStatusColors(statusValue, isDarkTheme);

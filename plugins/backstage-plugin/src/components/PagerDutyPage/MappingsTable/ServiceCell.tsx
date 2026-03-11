@@ -1,9 +1,8 @@
 import { CellText } from '@backstage/ui';
 import { makeStyles } from '@material-ui/core';
-import { BackstageTheme } from '@backstage/theme';
 import { BackstageEntity } from '../../types';
 
-const useStyles = makeStyles<BackstageTheme>(theme => ({
+const useStyles = makeStyles(theme => ({
   underlinedCell: {
     '& .bui-Text': {
       textDecoration: 'underline',

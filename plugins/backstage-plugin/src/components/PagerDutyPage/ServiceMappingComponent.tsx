@@ -3,9 +3,8 @@ import MappingsTable from './MappingsTable/MappingsTable';
 import { Card, CardBody, Select, Flex, Text } from '@backstage/ui';
 import { AccountProvider, useAccountContext } from './AccountContext';
 import { makeStyles } from '@material-ui/core';
-import { BackstageTheme } from '@backstage/theme';
 
-const useStyles = makeStyles<BackstageTheme>(theme => ({
+const useStyles = makeStyles(theme => ({
   accountCard: {
     marginBottom: '16px',
     width: 'fit-content',

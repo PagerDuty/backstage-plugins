@@ -61,12 +61,14 @@ interface MappingsDialogProps {
   isOpen: boolean;
   setIsOpen: Dispatch<React.SetStateAction<boolean>>;
   entity: BackstageEntity | null;
+  onMappingSuccess?: (isUnmapping: boolean) => void;
 }
 
 export default function MappingsDialog({
   isOpen,
   setIsOpen,
   entity,
+  onMappingSuccess,
 }: MappingsDialogProps) {
   const classes = useStyles();
   const pagerDutyApi = useApi(pagerDutyApiRef);
@@ -114,25 +116,30 @@ export default function MappingsDialog({
         integrationKey,
         entityRef,
         account,
+        isUnmapping,
       }: {
         serviceId: string;
         integrationKey: string;
         entityRef: string;
         account: string;
-      }) =>
-        pagerDutyApi.storeServiceMapping(
-          serviceId,
-          integrationKey,
-          entityRef,
-          account,
-        ),
+        isUnmapping: boolean;
+      }) => {
+          await pagerDutyApi.storeServiceMapping(
+            serviceId,
+            integrationKey,
+            entityRef,
+            account,
+          );
+        return isUnmapping;
+      },
 
-      onSuccess: async () => {
+      onSuccess: async (isUnmapping) => {
         queryClient.invalidateQueries({
           queryKey: ['pagerduty', 'enhancedEntityMappings'],
         });
         setIsOpen(false);
         setSelectedServiceId('');
+        onMappingSuccess?.(isUnmapping);
       },
     });
 
@@ -151,6 +158,7 @@ export default function MappingsDialog({
         integrationKey: currentIntegrationKey,
         entityRef: '',
         account: account,
+        isUnmapping: true,
       });
       return;
     }
@@ -169,6 +177,7 @@ export default function MappingsDialog({
       integrationKey: '',
       entityRef: entityRef,
       account: selectedService.account ?? '',
+      isUnmapping: false,
     });
   };
 

@@ -1,7 +1,6 @@
 import { Button, Flex } from '@backstage/ui';
 import { Rocket, Check, Close } from '@mui/icons-material';
 import { CircularProgress, makeStyles } from '@material-ui/core';
-import { BackstageTheme } from '@backstage/theme';
 
 interface AutoMappingsButtonProps {
   hasMatches: boolean;
@@ -11,7 +10,7 @@ interface AutoMappingsButtonProps {
   isConfirming?: boolean;
 }
 
-const useStyles = makeStyles<BackstageTheme>(() => ({
+const useStyles = makeStyles(() => ({
   newBadge: {
     display: 'inline-block',
     backgroundColor: '#00A67E',

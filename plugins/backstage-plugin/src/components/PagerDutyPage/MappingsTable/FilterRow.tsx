@@ -1,6 +1,5 @@
 import { Flex, SearchField, Select } from '@backstage/ui';
 import { makeStyles } from '@material-ui/core';
-import { BackstageTheme } from '@backstage/theme';
 
 type FilterableFields =
   | 'name'
@@ -26,7 +25,7 @@ const statusOptions = [
   { value: 'ErrorWhenFetchingService', label: 'Error' },
 ];
 
-const useStyles = makeStyles<BackstageTheme>(() => ({
+const useStyles = makeStyles(() => ({
   filterRow: {
     padding: '16px 0',
     marginBottom: '16px',
