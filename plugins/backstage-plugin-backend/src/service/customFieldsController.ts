@@ -1,12 +1,14 @@
 import { LoggerService } from '@backstage/backend-plugin-api';
 import { Request, Response } from 'express';
 import { PagerDutyBackendStore } from '../db/PagerDutyBackendDatabase';
-import { createCustomField } from '../apis/pagerduty';
+import { createCustomField, updateCustomField } from '../apis/pagerduty';
 import {
   BackstageCustomFieldCreateRequest,
+  BackstageCustomFieldUpdateRequest,
   BackstageCustomFieldsResponse,
   HttpError,
   PagerDutyCustomFieldCreateRequest,
+  PagerDutyCustomFieldUpdateRequest,
 } from '@pagerduty/backstage-plugin-common';
 
 export interface CustomFieldsControllerOptions {
@@ -48,6 +50,14 @@ export class CustomFieldsController {
 
       // Get subdomain from config (or use 'default' for single account setup)
       const subdomain = this.getSubdomainFromRequest(request);
+
+      const existingByPath = await this.store.findCustomFieldByEntityPath(entityPath);
+      if (existingByPath) {
+        response.status(409).json({
+          errors: ['A custom field with this entity path already exists'],
+        });
+        return;
+      }
 
       // Create the custom field on PagerDuty
       const pagerDutyRequest: PagerDutyCustomFieldCreateRequest = {
@@ -140,6 +150,108 @@ export class CustomFieldsController {
       response.status(500).json({
         errors: ['An unexpected error occurred while fetching custom fields'],
       });
+    }
+  }
+
+  async updateCustomField(request: Request, response: Response): Promise<void> {
+    try {
+      const id = parseInt(request.params.id, 10);
+      if (isNaN(id)) {
+        response.status(400).json({ errors: ['Invalid id parameter'] });
+        return;
+      }
+
+      const { name, entityPath, description } =
+        request.body as BackstageCustomFieldUpdateRequest;
+
+      if (!name || !entityPath) {
+        response.status(400).json({
+          errors: ['Missing required fields: name and entityPath are required'],
+        });
+        return;
+      }
+
+      const sanitizedName = this.sanitizeFieldName(name);
+      if (!sanitizedName) {
+        response.status(400).json({
+          errors: [
+            'Field name must contain at least one alphanumeric character',
+          ],
+        });
+        return;
+      }
+
+      const existing = await this.store.findCustomFieldById(id);
+      if (!existing) {
+        response.status(404).json({ errors: ['Custom field not found'] });
+        return;
+      }
+
+      const existingByPath = await this.store.findCustomFieldByEntityPath(entityPath, id);
+      if (existingByPath) {
+        response.status(409).json({
+          errors: ['A custom field with this entity path already exists'],
+        });
+        return;
+      }
+
+      const normalizedDescription =
+        (description ?? '').trim() || `Backstage custom field: ${entityPath}`;
+
+      const pagerDutyRequest: PagerDutyCustomFieldUpdateRequest = {
+        field: {
+          display_name: name,
+          description: normalizedDescription,
+        },
+      };
+
+      try {
+        await updateCustomField({
+          fieldId: existing.pagerdutyCustomFieldId,
+          request: pagerDutyRequest,
+          account: existing.pagerdutySubdomain,
+        });
+      } catch (error) {
+        if (error instanceof HttpError) {
+          if (error.status === 409) {
+            response.status(409).json({
+              errors: [
+                'A custom field with this name already exists in PagerDuty',
+              ],
+            });
+            return;
+          } else if (error.status === 404) {
+            response.status(404).json({
+              errors: ['Custom field not found in PagerDuty'],
+            });
+            return;
+          } else if (error.status === 400) {
+            response.status(400).json({ errors: [error.message] });
+            return;
+          }
+        }
+        throw error;
+      }
+
+      const customField = await this.store.updateCustomField(id, {
+        pagerdutyCustomFieldDisplayName: name,
+        backstageEntityMappingPath: entityPath,
+        description: normalizedDescription,
+      });
+
+      this.logger.info(`Successfully updated custom field id=${id} (${name})`);
+      response.status(200).json({ customField });
+    } catch (error) {
+      this.logger.error(`Failed to update custom field: ${error}`);
+      if (error instanceof HttpError) {
+        response.status(error.status).json({ errors: [error.message] });
+      } else {
+        response.status(500).json({
+          errors: [
+            'An unexpected error occurred while updating the custom field',
+          ],
+        });
+      }
     }
   }
 

@@ -1,10 +1,15 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Button,
   CircularProgress,
   Divider,
+  IconButton,
   Link,
+  ListItemIcon,
+  ListItemText,
+  Menu,
+  MenuItem,
   Paper,
   Table,
   TableBody,
@@ -14,12 +19,16 @@ import {
   TableRow,
   Typography,
 } from '@material-ui/core';
+import MoreVertIcon from '@material-ui/icons/MoreVert';
+import EditIcon from '@material-ui/icons/Edit';
+import BlockIcon from '@material-ui/icons/Block';
+import DeleteIcon from '@material-ui/icons/Delete';
 import { createStyles, makeStyles } from '@material-ui/core/styles';
 import { BackstageTheme } from '@backstage/theme';
 import { useApi } from '@backstage/core-plugin-api';
 import { pagerDutyApiRef } from '../../api';
 import { BackstageCustomField } from '@pagerduty/backstage-plugin-common';
-import { AddCustomFieldModal } from './AddCustomFieldModal';
+import { AddCustomFieldModal, FieldErrors } from './AddCustomFieldModal';
 
 
 const useStyles = makeStyles<BackstageTheme>(theme => {
@@ -104,7 +113,28 @@ export const CustomFieldsTab = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<FieldErrors | null>(null);
+  const [menuAnchorEl, setMenuAnchorEl] = useState<HTMLElement | null>(null);
+  const [menuField, setMenuField] = useState<BackstageCustomField | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState<FieldErrors | null>(null);
+
+  const toFieldErrors = (message: string): FieldErrors => {
+    const lower = message.toLowerCase();
+    if (lower.includes('name') && lower.includes('already exists')) {
+      return {
+        name: 'Entered Name matches one already in use. Please make changes to continue.',
+      };
+    }
+    if (lower.includes('entity path') && lower.includes('already')) {
+      return {
+        entityPath:
+          'Entered Entity Path matches one already in use. Please make changes to continue.',
+      };
+    }
+    return { general: message };
+  };
 
   // Fetch custom fields on mount
   useEffect(() => {
@@ -115,9 +145,10 @@ export const CustomFieldsTab = () => {
         const response = await pagerDutyApi.getCustomFields();
         setCustomFields(response.customFields);
       } catch (err) {
-        setError(
-          err instanceof Error ? err.message : 'Failed to load custom fields',
-        );
+        setError({
+          general:
+            err instanceof Error ? err.message : 'Failed to load custom fields',
+        });
       } finally {
         setLoading(false);
       }
@@ -152,10 +183,63 @@ export const CustomFieldsTab = () => {
       setCustomFields(prev => [...prev, result.data]);
       setIsModalOpen(false);
     } else {
-      setError(result.error);
+      setError(toFieldErrors(result.error));
     }
 
     setSaving(false);
+  };
+
+  const handleOpenMenu = (
+    event: React.MouseEvent<HTMLButtonElement>,
+    field: BackstageCustomField,
+  ) => {
+    setMenuAnchorEl(event.currentTarget);
+    setMenuField(field);
+  };
+
+  const handleCloseMenu = () => {
+    setMenuAnchorEl(null);
+  };
+
+  const handleOpenEditModal = () => {
+    handleCloseMenu();
+    setEditError(null);
+    setIsEditModalOpen(true);
+  };
+
+  const handleCloseEditModal = () => {
+    setIsEditModalOpen(false);
+    setMenuField(null);
+    setEditError(null);
+  };
+
+  const handleUpdateCustomField = async (formData: {
+    name: string;
+    entityPath: string;
+    description: string;
+  }) => {
+    if (!menuField) return;
+
+    setEditSaving(true);
+    setEditError(null);
+
+    const result = await pagerDutyApi.updateCustomField(menuField.id, {
+      name: formData.name,
+      entityPath: formData.entityPath,
+      description: formData.description,
+    });
+
+    if (result.status === 'ok') {
+      setCustomFields(prev =>
+        prev.map(f => (f.id === menuField.id ? result.data : f)),
+      );
+      setIsEditModalOpen(false);
+      setMenuField(null);
+    } else {
+      setEditError(toFieldErrors(result.error));
+    }
+
+    setEditSaving(false);
   };
 
   const handleStartDataSync = () => {
@@ -221,12 +305,13 @@ export const CustomFieldsTab = () => {
                   <TableCell className={classes.tableHeaderCell}>
                     Entity Path
                   </TableCell>
+                  <TableCell className={classes.tableHeaderCell} />
                 </TableRow>
               </TableHead>
               <TableBody>
                 {customFields.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={2} className={classes.emptyState}>
+                    <TableCell colSpan={3} className={classes.emptyState}>
                       No custom fields have been added
                     </TableCell>
                   </TableRow>
@@ -235,6 +320,15 @@ export const CustomFieldsTab = () => {
                     <TableRow key={field.id}>
                       <TableCell>{field.pagerdutyCustomFieldDisplayName}</TableCell>
                       <TableCell>{field.backstageEntityMappingPath}</TableCell>
+                      <TableCell align="right" padding="none">
+                        <IconButton
+                          size="small"
+                          aria-label="actions"
+                          onClick={event => handleOpenMenu(event, field)}
+                        >
+                          <MoreVertIcon fontSize="small" />
+                        </IconButton>
+                      </TableCell>
                     </TableRow>
                   ))
                 )}
@@ -242,6 +336,52 @@ export const CustomFieldsTab = () => {
             </Table>
           </TableContainer>
         )}
+
+        {/* Row action menu */}
+        <Menu
+          anchorEl={menuAnchorEl}
+          open={Boolean(menuAnchorEl)}
+          onClose={handleCloseMenu}
+          keepMounted
+        >
+          <MenuItem onClick={handleOpenEditModal}>
+            <ListItemIcon>
+              <EditIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText primary="Edit" />
+          </MenuItem>
+          <MenuItem disabled>
+            <ListItemIcon>
+              <BlockIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText primary="Disable" />
+          </MenuItem>
+          <MenuItem disabled>
+            <ListItemIcon>
+              <DeleteIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText primary="Delete" />
+          </MenuItem>
+        </Menu>
+
+        {/* Edit modal */}
+        <AddCustomFieldModal
+          open={isEditModalOpen}
+          saving={editSaving}
+          error={editError}
+          onClose={handleCloseEditModal}
+          onSave={handleUpdateCustomField}
+          mode="edit"
+          initialValues={
+            menuField
+              ? {
+                  name: menuField.pagerdutyCustomFieldDisplayName,
+                  entityPath: menuField.backstageEntityMappingPath,
+                  description: menuField.description ?? '',
+                }
+              : undefined
+          }
+        />
       </Box>
 
       <Box className={classes.footer}>

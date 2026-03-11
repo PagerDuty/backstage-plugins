@@ -33,6 +33,7 @@ import {
   PagerDutyEntityMappingsResponse,
   PagerDutySetting,
   BackstageCustomFieldCreateRequest,
+  BackstageCustomFieldUpdateRequest,
   BackstageCustomField,
   BackstageCustomFieldsResponse,
 } from '@pagerduty/backstage-plugin-common';
@@ -349,7 +350,14 @@ export class PagerDutyClient implements PagerDutyApi {
             error: 'A custom field with this name already exists',
           };
         }
-        if (error.message.toLowerCase().includes('product limit reached')) {
+        if (error.message.toLowerCase().includes('entity path already exists')) {
+          return {
+            status: 'error',
+            data: null,
+            error: 'A custom field with this entity path already exists',
+          };
+        }
+        if (error.message.toLowerCase().includes('limit reached')) {
           return {
             status: 'error',
             data: null,
@@ -380,6 +388,68 @@ export class PagerDutyClient implements PagerDutyApi {
     }
 
     return await this.findByUrl<BackstageCustomFieldsResponse>(url);
+  }
+
+  async updateCustomField(
+    id: number,
+    request: BackstageCustomFieldUpdateRequest,
+    account?: string,
+  ): Promise<Result<BackstageCustomField>> {
+    const body = JSON.stringify(request);
+
+    const options = {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json; charset=UTF-8',
+        Accept: 'application/json, text/plain, */*',
+      },
+      body,
+    };
+
+    let url = `${await this.config.discoveryApi.getBaseUrl(
+      'pagerduty',
+    )}/custom-fields/${id}`;
+
+    if (account) {
+      url = url.concat(`?account=${account}`);
+    }
+
+    try {
+      const response = await this.request(url, options);
+      const result = await response.json();
+      return {
+        status: 'ok',
+        data: result.customField,
+        error: null,
+      };
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.message.includes('already been taken')) {
+          return {
+            status: 'error',
+            data: null,
+            error: 'A custom field with this name already exists',
+          };
+        }
+        if (error.message.toLowerCase().includes('entity path already exists')) {
+          return {
+            status: 'error',
+            data: null,
+            error: 'A custom field with this entity path already exists',
+          };
+        }
+        return {
+          status: 'error',
+          data: null,
+          error: error.message,
+        };
+      }
+      return {
+        status: 'error',
+        data: null,
+        error: 'Failed to update custom field',
+      };
+    }
   }
 
   private async findByUrl<T>(url: string): Promise<T> {

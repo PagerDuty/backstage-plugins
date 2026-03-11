@@ -1,4 +1,4 @@
-import { useState, ChangeEvent } from 'react';
+import { useState, useEffect, ChangeEvent } from 'react';
 import {
   Box,
   Button,
@@ -40,7 +40,7 @@ const useStyles = makeStyles<BackstageTheme>(theme => {
         backgroundColor: theme.palette.primary.dark,
       },
     },
-    error: {
+    generalError: {
       marginBottom: theme.spacing(2),
     },
   });
@@ -52,12 +52,21 @@ interface FormData {
   description: string;
 }
 
+/** @public */
+export interface FieldErrors {
+  name?: string;
+  entityPath?: string;
+  general?: string;
+}
+
 interface AddCustomFieldModalProps {
   open: boolean;
   saving: boolean;
-  error: string | null;
+  error: FieldErrors | null;
   onClose: () => void;
   onSave: (data: FormData) => Promise<void>;
+  mode?: 'add' | 'edit';
+  initialValues?: FormData;
 }
 
 /** @public */
@@ -67,22 +76,38 @@ export const AddCustomFieldModal = ({
   error,
   onClose,
   onSave,
+  mode = 'add',
+  initialValues,
 }: AddCustomFieldModalProps) => {
   const classes = useStyles();
-  const [formData, setFormData] = useState<FormData>({
-    name: '',
-    entityPath: '',
-    description: '',
-  });
+  const [formData, setFormData] = useState<FormData>(
+    initialValues ?? { name: '', entityPath: '', description: '' },
+  );
+  const [localErrors, setLocalErrors] = useState<FieldErrors>({});
+
+  useEffect(() => {
+    if (open) {
+      setFormData(initialValues ?? { name: '', entityPath: '', description: '' });
+      setLocalErrors({});
+    }
+  }, [open, initialValues]);
+
+  useEffect(() => {
+    setLocalErrors(error ?? {});
+  }, [error]);
 
   const handleFormChange = (field: keyof FormData) => (
-    event: ChangeEvent<HTMLInputElement>
+    event: ChangeEvent<HTMLInputElement>,
   ) => {
     setFormData(prev => ({ ...prev, [field]: event.target.value }));
+    if (field in localErrors) {
+      setLocalErrors(prev => ({ ...prev, [field]: undefined }));
+    }
   };
 
   const handleClose = () => {
     setFormData({ name: '', entityPath: '', description: '' });
+    setLocalErrors({});
     onClose();
   };
 
@@ -92,28 +117,21 @@ export const AddCustomFieldModal = ({
   };
 
   return (
-    <Dialog
-      open={open}
-      onClose={handleClose}
-      maxWidth="sm"
-      fullWidth
-    >
+    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
       <DialogTitle disableTypography>
         <Box className={classes.dialogTitle}>
-          <Typography variant="h6">Add New Custom Field</Typography>
-          <IconButton
-            aria-label="close"
-            onClick={handleClose}
-            size="small"
-          >
+          <Typography variant="h6">
+            {mode === 'edit' ? 'Edit Custom Field' : 'Add New Custom Field'}
+          </Typography>
+          <IconButton aria-label="close" onClick={handleClose} size="small">
             <CloseIcon />
           </IconButton>
         </Box>
       </DialogTitle>
       <DialogContent className={classes.dialogContent}>
-        {error && (
-          <Alert severity="error" className={classes.error}>
-            {error}
+        {localErrors.general && (
+          <Alert severity="error" className={classes.generalError}>
+            {localErrors.general}
           </Alert>
         )}
         <TextField
@@ -122,8 +140,11 @@ export const AddCustomFieldModal = ({
           onChange={handleFormChange('name')}
           fullWidth
           variant="outlined"
-          className={classes.formField}
+          className={localErrors.name ? undefined : classes.formField}
           disabled={saving}
+          error={!!localErrors.name}
+          helperText={localErrors.name}
+          FormHelperTextProps={{ style: { marginBottom: 16 } }}
         />
         <TextField
           label="Entity Path"
@@ -131,8 +152,11 @@ export const AddCustomFieldModal = ({
           onChange={handleFormChange('entityPath')}
           fullWidth
           variant="outlined"
-          className={classes.formField}
+          className={localErrors.entityPath ? undefined : classes.formField}
           disabled={saving}
+          error={!!localErrors.entityPath}
+          helperText={localErrors.entityPath}
+          FormHelperTextProps={{ style: { marginBottom: 16 } }}
         />
         <TextField
           label="Description"
@@ -156,7 +180,13 @@ export const AddCustomFieldModal = ({
           onClick={handleSave}
           disabled={!formData.name || !formData.entityPath || saving}
         >
-          {saving ? 'Adding...' : 'Add'}
+          {saving
+            ? mode === 'edit'
+              ? 'Saving...'
+              : 'Adding...'
+            : mode === 'edit'
+            ? 'Save'
+            : 'Add'}
         </Button>
       </DialogActions>
     </Dialog>

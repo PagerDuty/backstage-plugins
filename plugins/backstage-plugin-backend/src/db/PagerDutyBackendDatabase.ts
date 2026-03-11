@@ -43,6 +43,19 @@ export interface PagerDutyBackendStore {
   getAllSettings(): Promise<PagerDutySetting[]>;
   insertCustomField(customField: Omit<BackstageCustomField, 'id' | 'createdAt' | 'updatedAt'>): Promise<BackstageCustomField>;
   getAllCustomFields(subdomain: string): Promise<BackstageCustomField[]>;
+  findCustomFieldById(id: number): Promise<BackstageCustomField | undefined>;
+  findCustomFieldByEntityPath(
+    entityPath: string,
+    excludeId?: number,
+  ): Promise<BackstageCustomField | undefined>;
+  updateCustomField(
+    id: number,
+    updates: {
+      pagerdutyCustomFieldDisplayName: string;
+      backstageEntityMappingPath: string;
+      description?: string;
+    },
+  ): Promise<BackstageCustomField>;
 }
 
 type Options = {
@@ -186,6 +199,93 @@ export class PagerDutyBackendDatabase implements PagerDutyBackendStore {
       throw new Error(
         'Failed to retrieve custom field after insert into pagerduty_custom_fields',
       );
+    }
+
+    return {
+      id: result.id,
+      pagerdutyCustomFieldId: result.pagerdutyCustomFieldId,
+      pagerdutyCustomFieldDisplayName: result.pagerdutyCustomFieldDisplayName,
+      pagerdutyCustomFieldEnabled: result.pagerdutyCustomFieldEnabled,
+      backstageEntityMappingPath: result.backstageEntityMappingPath,
+      pagerdutySubdomain: result.pagerdutySubdomain,
+      description: result.description,
+      createdAt: result.createdAt,
+      updatedAt: result.updatedAt,
+    };
+  }
+
+  async findCustomFieldById(id: number): Promise<BackstageCustomField | undefined> {
+    const result = await this.db<RawDbCustomFieldRow>('pagerduty_custom_fields')
+      .where('id', id)
+      .first();
+
+    if (!result) return undefined;
+
+    return {
+      id: result.id,
+      pagerdutyCustomFieldId: result.pagerdutyCustomFieldId,
+      pagerdutyCustomFieldDisplayName: result.pagerdutyCustomFieldDisplayName,
+      pagerdutyCustomFieldEnabled: result.pagerdutyCustomFieldEnabled,
+      backstageEntityMappingPath: result.backstageEntityMappingPath,
+      pagerdutySubdomain: result.pagerdutySubdomain,
+      description: result.description,
+      createdAt: result.createdAt,
+      updatedAt: result.updatedAt,
+    };
+  }
+
+  async findCustomFieldByEntityPath(
+    entityPath: string,
+    excludeId?: number,
+  ): Promise<BackstageCustomField | undefined> {
+    let query = this.db<RawDbCustomFieldRow>('pagerduty_custom_fields').where(
+      'backstageEntityMappingPath',
+      entityPath,
+    );
+
+    if (excludeId !== undefined) {
+      query = query.andWhereNot('id', excludeId);
+    }
+
+    const result = await query.first();
+    if (!result) return undefined;
+
+    return {
+      id: result.id,
+      pagerdutyCustomFieldId: result.pagerdutyCustomFieldId,
+      pagerdutyCustomFieldDisplayName: result.pagerdutyCustomFieldDisplayName,
+      pagerdutyCustomFieldEnabled: result.pagerdutyCustomFieldEnabled,
+      backstageEntityMappingPath: result.backstageEntityMappingPath,
+      pagerdutySubdomain: result.pagerdutySubdomain,
+      description: result.description,
+      createdAt: result.createdAt,
+      updatedAt: result.updatedAt,
+    };
+  }
+
+  async updateCustomField(
+    id: number,
+    updates: {
+      pagerdutyCustomFieldDisplayName: string;
+      backstageEntityMappingPath: string;
+      description?: string;
+    },
+  ): Promise<BackstageCustomField> {
+    await this.db<RawDbCustomFieldRow>('pagerduty_custom_fields')
+      .where('id', id)
+      .update({
+        pagerdutyCustomFieldDisplayName: updates.pagerdutyCustomFieldDisplayName,
+        backstageEntityMappingPath: updates.backstageEntityMappingPath,
+        description: updates.description,
+        updatedAt: new Date(),
+      });
+
+    const result = await this.db<RawDbCustomFieldRow>('pagerduty_custom_fields')
+      .where('id', id)
+      .first();
+
+    if (!result) {
+      throw new Error(`Failed to retrieve custom field after update for id: ${id}`);
     }
 
     return {
