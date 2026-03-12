@@ -5,7 +5,6 @@ import {
   CircularProgress,
   Divider,
   IconButton,
-  Link,
   ListItemIcon,
   ListItemText,
   Menu,
@@ -19,7 +18,7 @@ import {
   TableRow,
   Typography,
 } from '@material-ui/core';
-import MoreVertIcon from '@material-ui/icons/MoreVert';
+import MoreHorizIcon from '@material-ui/icons/MoreHoriz';
 import EditIcon from '@material-ui/icons/Edit';
 import BlockIcon from '@material-ui/icons/Block';
 import DeleteIcon from '@material-ui/icons/Delete';
@@ -61,11 +60,6 @@ const useStyles = makeStyles<BackstageTheme>(theme => {
     },
     availableMappings: {
       color: theme.palette.text.secondary,
-      fontSize: '0.875rem',
-    },
-    addLink: {
-      color: theme.palette.primary.main,
-      cursor: 'pointer',
       fontSize: '0.875rem',
     },
     sectionMeta: {
@@ -276,17 +270,17 @@ export const CustomFieldsTab = () => {
               Custom Fields
             </Typography>
             <Typography variant="body2" className={classes.sectionSubtitle}>
-              Manually manage your global data sync preferences
+              Manage your custom fields
             </Typography>
           </Box>
           <Box className={classes.sectionMeta}>
-            <Link
-              className={classes.addLink}
+            <Button
+              variant="outlined"
+              size="small"
               onClick={handleAddCustomField}
-              underline="always"
             >
-              + Add Custom Field
-            </Link>
+              + Add New
+            </Button>
           </Box>
         </Box>
 
@@ -305,13 +299,16 @@ export const CustomFieldsTab = () => {
                   <TableCell className={classes.tableHeaderCell}>
                     Entity Path
                   </TableCell>
+                  <TableCell className={classes.tableHeaderCell}>
+                    Description
+                  </TableCell>
                   <TableCell className={classes.tableHeaderCell} />
                 </TableRow>
               </TableHead>
               <TableBody>
                 {customFields.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={3} className={classes.emptyState}>
+                    <TableCell colSpan={4} className={classes.emptyState}>
                       No custom fields have been added
                     </TableCell>
                   </TableRow>
@@ -320,13 +317,14 @@ export const CustomFieldsTab = () => {
                     <TableRow key={field.id}>
                       <TableCell>{field.pagerdutyCustomFieldDisplayName}</TableCell>
                       <TableCell>{field.backstageEntityMappingPath}</TableCell>
+                      <TableCell>{field.description ?? ''}</TableCell>
                       <TableCell align="right" padding="none">
                         <IconButton
                           size="small"
                           aria-label="actions"
                           onClick={event => handleOpenMenu(event, field)}
                         >
-                          <MoreVertIcon fontSize="small" />
+                          <MoreHorizIcon fontSize="small" />
                         </IconButton>
                       </TableCell>
                     </TableRow>
@@ -385,7 +383,7 @@ export const CustomFieldsTab = () => {
       </Box>
 
       <Box className={classes.footer}>
-        <Button variant="contained" className={classes.saveButton} onClick={handleSave}>
+        <Button variant="contained" className={classes.saveButton} onClick={handleSave} disabled>
           Save
         </Button>
       </Box>
