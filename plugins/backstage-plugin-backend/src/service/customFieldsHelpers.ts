@@ -44,20 +44,38 @@ export async function checkEntityPathUnique(
 /** Translates well-known PagerDuty HttpErrors into clean HttpErrors and
  *  re-throws them to be handled by the outer catch. */
 export function handlePagerDutyError(error: HttpError): never {
+  if (error.status === 400) {
+    const message = error.message.toLowerCase().includes('product limit reached')
+      ? 'PagerDuty custom field limit reached. Maximum number of custom fields (15 or 30) has been exceeded.'
+      : error.message;
+    throw new HttpError(message, 400);
+  }
+  if (error.status === 401) {
+    throw new HttpError(
+      'Authentication failed. Please check your PagerDuty API credentials.',
+      401,
+    );
+  }
+  if (error.status === 403) {
+    throw new HttpError(
+      'Authorization failed. You do not have permission to manage custom fields in PagerDuty.',
+      403,
+    );
+  }
+  if (error.status === 404) {
+    throw new HttpError('Custom field not found in PagerDuty', 404);
+  }
   if (error.status === 409) {
     throw new HttpError(
       'A custom field with this name already exists in PagerDuty',
       409,
     );
   }
-  if (error.status === 404) {
-    throw new HttpError('Custom field not found in PagerDuty', 404);
-  }
-  if (error.status === 400) {
-    const message = error.message.toLowerCase().includes('product limit reached')
-      ? 'PagerDuty custom field limit reached. Maximum number of custom fields (15 or 30) has been exceeded.'
-      : error.message;
-    throw new HttpError(message, 400);
+  if (error.status === 429) {
+    throw new HttpError(
+      'PagerDuty API rate limit exceeded. Please try again in a few moments.',
+      429,
+    );
   }
   throw error;
 }
