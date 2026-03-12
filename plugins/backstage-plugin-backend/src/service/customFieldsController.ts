@@ -10,6 +10,14 @@ import {
   PagerDutyCustomFieldCreateRequest,
   PagerDutyCustomFieldUpdateRequest,
 } from '@pagerduty/backstage-plugin-common';
+import {
+  checkEntityPathUnique,
+  getSubdomainFromRequest,
+  handlePagerDutyError,
+  handleUnexpectedError,
+  normalizeDescription,
+  validateFieldInput,
+} from './customFieldsHelpers';
 
 export interface CustomFieldsControllerOptions {
   logger: LoggerService;
@@ -27,43 +35,20 @@ export class CustomFieldsController {
 
   async createCustomField(request: Request, response: Response): Promise<void> {
     try {
-      const { name, entityPath, description } = request.body as BackstageCustomFieldCreateRequest;
+      const { name, entityPath, description } =
+        request.body as BackstageCustomFieldCreateRequest;
 
-      // Validate input
-      if (!name || !entityPath) {
-        response.status(400).json({
-          errors: ['Missing required fields: name and entityPath are required'],
-        });
-        return;
-      }
+      const sanitizedName = validateFieldInput(name, entityPath);
+      const subdomain = getSubdomainFromRequest(request);
 
-      const sanitizedName = this.sanitizeFieldName(name);
-      if (!sanitizedName) {
-        response.status(400).json({
-          errors: ['Field name must contain at least one alphanumeric character'],
-        });
-        return;
-      }
+      await checkEntityPathUnique(this.store, entityPath);
 
-      const normalizedDescription =
-        (description ?? '').trim() || `Backstage custom field: ${entityPath}`;
+      const normalizedDesc = normalizeDescription(description, entityPath);
 
-      // Get subdomain from config (or use 'default' for single account setup)
-      const subdomain = this.getSubdomainFromRequest(request);
-
-      const existingByPath = await this.store.findCustomFieldByEntityPath(entityPath);
-      if (existingByPath) {
-        response.status(409).json({
-          errors: ['A custom field with this entity path already exists'],
-        });
-        return;
-      }
-
-      // Create the custom field on PagerDuty
       const pagerDutyRequest: PagerDutyCustomFieldCreateRequest = {
         field: {
           data_type: 'string',
-          description: normalizedDescription,
+          description: normalizedDesc,
           display_name: name,
           enabled: true,
           field_type: 'single_value',
@@ -79,130 +64,58 @@ export class CustomFieldsController {
         });
         pagerDutyField = pagerDutyResponse.field;
       } catch (error) {
-        if (error instanceof HttpError) {
-          if (error.status === 409) {
-            response.status(409).json({
-              errors: ['A custom field with this name already exists in PagerDuty'],
-            });
-            return;
-          } else if (
-            error.status === 400 && 
-            (error.message.toLowerCase().includes('product limit reached'))) {
-            response.status(400).json({
-              errors: ['PagerDuty custom field limit reached. Maximum number of custom fields (15 or 30) has been exceeded.'],
-            });
-            return;
-          } else if (error.status === 400) {
-            // Pass through other 400 errors with clean message
-            response.status(400).json({
-              errors: [error.message],
-            });
-            return;
-          }
-        }
+        if (error instanceof HttpError) handlePagerDutyError(error);
         throw error;
       }
 
-      // Store the mapping in the database
       const customField = await this.store.insertCustomField({
         pagerdutyCustomFieldId: pagerDutyField.id,
         pagerdutyCustomFieldDisplayName: pagerDutyField.display_name,
         pagerdutyCustomFieldEnabled: pagerDutyField.enabled,
         backstageEntityMappingPath: entityPath,
         pagerdutySubdomain: subdomain,
-        description: normalizedDescription,
+        description: normalizedDesc,
       });
 
       this.logger.info(
         `Successfully created custom field: ${name} (${pagerDutyField.id}) mapped to ${entityPath}`,
       );
-
-      response.status(201).json({
-        customField,
-      });
+      response.status(201).json({ customField });
     } catch (error) {
-      this.logger.error(`Failed to create custom field: ${error}`);
-      
-      if (error instanceof HttpError) {
-        response.status(error.status).json({
-          errors: [error.message],
-        });
-      } else {
-        response.status(500).json({
-          errors: ['An unexpected error occurred while creating the custom field'],
-        });
-      }
+      handleUnexpectedError(this.logger, error, 'creating the custom field', response);
     }
   }
 
   async getCustomFields(request: Request, response: Response): Promise<void> {
     try {
-      const subdomain = this.getSubdomainFromRequest(request);
+      const subdomain = getSubdomainFromRequest(request);
       const customFields = await this.store.getAllCustomFields(subdomain);
-
-      const responseData: BackstageCustomFieldsResponse = {
-        customFields,
-      };
-
+      const responseData: BackstageCustomFieldsResponse = { customFields };
       response.status(200).json(responseData);
     } catch (error) {
-      this.logger.error(`Failed to get custom fields: ${error}`);
-      response.status(500).json({
-        errors: ['An unexpected error occurred while fetching custom fields'],
-      });
+      handleUnexpectedError(this.logger, error, 'fetching custom fields', response);
     }
   }
 
   async updateCustomField(request: Request, response: Response): Promise<void> {
     try {
       const id = parseInt(request.params.id, 10);
-      if (isNaN(id)) {
-        response.status(400).json({ errors: ['Invalid id parameter'] });
-        return;
-      }
+      if (isNaN(id)) throw new HttpError('Invalid id parameter', 400);
 
       const { name, entityPath, description } =
         request.body as BackstageCustomFieldUpdateRequest;
 
-      if (!name || !entityPath) {
-        response.status(400).json({
-          errors: ['Missing required fields: name and entityPath are required'],
-        });
-        return;
-      }
-
-      const sanitizedName = this.sanitizeFieldName(name);
-      if (!sanitizedName) {
-        response.status(400).json({
-          errors: [
-            'Field name must contain at least one alphanumeric character',
-          ],
-        });
-        return;
-      }
+      validateFieldInput(name, entityPath);
 
       const existing = await this.store.findCustomFieldById(id);
-      if (!existing) {
-        response.status(404).json({ errors: ['Custom field not found'] });
-        return;
-      }
+      if (!existing) throw new HttpError('Custom field not found', 404);
 
-      const existingByPath = await this.store.findCustomFieldByEntityPath(entityPath, id);
-      if (existingByPath) {
-        response.status(409).json({
-          errors: ['A custom field with this entity path already exists'],
-        });
-        return;
-      }
+      await checkEntityPathUnique(this.store, entityPath, id);
 
-      const normalizedDescription =
-        (description ?? '').trim() || `Backstage custom field: ${entityPath}`;
+      const normalizedDesc = normalizeDescription(description, entityPath);
 
       const pagerDutyRequest: PagerDutyCustomFieldUpdateRequest = {
-        field: {
-          display_name: name,
-          description: normalizedDescription,
-        },
+        field: { display_name: name, description: normalizedDesc },
       };
 
       try {
@@ -212,60 +125,20 @@ export class CustomFieldsController {
           account: existing.pagerdutySubdomain,
         });
       } catch (error) {
-        if (error instanceof HttpError) {
-          if (error.status === 409) {
-            response.status(409).json({
-              errors: [
-                'A custom field with this name already exists in PagerDuty',
-              ],
-            });
-            return;
-          } else if (error.status === 404) {
-            response.status(404).json({
-              errors: ['Custom field not found in PagerDuty'],
-            });
-            return;
-          } else if (error.status === 400) {
-            response.status(400).json({ errors: [error.message] });
-            return;
-          }
-        }
+        if (error instanceof HttpError) handlePagerDutyError(error);
         throw error;
       }
 
       const customField = await this.store.updateCustomField(id, {
         pagerdutyCustomFieldDisplayName: name,
         backstageEntityMappingPath: entityPath,
-        description: normalizedDescription,
+        description: normalizedDesc,
       });
 
       this.logger.info(`Successfully updated custom field id=${id} (${name})`);
       response.status(200).json({ customField });
     } catch (error) {
-      this.logger.error(`Failed to update custom field: ${error}`);
-      if (error instanceof HttpError) {
-        response.status(error.status).json({ errors: [error.message] });
-      } else {
-        response.status(500).json({
-          errors: [
-            'An unexpected error occurred while updating the custom field',
-          ],
-        });
-      }
+      handleUnexpectedError(this.logger, error, 'updating the custom field', response);
     }
-  }
-
-  private getSubdomainFromRequest(request: Request): string {
-    // Try to get account from query parameter or use 'default'
-    const account = (request.query.account as string) || 'default';
-    return account;
-  }
-
-  private sanitizeFieldName(name: string): string {
-    // PagerDuty field names should be lowercase and use underscores
-    return name
-      .toLowerCase()
-      .replace(/\s+/g, '_')
-      .replace(/[^a-z0-9_]/g, '');
   }
 }
