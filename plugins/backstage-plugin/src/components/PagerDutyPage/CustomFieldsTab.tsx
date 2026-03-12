@@ -20,8 +20,6 @@ import {
 } from '@material-ui/core';
 import MoreHorizIcon from '@material-ui/icons/MoreHoriz';
 import EditIcon from '@material-ui/icons/Edit';
-import BlockIcon from '@material-ui/icons/Block';
-import DeleteIcon from '@material-ui/icons/Delete';
 import { createStyles, makeStyles } from '@material-ui/core/styles';
 import { BackstageTheme } from '@backstage/theme';
 import { useApi } from '@backstage/core-plugin-api';
@@ -347,18 +345,6 @@ export const CustomFieldsTab = () => {
               <EditIcon fontSize="small" />
             </ListItemIcon>
             <ListItemText primary="Edit" />
-          </MenuItem>
-          <MenuItem disabled>
-            <ListItemIcon>
-              <BlockIcon fontSize="small" />
-            </ListItemIcon>
-            <ListItemText primary="Disable" />
-          </MenuItem>
-          <MenuItem disabled>
-            <ListItemIcon>
-              <DeleteIcon fontSize="small" />
-            </ListItemIcon>
-            <ListItemText primary="Delete" />
           </MenuItem>
         </Menu>
 
