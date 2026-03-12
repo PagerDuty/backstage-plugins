@@ -59,7 +59,7 @@ export interface FieldErrors {
   general?: string;
 }
 
-interface AddCustomFieldModalProps {
+interface CustomFieldModalProps {
   open: boolean;
   saving: boolean;
   error: FieldErrors | null;
@@ -70,7 +70,7 @@ interface AddCustomFieldModalProps {
 }
 
 /** @public */
-export const AddCustomFieldModal = ({
+export const CustomFieldModal = ({
   open,
   saving,
   error,
@@ -78,7 +78,7 @@ export const AddCustomFieldModal = ({
   onSave,
   mode = 'add',
   initialValues,
-}: AddCustomFieldModalProps) => {
+}: CustomFieldModalProps) => {
   const classes = useStyles();
   const [formData, setFormData] = useState<FormData>(
     initialValues ?? { name: '', entityPath: '', description: '' },

@@ -27,7 +27,7 @@ import { BackstageTheme } from '@backstage/theme';
 import { useApi } from '@backstage/core-plugin-api';
 import { pagerDutyApiRef } from '../../api';
 import { BackstageCustomField } from '@pagerduty/backstage-plugin-common';
-import { AddCustomFieldModal, FieldErrors } from './AddCustomFieldModal';
+import { CustomFieldModal, FieldErrors } from './CustomFieldModal';
 
 
 const useStyles = makeStyles<BackstageTheme>(theme => {
@@ -363,7 +363,7 @@ export const CustomFieldsTab = () => {
         </Menu>
 
         {/* Edit modal */}
-        <AddCustomFieldModal
+        <CustomFieldModal
           open={isEditModalOpen}
           saving={editSaving}
           error={editError}
@@ -388,7 +388,7 @@ export const CustomFieldsTab = () => {
         </Button>
       </Box>
 
-      <AddCustomFieldModal
+      <CustomFieldModal
         open={isModalOpen}
         saving={saving}
         error={error}
