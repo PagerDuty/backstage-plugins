@@ -212,10 +212,13 @@ export const CustomFieldsTab = () => {
   }) => {
     if (!menuField) return;
 
+    // Capture field ID early to prevent race conditions
+    const fieldId = menuField.id;
+
     setEditSaving(true);
     setEditError(null);
 
-    const result = await pagerDutyApi.updateCustomField(menuField.id, {
+    const result = await pagerDutyApi.updateCustomField(fieldId, {
       name: formData.name,
       entityPath: formData.entityPath,
       description: formData.description,
@@ -223,7 +226,7 @@ export const CustomFieldsTab = () => {
 
     if (result.status === 'ok') {
       setCustomFields(prev =>
-        prev.map(f => (f.id === menuField.id ? result.data : f)),
+        prev.map(f => (f.id === fieldId ? result.data : f)),
       );
       setIsEditModalOpen(false);
       setMenuField(null);
