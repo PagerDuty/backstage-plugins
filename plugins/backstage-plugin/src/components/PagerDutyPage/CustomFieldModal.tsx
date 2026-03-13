@@ -93,7 +93,11 @@ export const CustomFieldModal = ({
       setFormData(initialValues ?? { name: '', entityPath: '', description: '' });
       setLocalErrors({});
     }
-  }, [open, initialValues]);
+    // initialValues is intentionally excluded: the form must only reset when the
+    // modal opens, not on every re-render of the parent that creates a new object
+    // reference while the modal is already open (e.g. while saving).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   useEffect(() => {
     setLocalErrors(error ?? {});
