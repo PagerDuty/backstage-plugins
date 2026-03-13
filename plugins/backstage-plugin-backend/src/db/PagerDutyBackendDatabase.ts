@@ -44,10 +44,6 @@ export interface PagerDutyBackendStore {
   insertCustomField(customField: Omit<BackstageCustomField, 'id' | 'createdAt' | 'updatedAt'>): Promise<BackstageCustomField>;
   getAllCustomFields(subdomain: string): Promise<BackstageCustomField[]>;
   findCustomFieldById(id: number): Promise<BackstageCustomField | undefined>;
-  findCustomFieldByEntityPath(
-    entityPath: string,
-    excludeId?: number,
-  ): Promise<BackstageCustomField | undefined>;
   updateCustomField(
     id: number,
     updates: {
@@ -219,35 +215,6 @@ export class PagerDutyBackendDatabase implements PagerDutyBackendStore {
       .where('id', id)
       .first();
 
-    if (!result) return undefined;
-
-    return {
-      id: result.id,
-      pagerdutyCustomFieldId: result.pagerdutyCustomFieldId,
-      pagerdutyCustomFieldDisplayName: result.pagerdutyCustomFieldDisplayName,
-      pagerdutyCustomFieldEnabled: result.pagerdutyCustomFieldEnabled,
-      backstageEntityMappingPath: result.backstageEntityMappingPath,
-      pagerdutySubdomain: result.pagerdutySubdomain,
-      description: result.description,
-      createdAt: result.createdAt,
-      updatedAt: result.updatedAt,
-    };
-  }
-
-  async findCustomFieldByEntityPath(
-    entityPath: string,
-    excludeId?: number,
-  ): Promise<BackstageCustomField | undefined> {
-    let query = this.db<RawDbCustomFieldRow>('pagerduty_custom_fields').where(
-      'backstageEntityMappingPath',
-      entityPath,
-    );
-
-    if (excludeId !== undefined) {
-      query = query.andWhereNot('id', excludeId);
-    }
-
-    const result = await query.first();
     if (!result) return undefined;
 
     return {

@@ -11,8 +11,8 @@ import {
   PagerDutyCustomFieldUpdateRequest,
 } from '@pagerduty/backstage-plugin-common';
 import {
-  checkEntityPathUnique,
   getSubdomainFromRequest,
+  handleDbError,
   handlePagerDutyError,
   handleUnexpectedError,
   normalizeDescription,
@@ -40,9 +40,6 @@ export class CustomFieldsController {
 
       const sanitizedName = validateFieldInput(name, entityPath);
       const subdomain = getSubdomainFromRequest(request);
-
-      await checkEntityPathUnique(this.store, entityPath);
-
       const normalizedDesc = normalizeDescription(description, entityPath);
 
       const pagerDutyRequest: PagerDutyCustomFieldCreateRequest = {
@@ -68,19 +65,23 @@ export class CustomFieldsController {
         throw error;
       }
 
-      const customField = await this.store.insertCustomField({
-        pagerdutyCustomFieldId: pagerDutyField.id,
-        pagerdutyCustomFieldDisplayName: pagerDutyField.display_name,
-        pagerdutyCustomFieldEnabled: pagerDutyField.enabled,
-        backstageEntityMappingPath: entityPath,
-        pagerdutySubdomain: subdomain,
-        description: normalizedDesc,
-      });
+      try {
+        const customField = await this.store.insertCustomField({
+          pagerdutyCustomFieldId: pagerDutyField.id,
+          pagerdutyCustomFieldDisplayName: pagerDutyField.display_name,
+          pagerdutyCustomFieldEnabled: pagerDutyField.enabled,
+          backstageEntityMappingPath: entityPath,
+          pagerdutySubdomain: subdomain,
+          description: normalizedDesc,
+        });
 
-      this.logger.info(
-        `Successfully created custom field: ${name} (${pagerDutyField.id}) mapped to ${entityPath}`,
-      );
-      response.status(201).json({ customField });
+        this.logger.info(
+          `Successfully created custom field: ${name} (${pagerDutyField.id}) mapped to ${entityPath}`,
+        );
+        response.status(201).json({ customField });
+      } catch (error) {
+        handleDbError(error);
+      }
     } catch (error) {
       handleUnexpectedError(this.logger, error, 'creating the custom field', response);
     }
@@ -110,8 +111,6 @@ export class CustomFieldsController {
       const existing = await this.store.findCustomFieldById(id);
       if (!existing) throw new HttpError('Custom field not found', 404);
 
-      await checkEntityPathUnique(this.store, entityPath, id);
-
       const normalizedDesc = normalizeDescription(description, entityPath);
 
       const pagerDutyRequest: PagerDutyCustomFieldUpdateRequest = {
@@ -129,14 +128,18 @@ export class CustomFieldsController {
         throw error;
       }
 
-      const customField = await this.store.updateCustomField(id, {
-        pagerdutyCustomFieldDisplayName: name,
-        backstageEntityMappingPath: entityPath,
-        description: normalizedDesc,
-      });
+      try {
+        const customField = await this.store.updateCustomField(id, {
+          pagerdutyCustomFieldDisplayName: name,
+          backstageEntityMappingPath: entityPath,
+          description: normalizedDesc,
+        });
 
-      this.logger.info(`Successfully updated custom field id=${id} (${name})`);
-      response.status(200).json({ customField });
+        this.logger.info(`Successfully updated custom field id=${id} (${name})`);
+        response.status(200).json({ customField });
+      } catch (error) {
+        handleDbError(error);
+      }
     } catch (error) {
       handleUnexpectedError(this.logger, error, 'updating the custom field', response);
     }
