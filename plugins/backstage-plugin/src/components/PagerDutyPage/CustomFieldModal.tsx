@@ -1,50 +1,53 @@
-import { useState, useEffect, ChangeEvent } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Button,
   Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  IconButton,
+  DialogBody,
+  DialogFooter,
+  DialogHeader,
+  Flex,
+  Text,
   TextField,
-  Typography,
-} from '@material-ui/core';
-import { createStyles, makeStyles } from '@material-ui/core/styles';
+} from '@backstage/ui';
+import { makeStyles, createStyles } from '@material-ui/core/styles';
 import { BackstageTheme } from '@backstage/theme';
-import CloseIcon from '@material-ui/icons/Close';
-import { Alert } from '@material-ui/lab';
 
-const useStyles = makeStyles<BackstageTheme>(theme => {
-  return createStyles({
-    dialogTitle: {
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingRight: theme.spacing(1),
-    },
-    dialogContent: {
-      minWidth: 500,
-      paddingTop: theme.spacing(2),
-    },
-    formField: {
+const useStyles = makeStyles<BackstageTheme>(theme =>
+  createStyles({
+    generalErrorBox: {
+      backgroundColor: 'rgba(211, 47, 47, 0.08)',
+      borderRadius: theme.shape.borderRadius,
+      padding: `${theme.spacing(1)}px ${theme.spacing(1.5)}px`,
       marginBottom: theme.spacing(2),
     },
-    dialogActions: {
-      padding: theme.spacing(2, 3),
+    fieldErrorText: {
+      color: theme.palette.error.main,
+      fontSize: '0.75rem',
+      margin: `${theme.spacing(0.5)}px 0 0 0`,
     },
-    addButton: {
-      backgroundColor: theme.palette.primary.main,
-      color: theme.palette.primary.contrastText,
-      '&:hover': {
-        backgroundColor: theme.palette.primary.dark,
+    descriptionLabel: {
+      display: 'block',
+      fontSize: '0.875rem',
+      marginBottom: theme.spacing(0.75),
+    },
+    textarea: {
+      width: '100%',
+      boxSizing: 'border-box' as const,
+      padding: `${theme.spacing(1)}px ${theme.spacing(1.5)}px`,
+      fontSize: '0.875rem',
+      border: `1px solid ${theme.palette.divider}`,
+      borderRadius: theme.shape.borderRadius,
+      resize: 'vertical' as const,
+      fontFamily: 'inherit',
+      color: 'inherit',
+      backgroundColor: 'transparent',
+      '&:disabled': {
+        backgroundColor: theme.palette.action.disabledBackground,
       },
     },
-    generalError: {
-      marginBottom: theme.spacing(2),
-    },
-  });
-});
+  }),
+);
 
 interface FormData {
   name: string;
@@ -96,10 +99,8 @@ export const CustomFieldModal = ({
     setLocalErrors(error ?? {});
   }, [error]);
 
-  const handleFormChange = (field: keyof FormData) => (
-    event: ChangeEvent<HTMLInputElement>,
-  ) => {
-    setFormData(prev => ({ ...prev, [field]: event.target.value }));
+  const handleFormChange = (field: keyof FormData) => (value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
     if (field in localErrors) {
       setLocalErrors(prev => ({ ...prev, [field]: undefined }));
     }
@@ -113,82 +114,87 @@ export const CustomFieldModal = ({
 
   const handleSave = async () => {
     await onSave(formData);
-    setFormData({ name: '', entityPath: '', description: '' });
   };
 
+  const getSaveLabel = () => {
+    return mode === 'edit' ? 'Save' : 'Add';
+  };
+  const saveLabel = getSaveLabel();
+
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-      <DialogTitle disableTypography>
-        <Box className={classes.dialogTitle}>
-          <Typography variant="h6">
-            {mode === 'edit' ? 'Edit Custom Field' : 'Add New Custom Field'}
-          </Typography>
-          <IconButton aria-label="close" onClick={handleClose} size="small">
-            <CloseIcon />
-          </IconButton>
-        </Box>
-      </DialogTitle>
-      <DialogContent className={classes.dialogContent}>
+    <Dialog
+      isOpen={open}
+      onOpenChange={isOpen => !isOpen && handleClose()}
+      width={500}
+    >
+      <DialogHeader>
+        {mode === 'edit' ? 'Edit Custom Field' : 'Add New Custom Field'}
+      </DialogHeader>
+      <DialogBody>
         {localErrors.general && (
-          <Alert severity="error" className={classes.generalError}>
-            {localErrors.general}
-          </Alert>
+          <Box className={classes.generalErrorBox}>
+            <Text variant="body-small" color="danger">
+              {localErrors.general}
+            </Text>
+          </Box>
         )}
-        <TextField
-          label="Name"
-          value={formData.name}
-          onChange={handleFormChange('name')}
-          fullWidth
-          variant="outlined"
-          className={localErrors.name ? undefined : classes.formField}
-          disabled={saving}
-          error={!!localErrors.name}
-          helperText={localErrors.name}
-          FormHelperTextProps={{ style: { marginBottom: 16 } }}
-        />
-        <TextField
-          label="Entity Path"
-          value={formData.entityPath}
-          onChange={handleFormChange('entityPath')}
-          fullWidth
-          variant="outlined"
-          className={localErrors.entityPath ? undefined : classes.formField}
-          disabled={saving}
-          error={!!localErrors.entityPath}
-          helperText={localErrors.entityPath}
-          FormHelperTextProps={{ style: { marginBottom: 16 } }}
-        />
-        <TextField
-          label="Description"
-          value={formData.description}
-          onChange={handleFormChange('description')}
-          fullWidth
-          variant="outlined"
-          multiline
-          rows={3}
-          className={classes.formField}
-          disabled={saving}
-        />
-      </DialogContent>
-      <DialogActions className={classes.dialogActions}>
-        <Button onClick={handleClose} disabled={saving}>
-          Cancel
-        </Button>
-        <Button
-          variant="contained"
-          className={classes.addButton}
-          onClick={handleSave}
-          disabled={!formData.name || !formData.entityPath || saving}
-        >
-          {saving
-            ? mode === 'edit'
-              ? 'Saving...'
-              : 'Adding...'
-            : mode === 'edit'
-            ? 'Save'
-            : 'Add'}
-        </Button>
-      </DialogActions>
+        <Flex direction="column" gap="4">
+          <Box>
+            <TextField
+              label="Name"
+              value={formData.name}
+              onChange={handleFormChange('name')}
+              isDisabled={saving}
+              isInvalid={!!localErrors.name}
+            />
+            {localErrors.name && (
+              <Text as="p" className={classes.fieldErrorText}>
+                {localErrors.name}
+              </Text>
+            )}
+          </Box>
+          <Box>
+            <TextField
+              label="Entity Path"
+              value={formData.entityPath}
+              onChange={handleFormChange('entityPath')}
+              isDisabled={saving}
+              isInvalid={!!localErrors.entityPath}
+            />
+            {localErrors.entityPath && (
+              <Text as="p" className={classes.fieldErrorText}>
+                {localErrors.entityPath}
+              </Text>
+            )}
+          </Box>
+          <Box>
+            <Text as="label" className={classes.descriptionLabel}>
+              Description
+            </Text>
+            <textarea
+              value={formData.description}
+              onChange={e => handleFormChange('description')(e.target.value)}
+              disabled={saving}
+              rows={5}
+              className={classes.textarea}
+            />
+          </Box>
+        </Flex>
+      </DialogBody>
+      <DialogFooter>
+        <Flex gap="2" justify="end">
+          <Button variant="secondary" isDisabled={saving} onClick={handleClose}>
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            onClick={handleSave}
+            isDisabled={!formData.name || !formData.entityPath || saving}
+          >
+            {saveLabel}
+          </Button>
+        </Flex>
+      </DialogFooter>
     </Dialog>
   );
 };
