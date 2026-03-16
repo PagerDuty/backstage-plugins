@@ -94,7 +94,7 @@ const COLUMNS = [
   { id: 'name', label: 'Custom Field', isRowHeader: true, width: undefined },
   { id: 'entityPath', label: 'Entity Path', isRowHeader: false, width: undefined },
   { id: 'description', label: 'Description', isRowHeader: false, width: undefined },
-  { id: 'actions', label: '', isRowHeader: false, width: 48 },
+  { id: 'actions', label: '', isRowHeader: false, width: undefined },
 ];
 
 /** @public */
@@ -106,7 +106,7 @@ export const CustomFieldsTab = () => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<FieldErrors | null>(null);
-  const [menuField, setMenuField] = useState<BackstageCustomField | null>(null);
+  const [selectedCustomField, setSelectedCustomField] = useState<BackstageCustomField | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState<FieldErrors | null>(null);
@@ -145,9 +145,15 @@ export const CustomFieldsTab = () => {
     })();
   }, [pagerDutyApi]);
 
-  const handleAddCustomField = () => {
-    setIsModalOpen(true);
-    setError(null);
+  const handleOpenModal = (field: BackstageCustomField | null = null) => {
+    if (field) {
+      setSelectedCustomField(field);
+      setEditError(null);
+      setIsEditModalOpen(true);
+    } else {
+      setIsModalOpen(true);
+      setError(null);
+    }
   };
 
   const handleCloseModal = () => {
@@ -179,15 +185,9 @@ export const CustomFieldsTab = () => {
     setSaving(false);
   };
 
-  const handleOpenEditModal = (field: BackstageCustomField) => {
-    setMenuField(field);
-    setEditError(null);
-    setIsEditModalOpen(true);
-  };
-
   const handleCloseEditModal = () => {
     setIsEditModalOpen(false);
-    setMenuField(null);
+    setSelectedCustomField(null);
     setEditError(null);
   };
 
@@ -196,10 +196,10 @@ export const CustomFieldsTab = () => {
     entityPath: string;
     description: string;
   }) => {
-    if (!menuField) return;
+    if (!selectedCustomField) return;
 
     // Capture field ID early to prevent race conditions
-    const fieldId = menuField.id;
+    const fieldId = selectedCustomField.id;
 
     setEditSaving(true);
     setEditError(null);
@@ -215,7 +215,7 @@ export const CustomFieldsTab = () => {
         prev.map(f => (f.id === fieldId ? result.data : f)),
       );
       setIsEditModalOpen(false);
-      setMenuField(null);
+      setSelectedCustomField(null);
     } else {
       setEditError(toFieldErrors(result.error));
     }
@@ -278,7 +278,7 @@ export const CustomFieldsTab = () => {
         <Text as="p" className={classes.manageText}>
           Manage your custom fields
         </Text>
-        <Button variant="secondary" size="small" onClick={handleAddCustomField}>
+        <Button variant="secondary" size="small" onClick={() => handleOpenModal()}>
           + Add New
         </Button>
       </Flex>
@@ -325,7 +325,7 @@ export const CustomFieldsTab = () => {
                           <Menu>
                             <MenuItem
                               iconStart={<RiEditLine />}
-                              onAction={() => handleOpenEditModal(item)}
+                              onAction={() => handleOpenModal(item)}
                             >
                               Edit
                             </MenuItem>
@@ -346,20 +346,20 @@ export const CustomFieldsTab = () => {
         )}
       </Box>
 
-      {/* Edit modal */}
+      {/* Custom Field Modal */}
       <CustomFieldModal
-        open={isEditModalOpen}
-        saving={editSaving}
-        error={editError}
-        onClose={handleCloseEditModal}
-        onSave={handleUpdateCustomField}
-        mode="edit"
+        open={isEditModalOpen || isModalOpen}
+        saving={isEditModalOpen ? editSaving : saving}
+        error={isEditModalOpen ? editError : error}
+        onClose={isEditModalOpen ? handleCloseEditModal : handleCloseModal}
+        onSave={isEditModalOpen ? handleUpdateCustomField : handleSaveCustomField}
+        mode={isEditModalOpen ? 'edit' : 'add'}
         initialValues={
-          menuField
+          selectedCustomField
             ? {
-                name: menuField.pagerdutyCustomFieldDisplayName,
-                entityPath: menuField.backstageEntityMappingPath,
-                description: menuField.description ?? '',
+                name: selectedCustomField.pagerdutyCustomFieldDisplayName,
+                entityPath: selectedCustomField.backstageEntityMappingPath,
+                description: selectedCustomField.description ?? '',
               }
             : undefined
         }
@@ -370,14 +370,6 @@ export const CustomFieldsTab = () => {
           Save
         </Button>
       </Flex>
-
-      <CustomFieldModal
-        open={isModalOpen}
-        saving={saving}
-        error={error}
-        onClose={handleCloseModal}
-        onSave={handleSaveCustomField}
-      />
     </Box>
   );
 };

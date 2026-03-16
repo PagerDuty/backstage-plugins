@@ -32,12 +32,12 @@ export class CustomFieldsController {
 
       const sanitizedName = this.validateFieldInput(name, entityPath);
       const subdomain = this.getSubdomainFromRequest(request);
-      const normalizedDesc = this.normalizeDescription(description, entityPath);
+      const normalizedDescription = this.normalizeDescription(description, entityPath);
 
       const pagerDutyRequest: PagerDutyCustomFieldCreateRequest = {
         field: {
           data_type: 'string',
-          description: normalizedDesc,
+          description: normalizedDescription,
           display_name: name,
           enabled: true,
           field_type: 'single_value',
@@ -64,7 +64,7 @@ export class CustomFieldsController {
           pagerdutyCustomFieldEnabled: pagerDutyField.enabled,
           backstageEntityMappingPath: entityPath,
           pagerdutySubdomain: subdomain,
-          description: normalizedDesc,
+          description: normalizedDescription,
         });
 
         this.logger.info(
@@ -95,18 +95,18 @@ export class CustomFieldsController {
       const id = parseInt(request.params.id, 10);
       if (isNaN(id)) throw new HttpError('Invalid id parameter', 400);
 
+      const existing = await this.store.findCustomFieldById(id);
+      if (!existing) throw new HttpError('Custom field not found', 404);
+
       const { name, entityPath, description } =
         request.body as BackstageCustomFieldUpdateRequest;
 
       this.validateFieldInput(name, entityPath);
 
-      const existing = await this.store.findCustomFieldById(id);
-      if (!existing) throw new HttpError('Custom field not found', 404);
-
-      const normalizedDesc = this.normalizeDescription(description, entityPath);
+      const normalizedDescription = this.normalizeDescription(description, entityPath);
 
       const pagerDutyRequest: PagerDutyCustomFieldUpdateRequest = {
-        field: { display_name: name, description: normalizedDesc },
+        field: { display_name: name, description: normalizedDescription },
       };
 
       try {
@@ -124,7 +124,7 @@ export class CustomFieldsController {
         const customField = await this.store.updateCustomField(id, {
           pagerdutyCustomFieldDisplayName: name,
           backstageEntityMappingPath: entityPath,
-          description: normalizedDesc,
+          description: normalizedDescription,
         });
 
         this.logger.info(`Successfully updated custom field id=${id} (${name})`);

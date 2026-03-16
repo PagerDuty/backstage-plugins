@@ -1533,9 +1533,20 @@ describe('PagerDuty API', () => {
           },
         });
 
-        expect(result.field.id).toBe('PD123');
-        expect(result.field.display_name).toBe('Runbook Link');
         expect(fetch).toHaveBeenCalledTimes(1);
+        expect(fetch).toHaveBeenCalledWith(
+          expect.stringContaining('/custom_fields/PD123'),
+          expect.objectContaining({
+            method: 'PUT',
+            body: JSON.stringify({
+              field: {
+                display_name: 'Runbook Link',
+                description: 'Updated description',
+              },
+            }),
+          }),
+        );
+        expect(result.field).toEqual(mockField);
       },
     );
 
@@ -1550,6 +1561,14 @@ describe('PagerDuty API', () => {
             request: { field: { display_name: 'X' } },
           }),
         ).rejects.toMatchObject({ status: 404 });
+
+        expect(fetch).toHaveBeenCalledTimes(1);
+        expect(fetch).toHaveBeenCalledWith(
+          expect.stringContaining('/custom_fields/MISSING'),
+          expect.objectContaining({
+            method: 'PUT',
+          }),
+        );
       },
     );
   });
