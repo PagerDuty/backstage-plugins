@@ -711,4 +711,95 @@ describe('getCustomFields', () => {
     });
   });
 });
+
+describe('updateCustomField', () => {
+  const mockField: BackstageCustomField = {
+    id: 1,
+    pagerdutyCustomFieldId: 'PD123',
+    pagerdutyCustomFieldDisplayName: 'New Name',
+    pagerdutyCustomFieldEnabled: true,
+    backstageEntityMappingPath: 'metadata.new',
+    pagerdutySubdomain: 'default',
+    description: 'desc',
+    createdAt: new Date('2026-03-04T00:00:00.000Z'),
+    updatedAt: new Date('2026-03-04T00:00:00.000Z'),
+  };
+
+  beforeEach(() => {
+    mockFetch.mockReset();
+    client = new PagerDutyClient({
+      eventsBaseUrl: 'https://events.pagerduty.com/v2',
+      discoveryApi: mockDiscoveryApi,
+      fetchApi: mockFetchApi,
+    });
+  });
+
+  it('returns ok result with updated custom field on success', async () => {
+    mockFetch.mockResolvedValueOnce({
+      status: 200,
+      ok: true,
+      json: () => Promise.resolve({ customField: mockField }),
+    });
+
+    const result = await client.updateCustomField(1, {
+      name: 'New Name',
+      entityPath: 'metadata.new',
+      description: 'desc',
+    });
+
+    expect(result.status).toEqual('ok');
+    expect(result.data?.pagerdutyCustomFieldDisplayName).toEqual('New Name');
+    expect(mockFetch).toHaveBeenCalledWith(
+      'http://localhost:7007/pagerduty/custom-fields/1',
+      expect.objectContaining({
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json; charset=UTF-8',
+          Accept: 'application/json, text/plain, */*',
+        },
+        body: JSON.stringify({
+          name: 'New Name',
+          entityPath: 'metadata.new',
+          description: 'desc',
+        }),
+      }),
+    );
+  });
+
+  it('returns error result when field not found (404)', async () => {
+    mockFetch.mockResolvedValueOnce({
+      status: 404,
+      ok: false,
+      json: () => Promise.resolve({}),
+    });
+
+    const result = await client.updateCustomField(999, {
+      name: 'X',
+      entityPath: 'metadata.x',
+    });
+
+    expect(result.status).toEqual('error');
+  });
+
+  it('returns error result on name conflict (409)', async () => {
+    mockFetch.mockResolvedValueOnce({
+      status: 409,
+      ok: false,
+      json: () =>
+        Promise.resolve({
+          errors: [
+            'A custom field with this name already exists in PagerDuty',
+          ],
+        }),
+    });
+
+    const result = await client.updateCustomField(1, {
+      name: 'Taken',
+      entityPath: 'metadata.taken',
+    });
+
+    expect(result.status).toEqual('error');
+    expect(result.error).toContain('already exists');
+  });
+});
 });

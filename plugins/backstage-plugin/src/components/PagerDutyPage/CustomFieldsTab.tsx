@@ -2,99 +2,100 @@ import { useState, useEffect } from 'react';
 import {
   Box,
   Button,
-  CircularProgress,
-  Divider,
-  Link,
-  Paper,
+  ButtonIcon,
+  Cell,
+  CellText,
+  Column,
+  Flex,
+  Menu,
+  MenuItem,
+  MenuTrigger,
+  Row,
+  Skeleton,
   Table,
   TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Typography,
-} from '@material-ui/core';
-import { createStyles, makeStyles } from '@material-ui/core/styles';
+  TableHeader,
+  Text,
+} from '@backstage/ui';
+import { RiEditLine, RiMoreLine } from '@remixicon/react';
+import { makeStyles, createStyles } from '@material-ui/core/styles';
 import { BackstageTheme } from '@backstage/theme';
 import { useApi } from '@backstage/core-plugin-api';
 import { pagerDutyApiRef } from '../../api';
 import { BackstageCustomField } from '@pagerduty/backstage-plugin-common';
-import { AddCustomFieldModal } from './AddCustomFieldModal';
+import { CustomFieldModal, FieldErrors } from './CustomFieldModal';
 
-
-const useStyles = makeStyles<BackstageTheme>(theme => {
-  return createStyles({
+const useStyles = makeStyles<BackstageTheme>(theme =>
+  createStyles({
     root: {
       padding: theme.spacing(3),
+      border: `1px solid ${theme.palette.divider}`,
+      borderRadius: theme.shape.borderRadius,
     },
-    header: {
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      marginBottom: theme.spacing(1),
-    },
-    explanation: {
-      color: theme.palette.text.secondary,
-      marginBottom: theme.spacing(3),
-    },
-    sectionHeader: {
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      marginBottom: theme.spacing(0.5),
-    },
-    sectionTitle: {
+    title: {
+      margin: 0,
+      fontSize: '1.5rem',
       fontWeight: 700,
     },
-    sectionSubtitle: {
-      color: theme.palette.text.secondary,
-      marginBottom: theme.spacing(1),
+    divider: {
+      border: 'none',
+      borderTop: `1px solid ${theme.palette.divider}`,
+      margin: `0 0 ${theme.spacing(2)}px 0`,
     },
-    availableMappings: {
-      color: theme.palette.text.secondary,
-      fontSize: '0.875rem',
+    tabsRow: {
+      marginBottom: theme.spacing(2),
     },
-    addLink: {
-      color: theme.palette.primary.main,
-      cursor: 'pointer',
-      fontSize: '0.875rem',
-    },
-    sectionMeta: {
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'flex-end',
-      gap: theme.spacing(0.5),
-    },
-    tableHeader: {
-      backgroundColor: theme.palette.background.default,
-    },
-    tableHeaderCell: {
+    tabActive: {
+      margin: 0,
       fontWeight: 700,
+      paddingBottom: theme.spacing(0.5),
+      borderBottom: `2px solid ${theme.palette.text.primary}`,
+      cursor: 'default',
     },
-    emptyState: {
-      textAlign: 'center',
+    tabInactive: {
+      margin: 0,
+      color: theme.palette.text.secondary,
+      cursor: 'default',
+    },
+    manageRow: {
+      marginBottom: theme.spacing(1.5),
+    },
+    manageText: {
+      margin: 0,
+      color: theme.palette.text.secondary,
+    },
+    errorBox: {
+      padding: `${theme.spacing(1)}px ${theme.spacing(1.5)}px`,
+      backgroundColor: 'rgba(255,0,0,0.08)',
+      borderRadius: theme.shape.borderRadius,
+      marginBottom: theme.spacing(1.5),
+    },
+    errorText: {
+      color: theme.palette.error.main,
+    },
+    tableWrapper: {
+      border: `1px solid ${theme.palette.divider}`,
+      borderRadius: theme.shape.borderRadius,
+      overflow: 'hidden',
+    },
+    loadingContainer: {
       padding: theme.spacing(4),
-      color: theme.palette.text.secondary,
+    },
+    actionsCell: {
+      textAlign: 'end',
     },
     footer: {
-      display: 'flex',
-      justifyContent: 'flex-end',
-      marginTop: theme.spacing(3),
+      marginTop: theme.spacing(2),
     },
-    saveButton: {
-      backgroundColor: theme.palette.primary.main,
-      color: theme.palette.primary.contrastText,
-      '&:hover': {
-        backgroundColor: theme.palette.primary.dark,
-      },
-    },
-    loading: {
-      display: 'flex',
-      justifyContent: 'center',
-      padding: theme.spacing(4),
-    },
-  });
-});
+  }),
+);
+
+const COLUMNS = [
+  { id: 'name', label: 'Custom Field', isRowHeader: true, width: undefined },
+  { id: 'entityPath', label: 'Entity Path', isRowHeader: false, width: undefined },
+  { id: 'description', label: 'Description', isRowHeader: false, width: undefined },
+  { id: 'actions', label: '', isRowHeader: false, width: undefined },
+];
 
 /** @public */
 export const CustomFieldsTab = () => {
@@ -104,9 +105,28 @@ export const CustomFieldsTab = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<FieldErrors | null>(null);
+  const [selectedCustomField, setSelectedCustomField] = useState<BackstageCustomField | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState<FieldErrors | null>(null);
 
-  // Fetch custom fields on mount
+  const toFieldErrors = (message: string): FieldErrors => {
+    const lower = message.toLowerCase();
+    if (lower.includes('name') && lower.includes('already exists')) {
+      return {
+        name: 'Entered Name matches one already in use. Please make changes to continue.',
+      };
+    }
+    if (lower.includes('entity path') && lower.includes('already')) {
+      return {
+        entityPath:
+          'Entered Entity Path matches one already in use. Please make changes to continue.',
+      };
+    }
+    return { general: message };
+  };
+
   useEffect(() => {
     (async () => {
       setLoading(true);
@@ -115,18 +135,25 @@ export const CustomFieldsTab = () => {
         const response = await pagerDutyApi.getCustomFields();
         setCustomFields(response.customFields);
       } catch (err) {
-        setError(
-          err instanceof Error ? err.message : 'Failed to load custom fields',
-        );
+        setError({
+          general:
+            err instanceof Error ? err.message : 'Failed to load custom fields',
+        });
       } finally {
         setLoading(false);
       }
     })();
   }, [pagerDutyApi]);
 
-  const handleAddCustomField = () => {
-    setIsModalOpen(true);
-    setError(null);
+  const handleOpenModal = (field: BackstageCustomField | null = null) => {
+    if (field) {
+      setSelectedCustomField(field);
+      setEditError(null);
+      setIsEditModalOpen(true);
+    } else {
+      setIsModalOpen(true);
+      setError(null);
+    }
   };
 
   const handleCloseModal = () => {
@@ -152,10 +179,48 @@ export const CustomFieldsTab = () => {
       setCustomFields(prev => [...prev, result.data]);
       setIsModalOpen(false);
     } else {
-      setError(result.error);
+      setError(toFieldErrors(result.error));
     }
 
     setSaving(false);
+  };
+
+  const handleCloseEditModal = () => {
+    setIsEditModalOpen(false);
+    setSelectedCustomField(null);
+    setEditError(null);
+  };
+
+  const handleUpdateCustomField = async (formData: {
+    name: string;
+    entityPath: string;
+    description: string;
+  }) => {
+    if (!selectedCustomField) return;
+
+    // Capture field ID early to prevent race conditions
+    const fieldId = selectedCustomField.id;
+
+    setEditSaving(true);
+    setEditError(null);
+
+    const result = await pagerDutyApi.updateCustomField(fieldId, {
+      name: formData.name,
+      entityPath: formData.entityPath,
+      description: formData.description,
+    });
+
+    if (result.status === 'ok') {
+      setCustomFields(prev =>
+        prev.map(f => (f.id === fieldId ? result.data : f)),
+      );
+      setIsEditModalOpen(false);
+      setSelectedCustomField(null);
+    } else {
+      setEditError(toFieldErrors(result.error));
+    }
+
+    setEditSaving(false);
   };
 
   const handleStartDataSync = () => {
@@ -166,97 +231,145 @@ export const CustomFieldsTab = () => {
     // TODO: implement save
   };
 
+  const getCellContent = (
+    item: BackstageCustomField,
+    columnId: string,
+  ): string => {
+    switch (columnId) {
+      case 'name':
+        return item.pagerdutyCustomFieldDisplayName;
+      case 'entityPath':
+        return item.backstageEntityMappingPath;
+      case 'description':
+        return item.description ?? '';
+      default:
+        return '';
+    }
+  };
+
   return (
-    <Paper className={classes.root} elevation={1}>
-      <Box className={classes.header}>
-        <Typography variant="h5">Data Sync</Typography>
-        <Button
-          variant="contained"
-          className={classes.saveButton}
-          onClick={handleStartDataSync}
-        >
+    <Box className={classes.root}>
+      {/* Data Sync header */}
+      <Flex align="start" justify="between" style={{ marginBottom: 16 }}>
+        <Text as="h2" className={classes.title}>
+          Data Sync
+        </Text>
+        <Button variant="secondary" onClick={handleStartDataSync}>
           Start Data Sync
         </Button>
-      </Box>
+      </Flex>
 
-      {/* TODO: <Typography className={classes.explanation} variant="body2">
-        //Explanation of what this is and does...
-      </Typography> */}
+      <hr className={classes.divider} />
 
-      <Divider />
+      {/* Custom Fields / Activity Logs tabs */}
+      <Flex align="center" justify="between" className={classes.tabsRow}>
+        <Flex gap="4" align="center">
+          <Text as="p" className={classes.tabActive}>
+            Custom Fields
+          </Text>
+          <Text as="p" className={classes.tabInactive}>
+            Activity Logs
+          </Text>
+        </Flex>
+      </Flex>
 
-      <Box mt={2}>
-        <Box className={classes.sectionHeader}>
-          <Box>
-            <Typography variant="subtitle1" className={classes.sectionTitle}>
-              Custom Fields
-            </Typography>
-            <Typography variant="body2" className={classes.sectionSubtitle}>
-              Manually manage your global data sync preferences
-            </Typography>
-          </Box>
-          <Box className={classes.sectionMeta}>
-            <Link
-              className={classes.addLink}
-              onClick={handleAddCustomField}
-              underline="always"
-            >
-              + Add Custom Field
-            </Link>
-          </Box>
+      {/* Manage row */}
+      <Flex align="center" justify="between" className={classes.manageRow}>
+        <Text as="p" className={classes.manageText}>
+          Manage your custom fields
+        </Text>
+        <Button variant="secondary" size="small" onClick={() => handleOpenModal()}>
+          + Add New
+        </Button>
+      </Flex>
+
+      {error?.general && (
+        <Box className={classes.errorBox}>
+          <Text className={classes.errorText}>{error.general}</Text>
         </Box>
+      )}
 
+      {/* Table */}
+      <Box className={classes.tableWrapper}>
         {loading ? (
-          <Box className={classes.loading}>
-            <CircularProgress />
-          </Box>
+          <Flex direction="column" gap="2" className={classes.loadingContainer}>
+            <Skeleton />
+            <Skeleton />
+            <Skeleton />
+          </Flex>
         ) : (
-          <TableContainer component={Paper} variant="outlined">
-            <Table size="small">
-              <TableHead className={classes.tableHeader}>
-                <TableRow>
-                  <TableCell className={classes.tableHeaderCell}>
-                    Custom Field
-                  </TableCell>
-                  <TableCell className={classes.tableHeaderCell}>
-                    Entity Path
-                  </TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {customFields.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={2} className={classes.emptyState}>
-                      No custom fields have been added
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  customFields.map(field => (
-                    <TableRow key={field.id}>
-                      <TableCell>{field.pagerdutyCustomFieldDisplayName}</TableCell>
-                      <TableCell>{field.backstageEntityMappingPath}</TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
+          <Table aria-label="Custom fields">
+            <TableHeader columns={COLUMNS}>
+              {col => (
+                <Column key={col.id} id={col.id} isRowHeader={col.isRowHeader} width={col.width}>
+                  {col.label}
+                </Column>
+              )}
+            </TableHeader>
+            <TableBody
+              items={customFields}
+              renderEmptyState={() => 'No custom fields have been added'}
+            >
+              {item => (
+                <Row key={item.id} id={item.id} columns={COLUMNS}>
+                  {col =>
+                    col.id === 'actions' ? (
+                      <Cell key={col.id} className={classes.actionsCell}>
+                        <MenuTrigger>
+                          <ButtonIcon
+                            icon={<RiMoreLine />}
+                            aria-label="actions"
+                            variant="tertiary"
+                            size="small"
+                          />
+                          <Menu>
+                            <MenuItem
+                              iconStart={<RiEditLine />}
+                              onAction={() => handleOpenModal(item)}
+                            >
+                              Edit
+                            </MenuItem>
+                          </Menu>
+                        </MenuTrigger>
+                      </Cell>
+                    ) : (
+                      <CellText
+                        key={col.id}
+                        title={getCellContent(item, col.id)}
+                      />
+                    )
+                  }
+                </Row>
+              )}
+            </TableBody>
+          </Table>
         )}
       </Box>
 
-      <Box className={classes.footer}>
-        <Button variant="contained" className={classes.saveButton} onClick={handleSave}>
+      {/* Custom Field Modal */}
+      <CustomFieldModal
+        open={isEditModalOpen || isModalOpen}
+        saving={isEditModalOpen ? editSaving : saving}
+        error={isEditModalOpen ? editError : error}
+        onClose={isEditModalOpen ? handleCloseEditModal : handleCloseModal}
+        onSave={isEditModalOpen ? handleUpdateCustomField : handleSaveCustomField}
+        mode={isEditModalOpen ? 'edit' : 'add'}
+        initialValues={
+          selectedCustomField
+            ? {
+                name: selectedCustomField.pagerdutyCustomFieldDisplayName,
+                entityPath: selectedCustomField.backstageEntityMappingPath,
+                description: selectedCustomField.description ?? '',
+              }
+            : undefined
+        }
+      />
+
+      <Flex justify="end" className={classes.footer}>
+        <Button variant="primary" onClick={handleSave} isDisabled>
           Save
         </Button>
-      </Box>
-
-      <AddCustomFieldModal
-        open={isModalOpen}
-        saving={saving}
-        error={error}
-        onClose={handleCloseModal}
-        onSave={handleSaveCustomField}
-      />
-    </Paper>
+      </Flex>
+    </Box>
   );
 };
