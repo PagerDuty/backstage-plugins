@@ -2366,6 +2366,56 @@ describe('createRouter', () => {
       expect(response.status).toEqual(409);
     });
 
+    it('rolls back Backstage DB when PagerDuty creation fails', async () => {
+      // This test validates that when PagerDuty creation fails, the temporary
+      // Backstage DB record is deleted to prevent orphaned records.
+
+      const testId = `createrollback${Date.now()}`;
+      const newField = {
+        name: `Create Rollback Test ${testId}`,
+        entityPath: `spec.create_rollback_${testId}`,
+        description: 'This field creation should be rolled back',
+      };
+
+      // Mock PagerDuty to fail with 500 error
+      mocked(fetch).mockReturnValueOnce(
+        mockedResponse(500, { error: { message: 'PagerDuty service unavailable' } }),
+      );
+
+      // Get count of fields before the failed attempt
+      const beforeAttempt = await request(app).get('/custom-fields');
+      const countBefore = beforeAttempt.body.customFields.length;
+
+      // Attempt to create field (should fail)
+      const createAttempt = await request(app)
+        .post('/custom-fields')
+        .send(newField);
+
+      // Verify creation failed
+      expect(createAttempt.status).toEqual(500);
+
+      // CRITICAL: Verify no orphaned record exists in Backstage DB
+      const afterAttempt = await request(app).get('/custom-fields');
+      const countAfter = afterAttempt.body.customFields.length;
+
+      // Count should be the same (no new record)
+      expect(countAfter).toEqual(countBefore);
+
+      // Verify no temporary PENDING_ ID exists in the database
+      const allFields = afterAttempt.body.customFields;
+      const hasPendingRecord = allFields.some((f: { pagerdutyCustomFieldId: string }) =>
+        f.pagerdutyCustomFieldId.startsWith('PENDING_'),
+      );
+      expect(hasPendingRecord).toBe(false);
+
+      // Verify the specific field we tried to create doesn't exist
+      const orphanedField = allFields.find(
+        (f: { backstageEntityMappingPath: string }) =>
+          f.backstageEntityMappingPath === newField.entityPath,
+      );
+      expect(orphanedField).toBeUndefined();
+    });
+
   });
 
   describe('PUT /custom-fields/:id', () => {
@@ -2666,6 +2716,80 @@ describe('createRouter', () => {
         });
 
       expect(response.status).toEqual(409);
+    });
+
+    it('rolls back Backstage DB when PagerDuty update fails', async () => {
+      // This test validates that when PagerDuty update fails, the Backstage DB
+      // changes are rolled back to maintain consistency between the two systems.
+
+      const testId = `rollback${Date.now()}`;
+      const originalField = {
+        name: `Rollback Test Original ${testId}`,
+        entityPath: `spec.rollback_test_${testId}`,
+        description: 'Original description',
+      };
+
+      // Create field successfully
+      const mockCreateResponse = {
+        field: {
+          id: `PROLLBACK_${testId}`,
+          display_name: originalField.name,
+          name: originalField.name.toLowerCase().replace(/ /g, '_'),
+          data_type: 'string',
+          field_type: 'single_value',
+          description: originalField.description,
+          enabled: true,
+        },
+      };
+
+      mocked(fetch).mockReturnValueOnce(mockedResponse(201, mockCreateResponse));
+
+      const createResponse = await request(app)
+        .post('/custom-fields')
+        .send(originalField);
+      expect(createResponse.status).toEqual(201);
+      const fieldId = createResponse.body.customField.id;
+      const createdField = createResponse.body.customField;
+
+      // Attempt to update but PagerDuty will fail
+      mocked(fetch).mockReturnValueOnce(
+        mockedResponse(500, { error: { message: 'PagerDuty internal error' } }),
+      );
+
+      const updateAttempt = await request(app)
+        .put(`/custom-fields/${fieldId}`)
+        .send({
+          name: `Rollback Test Updated ${testId}`,
+          entityPath: `spec.rollback_test_updated_${testId}`,
+          description: 'Updated description that should be rolled back',
+        });
+
+      // Verify the update failed
+      expect(updateAttempt.status).toEqual(500);
+
+      // CRITICAL: Verify Backstage DB was rolled back to original values
+      const fieldsAfterRollback = await request(app).get('/custom-fields');
+      const fieldAfterRollback = fieldsAfterRollback.body.customFields.find(
+        (f: { id: number }) => f.id === fieldId,
+      );
+
+      // Field should still have original values (not updated values)
+      expect(fieldAfterRollback).toBeDefined();
+      expect(fieldAfterRollback.pagerdutyCustomFieldDisplayName).toEqual(
+        originalField.name,
+      );
+      expect(fieldAfterRollback.backstageEntityMappingPath).toEqual(
+        originalField.entityPath,
+      );
+      expect(fieldAfterRollback.description).toEqual(originalField.description);
+
+      // Verify no partial updates occurred
+      expect(fieldAfterRollback.pagerdutyCustomFieldId).toEqual(
+        createdField.pagerdutyCustomFieldId,
+      );
+      expect(fieldAfterRollback.pagerdutySubdomain).toEqual(
+        createdField.pagerdutySubdomain,
+      );
     });
   });
 

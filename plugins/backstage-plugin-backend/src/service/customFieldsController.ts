@@ -26,6 +26,8 @@ export class CustomFieldsController {
   }
 
   async createCustomField(request: Request, response: Response): Promise<void> {
+    let backstageRecordId: number | undefined;
+
     try {
       const { name, entityPath, description } =
         request.body as BackstageCustomFieldCreateRequest;
@@ -34,6 +36,27 @@ export class CustomFieldsController {
       const subdomain = this.getSubdomainFromRequest(request);
       const normalizedDescription = this.normalizeDescription(description, entityPath);
 
+      // Step 1: Create in Backstage DB first with temporary PagerDuty ID
+      const tempPagerDutyId = `PENDING_${Date.now()}`;
+      try {
+        const backstageRecord = await this.store.insertCustomField({
+          pagerdutyCustomFieldId: tempPagerDutyId,
+          pagerdutyCustomFieldDisplayName: name,
+          pagerdutyCustomFieldEnabled: true,
+          backstageEntityMappingPath: entityPath,
+          pagerdutySubdomain: subdomain,
+          description: normalizedDescription,
+        });
+        backstageRecordId = backstageRecord.id;
+
+        this.logger.info(
+          `Created temporary Backstage record (id=${backstageRecordId}) for custom field: ${name}`,
+        );
+      } catch (error) {
+        this.handleDbError(error);
+      }
+
+      // Step 2: Create in PagerDuty
       const pagerDutyRequest: PagerDutyCustomFieldCreateRequest = {
         field: {
           data_type: 'string',
@@ -52,27 +75,37 @@ export class CustomFieldsController {
           account: subdomain,
         });
         pagerDutyField = pagerDutyResponse.field;
+
+        this.logger.info(
+          `Created PagerDuty custom field: ${name} (${pagerDutyField.id})`,
+        );
       } catch (error) {
+        // Rollback: Delete the Backstage record since PagerDuty creation failed
+        if (backstageRecordId) {
+          await this.store.deleteCustomField(backstageRecordId);
+          this.logger.info(
+            `Rolled back Backstage record (id=${backstageRecordId}) due to PagerDuty creation failure`,
+          );
+        }
         if (error instanceof HttpError) this.handlePagerDutyError(error);
         throw error;
       }
 
+      // Step 3: Update Backstage record with real PagerDuty ID
       try {
-        const customField = await this.store.insertCustomField({
-          pagerdutyCustomFieldId: pagerDutyField.id,
-          pagerdutyCustomFieldDisplayName: pagerDutyField.display_name,
-          pagerdutyCustomFieldEnabled: pagerDutyField.enabled,
-          backstageEntityMappingPath: entityPath,
-          pagerdutySubdomain: subdomain,
-          description: normalizedDescription,
-        });
+        await this.store.updateCustomFieldPagerDutyId(backstageRecordId!, pagerDutyField.id);
+
+        const customField = await this.store.findCustomFieldById(backstageRecordId!);
 
         this.logger.info(
           `Successfully created custom field: ${name} (${pagerDutyField.id}) mapped to ${entityPath}`,
         );
         response.status(201).json({ customField });
       } catch (error) {
-        this.handleDbError(error);
+        this.logger.error(
+          `Failed to update Backstage record with PagerDuty ID. Manual cleanup may be required for PagerDuty field ${pagerDutyField.id}`,
+        );
+        throw error;
       }
     } catch (error) {
       this.handleUnexpectedError(error, 'creating the custom field', response);
@@ -103,7 +136,7 @@ export class CustomFieldsController {
 
       this.validateFieldInput(name, entityPath);
 
-      // Validate uniqueness constraints BEFORE updating PagerDuty to prevent sync issues
+      // Validate uniqueness constraints BEFORE making any changes
       await this.validateUniqueConstraints(
         id,
         name,
@@ -113,6 +146,27 @@ export class CustomFieldsController {
 
       const normalizedDescription = this.normalizeDescription(description, entityPath);
 
+      // Snapshot current values for rollback
+      const snapshot = {
+        pagerdutyCustomFieldDisplayName: existing.pagerdutyCustomFieldDisplayName,
+        backstageEntityMappingPath: existing.backstageEntityMappingPath,
+        description: existing.description,
+      };
+
+      // Step 1: Update Backstage DB first
+      try {
+        await this.store.updateCustomField(id, {
+          pagerdutyCustomFieldDisplayName: name,
+          backstageEntityMappingPath: entityPath,
+          description: normalizedDescription,
+        });
+
+        this.logger.info(`Updated Backstage record for custom field id=${id}`);
+      } catch (error) {
+        this.handleDbError(error);
+      }
+
+      // Step 2: Update PagerDuty
       const pagerDutyRequest: PagerDutyCustomFieldUpdateRequest = {
         field: { display_name: name, description: normalizedDescription },
       };
@@ -123,23 +177,30 @@ export class CustomFieldsController {
           request: pagerDutyRequest,
           account: existing.pagerdutySubdomain,
         });
+
+        this.logger.info(`Updated PagerDuty custom field: ${name} (${existing.pagerdutyCustomFieldId})`);
       } catch (error) {
+        // Rollback: Revert Backstage DB to snapshot
+        try {
+          await this.store.updateCustomField(id, snapshot);
+          this.logger.info(
+            `Rolled back Backstage record (id=${id}) to previous values due to PagerDuty update failure`,
+          );
+        } catch (rollbackError) {
+          this.logger.error(
+            `CRITICAL: Failed to rollback Backstage record (id=${id}) after PagerDuty failure. Manual intervention required.`,
+            rollbackError,
+          );
+        }
+
         if (error instanceof HttpError) this.handlePagerDutyError(error);
         throw error;
       }
 
-      try {
-        const customField = await this.store.updateCustomField(id, {
-          pagerdutyCustomFieldDisplayName: name,
-          backstageEntityMappingPath: entityPath,
-          description: normalizedDescription,
-        });
-
-        this.logger.info(`Successfully updated custom field id=${id} (${name})`);
-        response.status(200).json({ customField });
-      } catch (error) {
-        this.handleDbError(error);
-      }
+      // Step 3: Return updated record
+      const customField = await this.store.findCustomFieldById(id);
+      this.logger.info(`Successfully updated custom field id=${id} (${name})`);
+      response.status(200).json({ customField });
     } catch (error) {
       this.handleUnexpectedError(error, 'updating the custom field', response);
     }

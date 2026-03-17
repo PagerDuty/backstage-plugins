@@ -52,6 +52,8 @@ export interface PagerDutyBackendStore {
       description?: string;
     },
   ): Promise<BackstageCustomField>;
+  deleteCustomField(id: number): Promise<void>;
+  updateCustomFieldPagerDutyId(id: number, pagerdutyCustomFieldId: string): Promise<void>;
 }
 
 type Options = {
@@ -270,5 +272,23 @@ export class PagerDutyBackendDatabase implements PagerDutyBackendStore {
       createdAt: field.createdAt,
       updatedAt: field.updatedAt,
     }));
+  }
+
+  async deleteCustomField(id: number): Promise<void> {
+    await this.db<RawDbCustomFieldRow>('pagerduty_custom_fields')
+      .where('id', id)
+      .delete();
+  }
+
+  async updateCustomFieldPagerDutyId(
+    id: number,
+    pagerdutyCustomFieldId: string,
+  ): Promise<void> {
+    await this.db<RawDbCustomFieldRow>('pagerduty_custom_fields')
+      .where('id', id)
+      .update({
+        pagerdutyCustomFieldId,
+        updatedAt: new Date(),
+      });
   }
 }
