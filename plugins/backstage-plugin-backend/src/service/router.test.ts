@@ -3457,36 +3457,32 @@ describe('createRouter', () => {
     });
 
   describe('POST /custom-fields', () => {
-    it.each(testInputs)(
-      'returns 200 when custom field is created successfully',
-      async () => {
-        const customFieldData = {
-          name: 'Test Field',
-          entityPath: 'spec.owner',
+    it('returns 200 when custom field is created successfully', async () => {
+      const customFieldData = {
+        name: 'Test Field',
+        entityPath: 'spec.create_success',
+        description: 'A test custom field',
+      };
+
+      const mockPagerDutyResponse = {
+        field: {
+          id: 'PTEST123',
+          display_name: 'Test Field',
+          name: 'test_field',
+          data_type: 'string',
+          field_type: 'single_value',
           description: 'A test custom field',
-        };
+          enabled: true,
+        },
+      };
+      mocked(fetch).mockReturnValue(mockedResponse(201, mockPagerDutyResponse));
 
-        // Mock successful PagerDuty API response
-        const mockPagerDutyResponse = {
-          field: {
-            id: 'PTEST123',
-            display_name: 'Test Field',
-            name: 'test_field',
-            data_type: 'string',
-            field_type: 'single_value',
-            description: 'A test custom field',
-            enabled: true,
-          },
-        };
-        mocked(fetch).mockReturnValue(mockedResponse(201, mockPagerDutyResponse));
+      const response = await request(app)
+        .post('/custom-fields')
+        .send(customFieldData);
 
-        const response = await request(app)
-          .post('/custom-fields')
-          .send(customFieldData);
-
-        expect(response.status).toEqual(201);
-      },
-    );
+      expect(response.status).toEqual(201);
+    });
 
     it.each(testInputs)(
       'returns 400 when required fields are missing',
@@ -3503,32 +3499,481 @@ describe('createRouter', () => {
       },
     );
 
-    it.each(testInputs)(
-      'returns 409 when custom field already exists',
-      async () => {
-        const customFieldData = {
-          name: 'Existing Field',
-          entityPath: 'spec.owner',
-          description: 'A custom field that already exists',
-        };
+    it('returns 409 when PagerDuty reports a name conflict', async () => {
+      const customFieldData = {
+        name: 'Existing Field',
+        entityPath: 'spec.name_conflict',
+        description: 'A custom field that already exists',
+      };
 
-        // Mock PagerDuty API 409 conflict response
-        const mockErrorResponse = {
-          error: {
-            message: 'Custom field with this name already exists',
-            code: 2009,
-          },
-        };
-        mocked(fetch).mockReturnValue(mockedResponse(409, mockErrorResponse));
+      const mockErrorResponse = {
+        error: {
+          message: 'Custom field with this name already exists',
+          code: 2009,
+        },
+      };
+      mocked(fetch).mockReturnValue(mockedResponse(409, mockErrorResponse));
 
-        const response = await request(app)
-          .post('/custom-fields')
-          .send(customFieldData);
+      const response = await request(app)
+        .post('/custom-fields')
+        .send(customFieldData);
 
-        expect(response.status).toEqual(409);
-      },
-    );
+      expect(response.status).toEqual(409);
+    });
 
+    it('returns 409 when entity path is already in use', async () => {
+      const first = {
+        name: 'First Field',
+        entityPath: 'spec.duplicate_path',
+        description: 'First',
+      };
+      const mockPagerDutyResponse = {
+        field: {
+          id: 'PDUP123',
+          display_name: 'First Field',
+          name: 'first_field',
+          data_type: 'string',
+          field_type: 'single_value',
+          description: 'First',
+          enabled: true,
+        },
+      };
+      mocked(fetch).mockReturnValue(mockedResponse(201, mockPagerDutyResponse));
+
+      await request(app).post('/custom-fields').send(first);
+
+      const response = await request(app)
+        .post('/custom-fields')
+        .send({ name: 'Second Field', entityPath: 'spec.duplicate_path' });
+
+      expect(response.status).toEqual(409);
+    });
+
+    it('rolls back Backstage DB when PagerDuty creation fails', async () => {
+      // This test validates that when PagerDuty creation fails, the temporary
+      // Backstage DB record is deleted to prevent orphaned records.
+
+      const testId = `createrollback${Date.now()}`;
+      const newField = {
+        name: `Create Rollback Test ${testId}`,
+        entityPath: `spec.create_rollback_${testId}`,
+        description: 'This field creation should be rolled back',
+      };
+
+      // Mock PagerDuty to fail with 500 error
+      mocked(fetch).mockReturnValueOnce(
+        mockedResponse(500, { error: { message: 'PagerDuty service unavailable' } }),
+      );
+
+      // Get count of fields before the failed attempt
+      const beforeAttempt = await request(app).get('/custom-fields');
+      const countBefore = beforeAttempt.body.customFields.length;
+
+      // Attempt to create field (should fail)
+      const createAttempt = await request(app)
+        .post('/custom-fields')
+        .send(newField);
+
+      // Verify creation failed
+      expect(createAttempt.status).toEqual(500);
+
+      // CRITICAL: Verify no orphaned record exists in Backstage DB
+      const afterAttempt = await request(app).get('/custom-fields');
+      const countAfter = afterAttempt.body.customFields.length;
+
+      // Count should be the same (no new record)
+      expect(countAfter).toEqual(countBefore);
+
+      // Verify no temporary PENDING_ ID exists in the database
+      const allFields = afterAttempt.body.customFields;
+      const hasPendingRecord = allFields.some((f: { pagerdutyCustomFieldId: string }) =>
+        f.pagerdutyCustomFieldId.startsWith('PENDING_'),
+      );
+      expect(hasPendingRecord).toBe(false);
+
+      // Verify the specific field we tried to create doesn't exist
+      const orphanedField = allFields.find(
+        (f: { backstageEntityMappingPath: string }) =>
+          f.backstageEntityMappingPath === newField.entityPath,
+      );
+      expect(orphanedField).toBeUndefined();
+    });
+
+  });
+
+  describe('PUT /custom-fields/:id', () => {
+    it('returns 200 with updated custom field', async () => {
+      const createData = {
+        name: 'Original Field',
+        entityPath: 'spec.put_success_create',
+        description: 'Original description',
+      };
+      const mockPagerDutyCreateResponse = {
+        field: {
+          id: 'PTEST456',
+          display_name: 'Original Field',
+          name: 'original_field',
+          data_type: 'string',
+          field_type: 'single_value',
+          description: 'Original description',
+          enabled: true,
+        },
+      };
+      mocked(fetch)
+        .mockReturnValueOnce(mockedResponse(201, mockPagerDutyCreateResponse))
+        .mockReturnValue(mockedResponse(200, {}));
+
+      const createResponse = await request(app)
+        .post('/custom-fields')
+        .send(createData);
+      expect(createResponse.status).toEqual(201);
+      const createdId = createResponse.body.customField.id;
+
+      const updateData = {
+        name: 'New Name',
+        entityPath: 'metadata.put_success_updated',
+        description: 'Updated desc',
+      };
+      const response = await request(app)
+        .put(`/custom-fields/${createdId}`)
+        .send(updateData);
+
+      expect(response.status).toEqual(200);
+      expect(response.body.customField.pagerdutyCustomFieldDisplayName).toEqual(
+        'New Name',
+      );
+    });
+
+    it('returns 400 when name is missing', async () => {
+      const response = await request(app)
+        .put('/custom-fields/1')
+        .send({ entityPath: 'metadata.missing_name' });
+
+      expect(response.status).toEqual(400);
+    });
+
+    it('returns 400 when entityPath is missing', async () => {
+      const response = await request(app)
+        .put('/custom-fields/1')
+        .send({ name: 'New Name' });
+
+      expect(response.status).toEqual(400);
+    });
+
+    it('returns 404 when custom field is not found in DB', async () => {
+      const response = await request(app)
+        .put('/custom-fields/999')
+        .send({
+          name: 'New Name',
+          entityPath: 'metadata.not_found_path',
+          description: 'Updated desc',
+        });
+
+      expect(response.status).toEqual(404);
+    });
+
+    it('returns 409 when entity path is already used by another field', async () => {
+      const fieldA = {
+        name: 'Field A',
+        entityPath: 'spec.put_path_conflict_a',
+        description: 'Field A',
+      };
+      const fieldB = {
+        name: 'Field B',
+        entityPath: 'spec.put_path_conflict_b',
+        description: 'Field B',
+      };
+      const mockResponse = (id: string, name: string) => ({
+        field: {
+          id,
+          display_name: name,
+          name: name.toLowerCase().replace(/ /g, '_'),
+          data_type: 'string',
+          field_type: 'single_value',
+          description: name,
+          enabled: true,
+        },
+      });
+
+      mocked(fetch)
+        .mockReturnValueOnce(mockedResponse(201, mockResponse('PA1', 'Field A')))
+        .mockReturnValueOnce(mockedResponse(201, mockResponse('PB1', 'Field B')));
+
+      const createA = await request(app).post('/custom-fields').send(fieldA);
+      expect(createA.status).toEqual(201);
+
+      const createB = await request(app).post('/custom-fields').send(fieldB);
+      expect(createB.status).toEqual(201);
+      const idB = createB.body.customField.id;
+
+      // Try updating B to use A's entity path
+      const response = await request(app)
+        .put(`/custom-fields/${idB}`)
+        .send({
+          name: 'Field B Renamed',
+          entityPath: 'spec.put_path_conflict_a',
+          description: 'Updated',
+        });
+
+      expect(response.status).toEqual(409);
+    });
+
+    it('validates uniqueness constraints before updating PagerDuty to prevent sync issues', async () => {
+      // This test validates the fix for the synchronization bug where PagerDuty
+      // could be updated successfully but the DB update could fail due to constraint
+      // violations, leaving the two systems out of sync.
+
+      // Create unique identifiers to avoid conflicts with other tests
+      const testId = `sync${Date.now()}`;
+      const fieldA = {
+        name: `Sync Test Field A ${testId}`,
+        entityPath: `spec.sync_test_field_a_${testId}`,
+        description: 'Field A for sync bug test',
+      };
+      const fieldB = {
+        name: `Sync Test Field B ${testId}`,
+        entityPath: `spec.sync_test_field_b_${testId}`,
+        description: 'Field B for sync bug test',
+      };
+
+      const mockResponse = (name: string) => ({
+        field: {
+          id: `P${testId}_${name.replace(/ /g, '')}`,
+          display_name: name,
+          name: name.toLowerCase().replace(/ /g, '_'),
+          data_type: 'string',
+          field_type: 'single_value',
+          description: `Description for ${name}`,
+          enabled: true,
+        },
+      });
+
+      // Mock successful creates for both fields
+      mocked(fetch)
+        .mockReturnValueOnce(mockedResponse(201, mockResponse(fieldA.name)))
+        .mockReturnValueOnce(mockedResponse(201, mockResponse(fieldB.name)));
+
+      const createA = await request(app).post('/custom-fields').send(fieldA);
+      expect(createA.status).toEqual(201);
+      const originalFieldA = createA.body.customField;
+
+      const createB = await request(app).post('/custom-fields').send(fieldB);
+      expect(createB.status).toEqual(201);
+      const idB = createB.body.customField.id;
+      const originalFieldB = createB.body.customField;
+
+      // Reset mock to track if PagerDuty is called during the update attempt
+      mocked(fetch).mockClear();
+
+      // Attempt to update Field B with Field A's entity path (duplicate)
+      // This should fail validation BEFORE calling PagerDuty
+      const updateAttempt = await request(app)
+        .put(`/custom-fields/${idB}`)
+        .send({
+          name: `Sync Test Field B Updated ${testId}`,
+          entityPath: fieldA.entityPath, // Duplicate of Field A's entity path
+          description: 'This update should be prevented',
+        });
+
+      // Verify the request was rejected with 409 Conflict
+      expect(updateAttempt.status).toEqual(409);
+      expect(updateAttempt.body.errors[0]).toContain('entity path already exists');
+
+      // CRITICAL: Verify that PagerDuty was NEVER called
+      // This proves the validation happened before any external API calls
+      expect(fetch).not.toHaveBeenCalled();
+
+      // Verify Field A remains unchanged in the database
+      const fieldsAfterAttempt = await request(app).get('/custom-fields');
+      const fieldAAfter = fieldsAfterAttempt.body.customFields.find(
+        (f: { id: number }) => f.id === originalFieldA.id,
+      );
+      const fieldBAfter = fieldsAfterAttempt.body.customFields.find(
+        (f: { id: number }) => f.id === originalFieldB.id,
+      );
+
+      // Field A should be completely unchanged
+      expect(fieldAAfter).toEqual(originalFieldA);
+
+      // Field B should also be completely unchanged (no partial updates)
+      expect(fieldBAfter).toEqual(originalFieldB);
+
+      // Verify no data corruption or sync issues occurred
+      expect(fieldAAfter.backstageEntityMappingPath).toEqual(fieldA.entityPath);
+      expect(fieldBAfter.backstageEntityMappingPath).toEqual(fieldB.entityPath);
+      expect(fieldBAfter.pagerdutyCustomFieldDisplayName).toEqual(fieldB.name);
+      expect(fieldBAfter.description).toEqual(fieldB.description);
+    });
+
+    it('validates display name uniqueness before updating PagerDuty to prevent sync issues', async () => {
+      // Similar test for display name uniqueness constraint
+
+      // Create unique identifiers to avoid conflicts with other tests
+      const testId = `syncname${Date.now()}`;
+      const fieldA = {
+        name: `Sync Name Test A ${testId}`,
+        entityPath: `spec.sync_name_test_a_${testId}`,
+        description: 'Field A for name validation',
+      };
+      const fieldB = {
+        name: `Sync Name Test B ${testId}`,
+        entityPath: `spec.sync_name_test_b_${testId}`,
+        description: 'Field B for name validation',
+      };
+
+      const mockResponse = (name: string) => ({
+        field: {
+          id: `P${testId}_${name.replace(/ /g, '')}`,
+          display_name: name,
+          name: name.toLowerCase().replace(/ /g, '_'),
+          data_type: 'string',
+          field_type: 'single_value',
+          description: `Description for ${name}`,
+          enabled: true,
+        },
+      });
+
+      mocked(fetch)
+        .mockReturnValueOnce(mockedResponse(201, mockResponse(fieldA.name)))
+        .mockReturnValueOnce(mockedResponse(201, mockResponse(fieldB.name)));
+
+      const createA = await request(app).post('/custom-fields').send(fieldA);
+      expect(createA.status).toEqual(201);
+
+      const createB = await request(app).post('/custom-fields').send(fieldB);
+      expect(createB.status).toEqual(201);
+      const idB = createB.body.customField.id;
+
+      mocked(fetch).mockClear();
+
+      // Attempt to update Field B with Field A's display name (duplicate)
+      const updateAttempt = await request(app)
+        .put(`/custom-fields/${idB}`)
+        .send({
+          name: fieldA.name, // Duplicate of Field A's display name
+          entityPath: `spec.sync_name_test_b_updated_${testId}`,
+          description: 'This update should be prevented',
+        });
+
+      // Verify rejection with 409 Conflict
+      expect(updateAttempt.status).toEqual(409);
+      expect(updateAttempt.body.errors[0]).toContain('display name already exists');
+
+      // Verify PagerDuty was never called (validation happened first)
+      expect(fetch).not.toHaveBeenCalled();
+    });
+
+    it('returns 409 when PagerDuty reports a name conflict', async () => {
+      const createData = {
+        name: 'Conflict Field',
+        entityPath: 'spec.put_pd_conflict_create',
+        description: 'A field',
+      };
+      const mockPagerDutyCreateResponse = {
+        field: {
+          id: 'PCONFLICT123',
+          display_name: 'Conflict Field',
+          name: 'conflict_field',
+          data_type: 'string',
+          field_type: 'single_value',
+          description: 'A field',
+          enabled: true,
+        },
+      };
+      mocked(fetch)
+        .mockReturnValueOnce(mockedResponse(201, mockPagerDutyCreateResponse))
+        .mockReturnValue(mockedResponse(409, { error: { message: 'Conflict' } }));
+
+      const createResponse = await request(app)
+        .post('/custom-fields')
+        .send(createData);
+      expect(createResponse.status).toEqual(201);
+      const createdId = createResponse.body.customField.id;
+
+      const response = await request(app)
+        .put(`/custom-fields/${createdId}`)
+        .send({
+          name: 'Duplicate Name',
+          entityPath: 'metadata.put_pd_conflict_updated',
+          description: 'Updated desc',
+        });
+
+      expect(response.status).toEqual(409);
+    });
+
+    it('rolls back Backstage DB when PagerDuty update fails', async () => {
+      // This test validates that when PagerDuty update fails, the Backstage DB
+      // changes are rolled back to maintain consistency between the two systems.
+
+      const testId = `rollback${Date.now()}`;
+      const originalField = {
+        name: `Rollback Test Original ${testId}`,
+        entityPath: `spec.rollback_test_${testId}`,
+        description: 'Original description',
+      };
+
+      // Create field successfully
+      const mockCreateResponse = {
+        field: {
+          id: `PROLLBACK_${testId}`,
+          display_name: originalField.name,
+          name: originalField.name.toLowerCase().replace(/ /g, '_'),
+          data_type: 'string',
+          field_type: 'single_value',
+          description: originalField.description,
+          enabled: true,
+        },
+      };
+
+      mocked(fetch).mockReturnValueOnce(mockedResponse(201, mockCreateResponse));
+
+      const createResponse = await request(app)
+        .post('/custom-fields')
+        .send(originalField);
+      expect(createResponse.status).toEqual(201);
+      const fieldId = createResponse.body.customField.id;
+      const createdField = createResponse.body.customField;
+
+      // Attempt to update but PagerDuty will fail
+      mocked(fetch).mockReturnValueOnce(
+        mockedResponse(500, { error: { message: 'PagerDuty internal error' } }),
+      );
+
+      const updateAttempt = await request(app)
+        .put(`/custom-fields/${fieldId}`)
+        .send({
+          name: `Rollback Test Updated ${testId}`,
+          entityPath: `spec.rollback_test_updated_${testId}`,
+          description: 'Updated description that should be rolled back',
+        });
+
+      // Verify the update failed
+      expect(updateAttempt.status).toEqual(500);
+
+      // CRITICAL: Verify Backstage DB was rolled back to original values
+      const fieldsAfterRollback = await request(app).get('/custom-fields');
+      const fieldAfterRollback = fieldsAfterRollback.body.customFields.find(
+        (f: { id: number }) => f.id === fieldId,
+      );
+
+      // Field should still have original values (not updated values)
+      expect(fieldAfterRollback).toBeDefined();
+      expect(fieldAfterRollback.pagerdutyCustomFieldDisplayName).toEqual(
+        originalField.name,
+      );
+      expect(fieldAfterRollback.backstageEntityMappingPath).toEqual(
+        originalField.entityPath,
+      );
+      expect(fieldAfterRollback.description).toEqual(originalField.description);
+
+      // Verify no partial updates occurred
+      expect(fieldAfterRollback.pagerdutyCustomFieldId).toEqual(
+        createdField.pagerdutyCustomFieldId,
+      );
+      expect(fieldAfterRollback.pagerdutySubdomain).toEqual(
+        createdField.pagerdutySubdomain,
+      );
+    });
   });
 
   describe('GET /custom-fields', () => {

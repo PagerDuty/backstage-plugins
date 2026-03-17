@@ -19,6 +19,7 @@ import {
   getServiceStandards,
   insertAccountConfig,
   setFallbackAccountConfig,
+  updateCustomField,
 } from './pagerduty';
 
 import { mocked } from 'jest-mock';
@@ -1599,6 +1600,74 @@ describe('PagerDuty API', () => {
               'X-PagerDuty-Client':
                 '"Backstage" <https://testaccount.backstage.com>',
             }),
+          }),
+        );
+      },
+    );
+  });
+
+  describe('updateCustomField', () => {
+    it.each(testInputs)(
+      'calls PUT /services/custom_fields/:id and returns the updated field',
+      async () => {
+        const mockField = {
+          id: 'PD123',
+          display_name: 'Runbook Link',
+          name: 'runbook_link',
+          data_type: 'string',
+          field_type: 'single_value',
+          enabled: true,
+          description: 'Updated description',
+        };
+
+        mocked(fetch).mockReturnValue(
+          mockedResponse(200, { field: mockField }),
+        );
+
+        const result = await updateCustomField({
+          fieldId: 'PD123',
+          request: {
+            field: {
+              display_name: 'Runbook Link',
+              description: 'Updated description',
+            },
+          },
+        });
+
+        expect(fetch).toHaveBeenCalledTimes(1);
+        expect(fetch).toHaveBeenCalledWith(
+          expect.stringContaining('/custom_fields/PD123'),
+          expect.objectContaining({
+            method: 'PUT',
+            body: JSON.stringify({
+              field: {
+                display_name: 'Runbook Link',
+                description: 'Updated description',
+              },
+            }),
+          }),
+        );
+        expect(result.field).toEqual(mockField);
+      },
+    );
+
+    it.each(testInputs)(
+      'throws HttpError with status 404 when field not found',
+      async () => {
+        mocked(fetch).mockReturnValue(mockedResponse(404, {}));
+
+        await expect(
+          updateCustomField({
+            fieldId: 'MISSING',
+            request: { field: { display_name: 'X' } },
+          }),
+        ).rejects.toMatchObject({ status: 404 });
+
+        expect(fetch).toHaveBeenCalledTimes(1);
+        expect(fetch).toHaveBeenCalledWith(
+          expect.stringContaining('/custom_fields/MISSING'),
+          expect.objectContaining({
+            method: 'PUT',
           }),
         );
       },

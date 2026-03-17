@@ -30,6 +30,7 @@ import {
   AutoMatchEntityMappingsResponse,
   BackstageCustomField,
   BackstageCustomFieldCreateRequest,
+  BackstageCustomFieldUpdateRequest,
   BackstageCustomFieldsResponse,
 } from '@pagerduty/backstage-plugin-common';
 import { DiscoveryApi, FetchApi } from '@backstage/core-plugin-api';
@@ -256,6 +257,15 @@ export interface PagerDutyApi {
    * Fetches all custom fields.
    */
   getCustomFields(account?: string): Promise<BackstageCustomFieldsResponse>;
+
+  /**
+   * Updates an existing custom field mapping.
+   */
+  updateCustomField(
+    id: number,
+    request: BackstageCustomFieldUpdateRequest,
+    account?: string,
+  ): Promise<Result<BackstageCustomField>>;
 }
 
 /** @public */
