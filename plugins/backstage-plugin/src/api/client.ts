@@ -36,6 +36,7 @@ import {
   AutoMatchEntityMappingsResponse,
   PagerDutyTeam,
   BackstageCustomFieldCreateRequest,
+  BackstageCustomFieldUpdateRequest,
   BackstageCustomField,
   BackstageCustomFieldsResponse,
 } from '@pagerduty/backstage-plugin-common';
@@ -55,6 +56,26 @@ export class ForbiddenError extends Error {}
 export const pagerDutyApiRef = createApiRef<PagerDutyApi>({
   id: 'plugin.pagerduty.api',
 });
+
+function parseCustomFieldError(
+  error: unknown,
+  fallbackMessage: string,
+): Result<BackstageCustomField> {
+  if (error instanceof Error) {
+    const msg = error.message;
+    if (msg.includes('already been taken')) {
+      return { status: 'error', data: null, error: 'A custom field with this name already exists' };
+    }
+    if (msg.toLowerCase().includes('entity path already exists')) {
+      return { status: 'error', data: null, error: 'A custom field with this entity path already exists' };
+    }
+    if (msg.toLowerCase().includes('limit reached')) {
+      return { status: 'error', data: null, error: 'Custom field limit reached. Maximum number of custom fields has been exceeded.' };
+    }
+    return { status: 'error', data: null, error: msg };
+  }
+  return { status: 'error', data: null, error: fallbackMessage };
+}
 
 /** @public */
 export class PagerDutyClient implements PagerDutyApi {
@@ -519,38 +540,9 @@ export class PagerDutyClient implements PagerDutyApi {
     try {
       const response = await this.request(url, options);
       const result = await response.json();
-      return {
-        status: 'ok',
-        data: result.customField,
-        error: null,
-      };
+      return { status: 'ok', data: result.customField, error: null };
     } catch (error) {
-      if (error instanceof Error) {
-        if (error.message.includes('already been taken')) {
-          return {
-            status: 'error',
-            data: null,
-            error: 'A custom field with this name already exists',
-          };
-        }
-        if (error.message.toLowerCase().includes('product limit reached')) {
-          return {
-            status: 'error',
-            data: null,
-            error: 'Custom field limit reached. Maximum number of custom fields has been exceeded.',
-          };
-        }
-        return {
-          status: 'error',
-          data: null,
-          error: error.message,
-        };
-      }
-      return {
-        status: 'error',
-        data: null,
-        error: 'Failed to create custom field',
-      };
+      return parseCustomFieldError(error, 'Failed to create custom field');
     }
   }
 
@@ -564,6 +556,39 @@ export class PagerDutyClient implements PagerDutyApi {
     }
 
     return await this.findByUrl<BackstageCustomFieldsResponse>(url);
+  }
+
+  async updateCustomField(
+    id: number,
+    request: BackstageCustomFieldUpdateRequest,
+    account?: string,
+  ): Promise<Result<BackstageCustomField>> {
+    const body = JSON.stringify(request);
+
+    const options = {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json; charset=UTF-8',
+        Accept: 'application/json, text/plain, */*',
+      },
+      body,
+    };
+
+    let url = `${await this.config.discoveryApi.getBaseUrl(
+      'pagerduty',
+    )}/custom-fields/${id}`;
+
+    if (account) {
+      url = url.concat(`?account=${account}`);
+    }
+
+    try {
+      const response = await this.request(url, options);
+      const result = await response.json();
+      return { status: 'ok', data: result.customField, error: null };
+    } catch (error) {
+      return parseCustomFieldError(error, 'Failed to update custom field');
+    }
   }
 
   private async findByUrl<T>(url: string): Promise<T> {

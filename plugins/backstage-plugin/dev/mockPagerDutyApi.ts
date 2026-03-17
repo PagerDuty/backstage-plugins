@@ -26,6 +26,7 @@ import {
   PagerDutyEnhancedEntityMappingsResponse,
   AutoMatchEntityMappingsResponse,
   BackstageCustomFieldCreateRequest,
+  BackstageCustomFieldUpdateRequest,
 } from '@pagerduty/backstage-plugin-common';
 import { Entity } from '@backstage/catalog-model';
 import { v4 as uuidv4 } from 'uuid';
@@ -520,4 +521,23 @@ export const mockPagerDutyApi: PagerDutyApi = {
       error: null,
     };
   },
+
+  updateCustomField: async (
+    _id: number,
+    request: BackstageCustomFieldUpdateRequest,
+  ) => ({
+    status: 'ok' as const,
+    data: {
+      id: 1,
+      pagerdutyCustomFieldId: 'PD123',
+      pagerdutyCustomFieldDisplayName: request.name,
+      pagerdutyCustomFieldEnabled: true,
+      backstageEntityMappingPath: request.entityPath,
+      pagerdutySubdomain: 'default',
+      description: request.description ?? '',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+    error: null,
+  }),
 };
