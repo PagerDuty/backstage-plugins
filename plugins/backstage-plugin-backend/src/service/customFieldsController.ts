@@ -103,6 +103,14 @@ export class CustomFieldsController {
 
       this.validateFieldInput(name, entityPath);
 
+      // Validate uniqueness constraints BEFORE updating PagerDuty to prevent sync issues
+      await this.validateUniqueConstraints(
+        id,
+        name,
+        entityPath,
+        existing.pagerdutySubdomain,
+      );
+
       const normalizedDescription = this.normalizeDescription(description, entityPath);
 
       const pagerDutyRequest: PagerDutyCustomFieldUpdateRequest = {
@@ -134,6 +142,41 @@ export class CustomFieldsController {
       }
     } catch (error) {
       this.handleUnexpectedError(error, 'updating the custom field', response);
+    }
+  }
+
+  private async validateUniqueConstraints(
+    currentId: number,
+    name: string,
+    entityPath: string,
+    subdomain: string,
+  ): Promise<void> {
+    const allFields = await this.store.getAllCustomFields(subdomain);
+
+    // Check if another field (not the current one) has the same display name
+    const duplicateName = allFields.find(
+      field =>
+        field.id !== currentId &&
+        field.pagerdutyCustomFieldDisplayName === name,
+    );
+    if (duplicateName) {
+      throw new HttpError(
+        'A custom field with this display name already exists',
+        409,
+      );
+    }
+
+    // Check if another field (not the current one) has the same entity path
+    const duplicateEntityPath = allFields.find(
+      field =>
+        field.id !== currentId &&
+        field.backstageEntityMappingPath === entityPath,
+    );
+    if (duplicateEntityPath) {
+      throw new HttpError(
+        'A custom field with this entity path already exists',
+        409,
+      );
     }
   }
 
