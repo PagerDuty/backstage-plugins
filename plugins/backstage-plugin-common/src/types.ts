@@ -492,6 +492,22 @@ export type BackstageCustomFieldCreateRequest = {
 };
 
 /** @public */
+export type BackstageCustomFieldUpdateRequest = {
+  name: string;
+  entityPath: string;
+  description?: string;
+};
+
+/** @public */
+export type PagerDutyCustomFieldUpdateRequest = {
+  field: {
+    display_name: string;
+    description?: string;
+    enabled?: boolean;
+  };
+};
+
+/** @public */
 export type BackstageCustomFieldsResponse = {
   customFields: BackstageCustomField[];
 };

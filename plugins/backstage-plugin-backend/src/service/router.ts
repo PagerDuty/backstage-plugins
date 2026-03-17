@@ -545,6 +545,11 @@ export async function createRouter(
     await customFieldsController.getCustomFields(request, response);
   });
 
+  // PUT /custom-fields/:id
+  router.put('/custom-fields/:id', async (request, response) => {
+    await customFieldsController.updateCustomField(request, response);
+  });
+
   // POST /mapping/entity
   router.post('/mapping/entity', async (request, response) => {
     try {

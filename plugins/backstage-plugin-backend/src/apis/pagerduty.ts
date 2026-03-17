@@ -29,6 +29,7 @@ import {
   PagerDutyCustomFieldCreateRequest,
   PagerDutyCustomFieldResponse,
   PagerDutyCustomFieldsResponse,
+  PagerDutyCustomFieldUpdateRequest,
 } from '@pagerduty/backstage-plugin-common';
 
 import { DateTime } from 'luxon';
@@ -1630,6 +1631,89 @@ export async function createCustomField({
     case 429:
       throw new HttpError(`Rate limit exceeded.`, 429);
     default: // 201
+      break;
+  }
+
+  try {
+    const result = (await response.json()) as PagerDutyCustomFieldResponse;
+    return result;
+  } catch (error) {
+    throw new Error(`Failed to parse custom field response: ${error}`);
+  }
+}
+
+export type UpdateCustomFieldProps = {
+  fieldId: string;
+  request: PagerDutyCustomFieldUpdateRequest;
+  account?: string;
+};
+
+export async function updateCustomField({
+  fieldId,
+  request,
+  account,
+}: UpdateCustomFieldProps): Promise<PagerDutyCustomFieldResponse> {
+  const apiBaseUrl = getApiBaseUrl(account);
+  const baseUrl = `${apiBaseUrl}/services/custom_fields/${fieldId}`;
+  const token = await getAuthToken(account);
+
+  const options: RequestInit = {
+    method: 'PUT',
+    body: JSON.stringify(request),
+    headers: {
+      Authorization: token,
+      Accept: 'application/vnd.pagerduty+json;version=2',
+      'Content-Type': 'application/json',
+    },
+  };
+
+  let response: Response;
+  try {
+    response = await fetchWithRetries(baseUrl, options);
+  } catch (error) {
+    throw new Error(`Failed to update custom field: ${error}`);
+  }
+
+  if (response.status >= 500) {
+    throw new HttpError(
+      `Failed to update custom field. PagerDuty API returned a server error.`,
+      response.status,
+    );
+  }
+
+  switch (response.status) {
+    case 400: {
+      const errorData = await response.json().catch(() => ({}));
+      throw new HttpError(
+        `Failed to update custom field. Invalid arguments: ${JSON.stringify(errorData)}`,
+        400,
+      );
+    }
+    case 401:
+      throw new HttpError(
+        `Failed to update custom field. Invalid credentials provided.`,
+        401,
+      );
+    case 403:
+      throw new HttpError(
+        `Failed to update custom field. Not authorized to perform this action.`,
+        403,
+      );
+    case 404:
+      throw new HttpError(
+        `Failed to update custom field. Custom field not found.`,
+        404,
+      );
+    case 409: {
+      const errorData = await response.json().catch(() => ({}));
+      throw new HttpError(
+        `Custom field with this name already exists: ${JSON.stringify(errorData)}`,
+        409,
+      );
+    }
+    case 429:
+      throw new HttpError(`Rate limit exceeded.`, 429);
+    default: // 200
       break;
   }
 
