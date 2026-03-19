@@ -10,6 +10,7 @@ import {
   PagerDutyEscalationPolicy,
   PagerDutyService,
   PagerDutyServiceResponse,
+  PagerDutyOnCallsResponse,
   PagerDutyOnCallUsersResponse,
   PagerDutyChangeEventsResponse,
   PagerDutyChangeEvent,
@@ -385,6 +386,81 @@ describe('createRouter', () => {
         expect(oncallUsersResponse.users.length).toEqual(0);
       },
     );
+  });
+
+  describe('GET /oncalls', () => {
+    it.each(testInputs)('returns full oncall data', async () => {
+      const escalationPolicyId = '12345';
+      const mockOncalls = [
+        {
+          user: {
+            id: 'userId1',
+            summary: 'John Doe',
+            name: 'John Doe',
+            email: 'john.doe@email.com',
+            avatar_url: 'https://example.pagerduty.com/avatars/123',
+            html_url: 'https://example.pagerduty.com/users/123',
+          },
+          escalation_level: 1,
+          schedule: {
+            id: 'SCHED1',
+            type: 'schedule_reference',
+            summary: 'Primary On-Call',
+          },
+          escalation_policy: {
+            id: 'P0L1CY1D',
+            type: 'escalation_policy_reference',
+            summary: 'Platform Team',
+          },
+        },
+      ];
+
+      mocked(fetch).mockReturnValue(
+        mockedResponse(200, { oncalls: mockOncalls }),
+      );
+
+      const response = await request(app).get(
+        `/oncalls?escalation_policy_ids=${escalationPolicyId}`,
+      );
+
+      const oncallsResponse: PagerDutyOnCallsResponse = JSON.parse(
+        response.text,
+      );
+
+      expect(response.status).toEqual(200);
+      expect(oncallsResponse.oncalls).toEqual(mockOncalls);
+      expect(oncallsResponse.oncalls.length).toEqual(1);
+    });
+
+    it.each(testInputs)('returns 400 when escalation_policy_ids is missing', async () => {
+      const response = await request(app).get('/oncalls');
+
+      expect(response.status).toEqual(400);
+    });
+
+    it.each(testInputs)('returns unauthorized', async () => {
+      mocked(fetch).mockReturnValue(mockedResponse(401, {}));
+
+      const response = await request(app).get(
+        '/oncalls?escalation_policy_ids=12345',
+      );
+
+      expect(response.status).toEqual(401);
+      expect(response.text).toMatch(
+        'Failed to list oncalls. Caller did not supply credentials or did not provide the correct credentials.',
+      );
+    });
+
+    it.each(testInputs)('returns empty list when no oncalls exist', async () => {
+      mocked(fetch).mockReturnValue(mockedResponse(200, { oncalls: [] }));
+
+      const response = await request(app).get(
+        '/oncalls?escalation_policy_ids=12345',
+      );
+
+      expect(response.status).toEqual(200);
+      expect(response.body).toEqual({ oncalls: [] });
+    });
   });
 
   describe('GET /services', () => {

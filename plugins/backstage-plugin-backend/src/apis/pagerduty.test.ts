@@ -12,6 +12,7 @@ import {
   getAllServices,
   getChangeEvents,
   getIncidents,
+  getOncalls,
   getOncallUsers,
   getServiceById,
   getServiceByIntegrationKey,
@@ -651,6 +652,95 @@ describe('PagerDuty API', () => {
         expect(result).toEqual(expectedResponse);
         expect(result.length).toEqual(2);
         expect(fetch).toHaveBeenCalledTimes(1);
+      },
+    );
+  });
+
+  describe('getOncalls', () => {
+    it.each(testInputs)(
+      'should return full oncall objects',
+      async () => {
+        const escalationPolicyId = '12345';
+        const mockAPIResponse = {
+          oncalls: [
+            {
+              user: {
+                id: 'userId1',
+                summary: 'John Doe',
+                name: 'John Doe',
+                email: 'john.doe@email.com',
+                avatar_url: 'https://example.pagerduty.com/avatars/123',
+                html_url: 'https://example.pagerduty.com/users/123',
+              },
+              escalation_level: 1,
+              schedule: {
+                id: 'SCHED1',
+                type: 'schedule_reference',
+                summary: 'Primary On-Call',
+              },
+              escalation_policy: {
+                id: 'P0L1CY1D',
+                type: 'escalation_policy_reference',
+                summary: 'Platform Team',
+              },
+            },
+            {
+              user: {
+                id: 'userId2',
+                summary: 'Jane Doe',
+                name: 'Jane Doe',
+                email: 'jane.doe@email.com',
+                avatar_url: 'https://example.pagerduty.com/avatars/456',
+                html_url: 'https://example.pagerduty.com/users/456',
+              },
+              escalation_level: 2,
+              schedule: null,
+              escalation_policy: {
+                id: 'P0L1CY1D',
+                type: 'escalation_policy_reference',
+                summary: 'Platform Team',
+              },
+            },
+          ],
+        };
+
+        mocked(fetch).mockReturnValue(mockedResponse(200, mockAPIResponse));
+
+        const result = await getOncalls(escalationPolicyId);
+
+        expect(result).toEqual(mockAPIResponse.oncalls);
+        expect(result.length).toEqual(2);
+        expect(fetch).toHaveBeenCalledTimes(1);
+      },
+    );
+
+    it.each(testInputs)(
+      'should return empty array when no oncalls exist',
+      async () => {
+        mocked(fetch).mockReturnValue(
+          mockedResponse(200, { oncalls: [] }),
+        );
+
+        const result = await getOncalls('12345');
+
+        expect(result).toEqual([]);
+        expect(fetch).toHaveBeenCalledTimes(1);
+      },
+    );
+
+    it.each(testInputs)(
+      'should throw HttpError on 401',
+      async () => {
+        mocked(fetch).mockReturnValue(mockedResponse(401, {}));
+
+        try {
+          await getOncalls('12345');
+        } catch (error) {
+          expect((error as HttpError).status).toEqual(401);
+          expect((error as HttpError).message).toEqual(
+            'Failed to list oncalls. Caller did not supply credentials or did not provide the correct credentials.',
+          );
+        }
       },
     );
   });

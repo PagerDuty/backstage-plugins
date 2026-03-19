@@ -9,6 +9,7 @@ import {
   PagerDutyEscalationPolicy,
   PagerDutyEscalationPoliciesResponse,
   PagerDutyAbilitiesResponse,
+  PagerDutyOnCall,
   PagerDutyOnCallsResponse,
   PagerDutyUser,
   PagerDutyService,
@@ -537,7 +538,36 @@ export async function getOncallUsers(
   escalationPolicy: string,
   account?: string,
 ): Promise<PagerDutyUser[]> {
-  let response: Response;
+  const oncalls = await getOncalls(escalationPolicy, account);
+
+  if (oncalls.length === 0) {
+    return [];
+  }
+
+  const oncallsSorted = [...oncalls].sort((a, b) => {
+    return a.escalation_level - b.escalation_level;
+  });
+
+  const oncallsFiltered = oncallsSorted.filter(oncall => {
+    return oncall.escalation_level === oncallsSorted[0].escalation_level;
+  });
+
+  const users = [...oncallsFiltered]
+    .sort((a, b) => (a.user.name > b.user.name ? 1 : -1))
+    .map(oncall => oncall.user);
+
+  const uniqueUsers = new Map<string, PagerDutyUser>();
+  for (const user of users) {
+    uniqueUsers.set(user.id, user);
+  }
+
+  return Array.from(uniqueUsers.values());
+}
+
+export async function getOncalls(
+  escalationPolicy: string,
+  account?: string,
+): Promise<PagerDutyOnCall[]> {
   const params = `time_zone=UTC&include[]=users&escalation_policy_ids[]=${escalationPolicy}`;
   const options: RequestInit = {
     method: 'GET',
@@ -547,6 +577,7 @@ export async function getOncallUsers(
   const apiBaseUrl = getApiBaseUrl(account);
   const baseUrl = `${apiBaseUrl}/oncalls`;
 
+  let response: Response;
   try {
     response = await fetchWithRetries(`${baseUrl}?${params}`, options);
   } catch (error) {
@@ -582,39 +613,9 @@ export async function getOncallUsers(
       break;
   }
 
-  let result: PagerDutyOnCallsResponse;
-  let usersItem: PagerDutyUser[];
   try {
-    result = (await response.json()) as PagerDutyOnCallsResponse;
-
-    if (result.oncalls.length !== 0) {
-      const oncallsSorted = [...result.oncalls].sort((a, b) => {
-        return a.escalation_level - b.escalation_level;
-      });
-
-      const oncallsFiltered = oncallsSorted.filter(oncall => {
-        return oncall.escalation_level === oncallsSorted[0].escalation_level;
-      });
-
-      usersItem = [...oncallsFiltered]
-        .sort((a, b) => (a.user.name > b.user.name ? 1 : -1))
-        .map(oncall => oncall.user);
-
-      // remove duplicates from usersItem
-      const uniqueUsers = new Map();
-      usersItem.forEach(user => {
-        uniqueUsers.set(user.id, user);
-      });
-
-      usersItem.length = 0;
-      uniqueUsers.forEach(user => {
-        usersItem.push(user);
-      });
-
-      return usersItem;
-    }
-
-    return [];
+    const result = (await response.json()) as PagerDutyOnCallsResponse;
+    return result.oncalls;
   } catch (error) {
     throw new HttpError(`Failed to parse oncall information: ${error}`, 500);
   }

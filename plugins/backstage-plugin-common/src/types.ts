@@ -99,10 +99,21 @@ export type PagerDutyTeam = {
   name: string;
 };
 
+/** @public */
+export type PagerDutySchedule = {
+  id: string;
+  type?: string;
+  summary?: string;
+  self?: string;
+  html_url?: string;
+};
+
 /** @public  */
 export type PagerDutyOnCall = {
   user: PagerDutyUser;
   escalation_level: number;
+  schedule?: PagerDutySchedule;
+  escalation_policy?: PagerDutyEscalationPolicy;
 };
 
 /** @public */
