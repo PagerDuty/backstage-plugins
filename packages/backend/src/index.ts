@@ -52,8 +52,11 @@ backend.add(import('@backstage/plugin-search-backend-module-techdocs'));
 // kubernetes
 backend.add(import('@backstage/plugin-kubernetes-backend'));
 
-// pageduty plugin
+// pagerduty plugin
 backend.add(import('@pagerduty/backstage-plugin-backend'));
 backend.add(import('@pagerduty/backstage-plugin-entity-processor'));
+
+// mcp actions
+backend.add(import('@backstage/plugin-mcp-actions-backend'));
 
 backend.start();

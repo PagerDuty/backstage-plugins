@@ -27,6 +27,7 @@
     "@backstage/plugin-catalog-backend-module-logs": "backstage:^",
     "@backstage/plugin-catalog-backend-module-scaffolder-entity-model": "backstage:^",
     "@backstage/plugin-kubernetes-backend": "backstage:^",
+    "@backstage/plugin-mcp-actions-backend": "backstage:^",
     "@backstage/plugin-permission-backend": "backstage:^",
     "@backstage/plugin-permission-backend-module-allow-all-policy": "backstage:^",
     "@backstage/plugin-permission-common": "backstage:^",

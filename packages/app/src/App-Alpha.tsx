@@ -8,6 +8,7 @@ import SearchPlugin from '@backstage/plugin-search/alpha';
 import TechDocsPlugin from '@backstage/plugin-techdocs/alpha';
 import { createApp } from '@backstage/frontend-defaults';
 import pagerDutyPlugin from '@pagerduty/backstage-plugin/alpha';
+import AuthPlugin from '@backstage/plugin-auth';
 
 const app = createApp({
   features: [
@@ -16,6 +17,7 @@ const app = createApp({
     CatalogPlugin,
     CatalogImportPlugin,
     ScaffolderPlugin,
+    AuthPlugin,
     SearchPlugin,
     OrgPlugin,
     TechDocsPlugin,

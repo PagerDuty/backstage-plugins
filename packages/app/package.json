@@ -23,6 +23,7 @@
     "@backstage/frontend-defaults": "backstage:^",
     "@backstage/integration-react": "backstage:^",
     "@backstage/plugin-api-docs": "backstage:^",
+    "@backstage/plugin-auth": "backstage:^",
     "@backstage/plugin-catalog": "backstage:^",
     "@backstage/plugin-catalog-common": "backstage:^",
     "@backstage/plugin-catalog-graph": "backstage:^",
