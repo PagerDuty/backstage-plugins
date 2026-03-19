@@ -4,7 +4,9 @@ import {
   coreServices,
   createBackendPlugin,
 } from '@backstage/backend-plugin-api';
+import { actionsRegistryServiceRef } from '@backstage/backend-plugin-api/alpha';
 import { createRouter } from './service/router';
+import { createPagerdutyActions } from './actions';
 import { PagerDutyBackendDatabase, PagerDutyBackendStore } from './db';
 import { CatalogClient } from '@backstage/catalog-client';
 
@@ -42,8 +44,9 @@ export const pagerDutyPlugin = createBackendPlugin({
         database: coreServices.database,
         discovery: coreServices.discovery,
         auth: coreServices.auth,
+        actionsRegistry: actionsRegistryServiceRef,
       },
-      async init({ config, logger, httpRouter, database, discovery, auth }) {
+      async init({ config, logger, httpRouter, database, discovery, auth, actionsRegistry }) {
         const pagerDutyBackendStore: PagerDutyBackendStore =
           await PagerDutyBackendDatabase.create(await database.getClient(), {
             skipMigrations: false,
@@ -66,6 +69,8 @@ export const pagerDutyPlugin = createBackendPlugin({
         // https://backstage.io/docs/backend-system/core-services/http-router/#using-the-service
         // Setting enableUnauthenticatedAccess to true will allow unauthenticated access to the PagerDuty plugin routes.
         const enableUnauthenticatedAccess: boolean = config.getOptionalBoolean('pagerDuty.enableUnauthenticatedAccess') ?? false;
+        createPagerdutyActions({ actionsRegistry, discovery, auth });
+
         if (enableUnauthenticatedAccess === true) {
           httpRouter.addAuthPolicy({
             path: '/',

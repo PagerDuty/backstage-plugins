@@ -36,6 +36,10 @@ backend:
   logger:
     level: debug
 
+  actions:
+    pluginSources:
+      - pagerduty
+
 integrations:
   github:
     - host: github.com

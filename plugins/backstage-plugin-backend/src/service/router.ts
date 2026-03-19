@@ -12,6 +12,7 @@ import {
   getAllEscalationPolicies,
   getChangeEvents,
   getIncidents,
+  getOncalls,
   getOncallUsers,
   getServiceById,
   getServiceByIntegrationKey,
@@ -34,6 +35,7 @@ import {
   HttpError,
   PagerDutyChangeEventsResponse,
   PagerDutyIncidentsResponse,
+  PagerDutyOnCallsResponse,
   PagerDutyOnCallUsersResponse,
   PagerDutyServiceResponse,
   PagerDutyServiceStandardsResponse,
@@ -909,7 +911,7 @@ export async function createRouter(
     }
   });
 
-  // GET /oncall
+  // Deprecated: use GET /oncalls instead which returns richer on-call data
   router.get('/oncall-users', async (request, response) => {
     try {
       // Get the escalation policy ID from the request parameters with parameter name "escalation_policy_ids[]"
@@ -930,6 +932,35 @@ export async function createRouter(
       };
 
       response.json(onCallUsersResponse);
+    } catch (error) {
+      if (error instanceof HttpError) {
+        response.status(error.status).json({
+          errors: [`${error.message}`],
+        });
+      }
+    }
+  });
+
+  // GET /oncalls
+  router.get('/oncalls', async (request, response) => {
+    try {
+      const escalationPolicyId: string =
+        (request.query.escalation_policy_ids as string) || '';
+      const account = (request.query.account as string) || '';
+
+      if (escalationPolicyId === '') {
+        response
+          .status(400)
+          .json("Bad Request: 'escalation_policy_ids' is required");
+        return;
+      }
+
+      const oncalls = await getOncalls(escalationPolicyId, account);
+      const oncallsResponse: PagerDutyOnCallsResponse = {
+        oncalls,
+      };
+
+      response.json(oncallsResponse);
     } catch (error) {
       if (error instanceof HttpError) {
         response.status(error.status).json({
