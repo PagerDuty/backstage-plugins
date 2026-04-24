@@ -178,7 +178,7 @@ export interface PagerDutyApi {
    *
    * @param account - The account ID to filter teams by
    */
-  getAllTeams(account: string): Promise<PagerDutyTeam[]>;
+  getAllTeams(account?: string): Promise<PagerDutyTeam[]>;
 
   /**
    * Fetches a filtered list of PagerDuty services.

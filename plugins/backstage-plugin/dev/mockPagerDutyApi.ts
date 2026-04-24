@@ -431,7 +431,7 @@ export const mockPagerDutyApi: PagerDutyApi = {
     return users;
   },
 
-  async getAllTeams(_account: string) {
+  async getAllTeams(_account?: string) {
     return [
       {
         id: 'team1',
