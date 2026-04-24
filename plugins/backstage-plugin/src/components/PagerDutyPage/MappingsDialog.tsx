@@ -87,14 +87,16 @@ export default function MappingsDialog({
     }
   }, [isOpen]);
 
+  const accountParam = selectedAccount || undefined;
+
   const { data: teams, isLoading: isTeamsLoading } = useQuery({
-    queryKey: ['pagerduty', 'getAllTeams', selectedAccount],
-    queryFn: () => pagerDutyApi.getAllTeams(selectedAccount),
-    enabled: isOpen && !!selectedAccount,
+    queryKey: ['pagerduty', 'getAllTeams', accountParam],
+    queryFn: () => pagerDutyApi.getAllTeams(accountParam),
+    enabled: isOpen,
   });
 
   const { data: services, isLoading: isServicesLoading } = useQuery({
-    queryKey: ['pagerduty', 'getFilteredServices', selectedTeamId, debouncedSearchQuery, selectedAccount],
+    queryKey: ['pagerduty', 'getFilteredServices', selectedTeamId, debouncedSearchQuery, accountParam],
     queryFn: async () => {
       const teamIdsToSend = selectedTeamId ? [selectedTeamId] : undefined;
       const queryToSend = debouncedSearchQuery || undefined;
@@ -102,11 +104,11 @@ export default function MappingsDialog({
         teamIdsToSend,
         queryToSend,
         10,
-        selectedAccount,
+        accountParam,
       );
       return result;
     },
-    enabled: isOpen && !!selectedAccount,
+    enabled: isOpen,
   });
 
   const { mutateAsync: createMapping, isPending: isCreatingMapping } =

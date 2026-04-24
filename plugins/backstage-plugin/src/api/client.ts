@@ -185,9 +185,11 @@ export class PagerDutyClient implements PagerDutyApi {
     return await this.findByUrl<PagerDutyService[]>(url);
   }
 
-  async getAllTeams(account: string): Promise<PagerDutyTeam[]> {
+  async getAllTeams(account?: string): Promise<PagerDutyTeam[]> {
     const baseUrl = await this.config.discoveryApi.getBaseUrl('pagerduty');
-    const url = `${baseUrl}/teams?account=${encodeURIComponent(account)}`;
+    const url = account
+      ? `${baseUrl}/teams?account=${encodeURIComponent(account)}`
+      : `${baseUrl}/teams`;
 
     return await this.findByUrl<PagerDutyTeam[]>(url);
   }
