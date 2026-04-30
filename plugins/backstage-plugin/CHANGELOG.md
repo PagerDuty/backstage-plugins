@@ -1,5 +1,16 @@
 # @backstage/plugin-pagerduty
 
+## 0.19.0
+
+### Minor Changes
+
+- ae2a9c3: Refactor the service mappings screen and add an auto-matching functionality to mass map PagerDuty service to Backstage entities
+
+### Patch Changes
+
+- Updated dependencies [ae2a9c3]
+  - @pagerduty/backstage-plugin-common@0.3.0
+
 ## 0.18.0
 
 ### Minor Changes
