@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react';
-import { createStyles, makeStyles, Typography } from '@material-ui/core';
-import { Card, Grid, RadioGroup, Radio } from '@backstage/ui';
+import {
+  CardContent,
+  createStyles,
+  makeStyles,
+  Typography,
+} from '@material-ui/core';
+import { Card, RadioGroup, Radio, Flex, Text } from '@backstage/ui';
 import {
   Header,
   Page,
@@ -23,7 +28,7 @@ enum StoreSettings {
 const SERVICE_DEPENDENCY_SYNC_STRATEGY =
   'settings::service-dependency-sync-strategy';
 
-const useStyles = makeStyles<BackstageTheme>(() =>
+const useStyles = makeStyles<BackstageTheme>(theme =>
   createStyles({
     cardStyles: {
       padding: '15px',
@@ -35,12 +40,27 @@ const useStyles = makeStyles<BackstageTheme>(() =>
     linkStyles: {
       color: 'cadetblue',
     },
+    descriptionCard: {
+      marginBottom: '24px',
+      borderRadius: '8px',
+    },
+    descriptionText: {
+      fontSize: '16px',
+      color: theme.palette.text.primary,
+      lineHeight: 1.5,
+      marginBottom: '4px',
+    },
+    warningText: {
+      fontSize: '16px',
+      color: theme.palette.text.primary,
+      lineHeight: 1.5,
+    },
   }),
 );
 
 /** @public */
 export const PagerDutyPage = () => {
-  const { cardStyles, textContainerStyles, linkStyles } = useStyles();
+  const { cardStyles, textContainerStyles, linkStyles, descriptionCard, descriptionText, warningText } = useStyles();
   const pagerDutyApi = useApi(pagerDutyApiRef);
   const [
     selectedServiceDependencyStrategy,
@@ -83,21 +103,24 @@ export const PagerDutyPage = () => {
       <Content>
         <TabbedLayout>
           <TabbedLayout.Route path="/service-mapping" title="Service Mapping">
-            <Grid.Root gap="3" columns="1">
-              <Grid.Item>
-                <Typography>
-                  Easily map your existing PagerDuty services to entities in
-                  Backstage without the need to add anotations to all your
-                  projects.
-                </Typography>
-                <Typography>
-                  <b>Warning: </b>Only 1:1 mapping is allowed at this time.
-                </Typography>
-              </Grid.Item>
-              <Grid.Item>
-                <ServiceMappingComponent />
-              </Grid.Item>
-            </Grid.Root>
+            <>
+              <Card className={descriptionCard}>
+                <CardContent>
+                  <Flex direction="column">
+                    <Text className={descriptionText}>
+                      Easily map your existing PagerDuty services to entities in
+                      Backstage without the need to add anotations to all your
+                      projects.
+                    </Text>
+                    <Text className={warningText}>
+                      <strong>Warning:</strong> Only 1:1 mapping is allowed at this time.
+                    </Text>
+                  </Flex>
+                </CardContent>
+              </Card>
+
+              <ServiceMappingComponent />
+            </>
           </TabbedLayout.Route>
           <TabbedLayout.Route path="/settings" title="Configuration">
             <>

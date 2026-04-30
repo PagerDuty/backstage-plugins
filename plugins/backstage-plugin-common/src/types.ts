@@ -97,6 +97,16 @@ export type PagerDutyTeam = {
   self?: string;
   html_url?: string;
   name: string;
+  account?: string;
+};
+
+/** @public */
+export type PagerDutyTeamsResponse = {
+  teams: PagerDutyTeam[];
+  more?: boolean;
+  limit?: number;
+  offset?: number;
+  total?: number;
 };
 
 /** @public  */
@@ -254,6 +264,7 @@ export type PagerDutyOAuthConfig = {
   clientSecret: string;
   region?: string;
   subDomain: string;
+  identityUrl?: string;
 };
 
 /** @public */
@@ -284,6 +295,34 @@ export type PagerDutyEntityMapping = {
 /** @public */
 export type PagerDutyEntityMappingsResponse = {
   mappings: PagerDutyEntityMapping[];
+};
+
+/** @public */
+export type FormattedBackstageEntity = {
+  name: string;
+  id: string;
+  namespace: string;
+  type: string;
+  system: string;
+  owner: string;
+  lifecycle: string;
+  annotations: {
+    'pagerduty.com/integration-key': string;
+    'pagerduty.com/service-id': string;
+  };
+  // PagerDuty properties
+  serviceName?: string;
+  serviceUrl?: string;
+  team?: string;
+  escalationPolicy?: string;
+  status?: 'NotMapped' | 'InSync' | 'OutOfSync' | 'ErrorWhenFetchingService';
+  account?: string;
+};
+
+/** @public */
+export type PagerDutyEnhancedEntityMappingsResponse = {
+  entities: FormattedBackstageEntity[];
+  totalCount: number;
 };
 
 /** @public */
@@ -319,4 +358,58 @@ export type PagerDutySetting = {
 /** @public */
 export type PagerDutySettings = {
   settings: PagerDutySetting[];
+};
+
+/** @public */
+export type AutoMatchScoreBreakdown = {
+  baseScore: number;
+  exactMatch: boolean;
+  teamMatch: boolean;
+  acronymMatch: boolean;
+  rawScore: number;
+};
+
+/** @public */
+export type AutoMatchPagerDutyService = {
+  serviceId: string;
+  name: string;
+  team: string;
+  account?: string;
+};
+
+/** @public */
+export type AutoMatchBackstageComponent = {
+  entityRef: string;
+  name: string;
+  owner: string;
+};
+
+/** @public */
+export type AutoMatchEntityMapping = {
+  pagerDutyService: AutoMatchPagerDutyService;
+  backstageComponent: AutoMatchBackstageComponent;
+  score: number;
+  confidence: string;
+  scoreBreakdown: AutoMatchScoreBreakdown;
+};
+
+/** @public */
+export type AutoMatchStatistics = {
+  totalPagerDutyServices: number;
+  totalBackstageComponents: number;
+  totalPossibleComparisons: number;
+  matchesFound: number;
+  exactMatches: number;
+  highConfidenceMatches: number;
+  mediumConfidenceMatches: number;
+  threshold: number;
+  loadTimeMs: number;
+  matchTimeMs: number;
+  totalTimeMs: number;
+};
+
+/** @public */
+export type AutoMatchEntityMappingsResponse = {
+  matches: AutoMatchEntityMapping[];
+  statistics: AutoMatchStatistics;
 };

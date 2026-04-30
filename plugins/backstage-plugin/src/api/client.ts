@@ -29,8 +29,11 @@ import {
   PagerDutyIncidentsResponse,
   PagerDutyServiceStandardsResponse,
   PagerDutyServiceMetricsResponse,
-  PagerDutyEntityMappingsResponse,
+  PagerDutyEnhancedEntityMappingsResponse,
   PagerDutySetting,
+  PagerDutyService,
+  AutoMatchEntityMappingsResponse,
+  PagerDutyTeam,
 } from '@pagerduty/backstage-plugin-common';
 import { createApiRef, ConfigApi } from '@backstage/core-plugin-api';
 import { NotFoundError } from '@backstage/errors';
@@ -137,12 +140,91 @@ export class PagerDutyClient implements PagerDutyApi {
     return this.request(url, options);
   }
 
-  async getEntityMappings(): Promise<PagerDutyEntityMappingsResponse> {
+  async getEntityMappingsWithPagination(options: {
+    offset: number;
+    limit: number;
+    filters?: {
+      name?: string;
+      serviceName?: string;
+      status?: string;
+      teamName?: string;
+    };
+    sort?: { column: string; direction: 'ascending' | 'descending' };
+    account?: string;
+  }): Promise<PagerDutyEnhancedEntityMappingsResponse> {
     const url = `${await this.config.discoveryApi.getBaseUrl(
       'pagerduty',
-    )}/mapping/entity`;
+    )}/mapping/entities`;
 
-    return await this.findByUrl<PagerDutyEntityMappingsResponse>(url);
+    const body = JSON.stringify({
+      offset: options.offset,
+      limit: options.limit,
+      filters: options.filters || {},
+      sort: options.sort,
+      account: options.account,
+    });
+
+    const requestOptions = {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json; charset=UTF-8',
+        Accept: 'application/json, text/plain, */*',
+      },
+      body,
+    };
+
+    const response = await this.request(url, requestOptions);
+    return response.json();
+  }
+
+  async getAllServices(): Promise<PagerDutyService[]> {
+    const url = `${await this.config.discoveryApi.getBaseUrl(
+      'pagerduty',
+    )}/all-pd-services`;
+
+    return await this.findByUrl<PagerDutyService[]>(url);
+  }
+
+  async getAllTeams(account?: string): Promise<PagerDutyTeam[]> {
+    const baseUrl = await this.config.discoveryApi.getBaseUrl('pagerduty');
+    const url = account
+      ? `${baseUrl}/teams?account=${encodeURIComponent(account)}`
+      : `${baseUrl}/teams`;
+
+    return await this.findByUrl<PagerDutyTeam[]>(url);
+  }
+
+  async getFilteredServices(
+    teamIds?: string[],
+    query?: string,
+    limit?: number,
+    account?: string,
+  ): Promise<PagerDutyService[]> {
+    const baseUrl = await this.config.discoveryApi.getBaseUrl('pagerduty');
+    const params = new URLSearchParams();
+
+    if (teamIds && teamIds.length > 0) {
+      params.append('team_id', teamIds[0]);
+    }
+
+    if (query && query.trim() !== '') {
+      params.append('query', query.trim());
+    }
+
+    if (limit) {
+      params.append('limit', limit.toString());
+    }
+
+    if (account) {
+      params.append('account', account);
+    }
+
+    const queryString = params.toString();
+    const url = queryString
+      ? `${baseUrl}/services?${queryString}`
+      : `${baseUrl}/services`;
+
+    return await this.findByUrl<PagerDutyService[]>(url);
   }
 
   async storeServiceMapping(
@@ -174,9 +256,9 @@ export class PagerDutyClient implements PagerDutyApi {
     return this.request(url, options);
   }
 
+
   async getEntityMapping(entityRef: string): Promise<{
-    mapping: {
-      serviceId: string;
+    mapping: {serviceId: string;
       integrationKey: string;
       entityRef: string;
       account: string;
@@ -194,6 +276,32 @@ export class PagerDutyClient implements PagerDutyApi {
     )}/mapping/entity/${kind}/${namespace}/${name}`;
 
     return await this.findByUrl(url);
+  }
+
+  async storeBulkServiceMappings(
+    mappings: Array<{
+      serviceId: string;
+      integrationKey: string;
+      entityRef: string;
+      account: string;
+    }>,
+  ): Promise<Response> {
+    const body = JSON.stringify({ mappings });
+
+    const options = {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json; charset=UTF-8',
+        Accept: 'application/json, text/plain, */*',
+      },
+      body,
+    };
+
+    const url = `${await this.config.discoveryApi.getBaseUrl(
+      'pagerduty',
+    )}/mapping/entities/bulk`;
+
+    return this.request(url, options);
   }
 
   async removeServiceMapping(entityRef: string): Promise<boolean> {
@@ -339,6 +447,46 @@ export class PagerDutyClient implements PagerDutyApi {
     const url = this.config.eventsBaseUrl ?? 'https://events.pagerduty.com/v2';
 
     return this.request(`${url}/enqueue`, options);
+  }
+
+  async autoMatchEntityMappings(options: {
+    team?: string;
+    threshold: number;
+    account?: string;
+  }): Promise<AutoMatchEntityMappingsResponse> {
+    const url = `${await this.config.discoveryApi.getBaseUrl(
+      'pagerduty',
+    )}/mapping/entity/auto-match`;
+
+    const body = JSON.stringify({
+      team: options.team === 'all' ? undefined : options.team,
+      threshold: options.threshold,
+      bestOnly: true,
+      account: options.account,
+    });
+
+    const requestOptions = {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json; charset=UTF-8',
+        Accept: 'application/json, text/plain, */*',
+      },
+      body,
+    };
+
+    const response = await this.request(url, requestOptions);
+    return response.json();
+  }
+
+  async getAccounts(): Promise<Array<{ id: string; isDefault: boolean }>> {
+    const url = `${await this.config.discoveryApi.getBaseUrl(
+      'pagerduty',
+    )}/accounts`;
+
+    const response = await this.findByUrl<{
+      accounts: Array<{ id: string; isDefault: boolean }>;
+    }>(url);
+    return response.accounts;
   }
 
   private async findByUrl<T>(url: string): Promise<T> {

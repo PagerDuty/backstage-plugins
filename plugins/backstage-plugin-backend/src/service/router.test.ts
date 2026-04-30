@@ -3,7 +3,6 @@ import request from 'supertest';
 
 import {
   createRouter,
-  createComponentEntitiesReferenceDict,
   buildEntityMappingsResponse,
 } from './router';
 import {
@@ -29,12 +28,18 @@ import {
 } from '../db/PagerDutyBackendDatabase';
 import { PagerDutyBackendDatabase } from '../db';
 import { mockServices, TestDatabases } from '@backstage/backend-test-utils';
+import { InMemoryCatalogClient } from '@backstage/catalog-client/testUtils';
+import * as Pagerduty from '../services/pagerduty';
 
 jest.mock('node-fetch');
 
 jest.mock('../auth/auth', () => ({
   getAuthToken: jest.fn().mockReturnValue(Promise.resolve('test-token')),
   loadAuthConfig: jest.fn().mockReturnValue(Promise.resolve()),
+}));
+
+jest.mock('../services/pagerduty', () => ({
+  getServicesIdsByPartialName: jest.fn(),
 }));
 
 const testInputs = ['apiToken', 'oauth'];
@@ -46,6 +51,7 @@ function mockedResponse(status: number, body: unknown): Promise<Response> {
   } as Response);
 }
 
+// This mocked database implements auto-cleanup after each test
 const testDatabase = TestDatabases.create();
 
 async function createDatabase(): Promise<PagerDutyBackendStore> {
@@ -56,33 +62,141 @@ async function createDatabase(): Promise<PagerDutyBackendStore> {
 
 describe('createRouter', () => {
   let app: express.Express;
+  let store: PagerDutyBackendStore;
+
+  // Define test entities for the catalog
+  const testEntities = [
+    {
+      apiVersion: 'backstage.io/v1alpha1',
+      kind: 'Component',
+      metadata: {
+        name: 'test-component',
+        namespace: 'default',
+        uid: 'test-uid-1',
+        annotations: {
+          'pagerduty.com/service-id': 'S3RV1CE1D',
+        },
+      },
+      spec: {
+        type: 'service',
+        owner: 'team-a',
+        lifecycle: 'production',
+      },
+    },
+    {
+      apiVersion: 'backstage.io/v1alpha1',
+      kind: 'Component',
+      metadata: {
+        name: 'component-1',
+        namespace: 'default',
+        uid: 'uid-1',
+        annotations: {
+          'pagerduty.com/service-id': 'SERVICE1',
+        },
+      },
+      spec: {
+        type: 'service',
+        owner: 'team-x',
+        lifecycle: 'experimental',
+      },
+    },
+    {
+      apiVersion: 'backstage.io/v1alpha1',
+      kind: 'Component',
+      metadata: {
+        name: 'component-2',
+        namespace: 'default',
+        uid: 'uid-2',
+        annotations: {
+          'pagerduty.com/service-id': 'SERVICE2',
+        },
+      },
+      spec: {
+        type: 'website',
+        owner: 'team-y',
+        lifecycle: 'production',
+      },
+    },
+    {
+      apiVersion: 'backstage.io/v1alpha1',
+      kind: 'Component',
+      metadata: {
+        name: 'test-component-filtered',
+        namespace: 'default',
+        uid: 'uid-filtered',
+        annotations: {
+          'pagerduty.com/service-id': 'SERVICEFILTERED',
+        },
+      },
+      spec: {
+        type: 'service',
+        owner: 'search-team',
+        lifecycle: 'production',
+      },
+    },
+    {
+      apiVersion: 'backstage.io/v1alpha1',
+      kind: 'Component',
+      metadata: {
+        name: 'test-default-search',
+        namespace: 'default',
+        uid: 'uid-default',
+        annotations: {
+          'pagerduty.com/service-id': 'SERVICEDEFAULT',
+        },
+      },
+      spec: {
+        type: 'service',
+        owner: 'default-team',
+        lifecycle: 'production',
+      },
+    },
+    {
+      apiVersion: 'backstage.io/v1alpha1',
+      kind: 'Component',
+      metadata: {
+        name: 'component-not-mapped',
+        namespace: 'default',
+        uid: 'uid-not-mapped',
+      },
+      spec: {
+        type: 'service',
+        owner: 'default-team',
+        lifecycle: 'production',
+      },
+    },
+  ];
+
+  const catalogApi = new InMemoryCatalogClient({ entities: testEntities });
 
   beforeAll(async () => {
     const configReader = mockServices.rootConfig({
       data: {
-          app: {
-            baseUrl: 'https://example.com/extra-path',
-          },
-          backend: {
-            baseUrl: 'https://example.com/extra-path',
-          },
-          pagerDuty: {
-            apiToken: 'test-token',
-            oauth: {
-              clientId: 'test-client-id',
-              clientSecret: 'test-client',
-              subDomain: 'test-subdomain',
-              region: 'EU',
-            },
+        app: {
+          baseUrl: 'https://example.com/extra-path',
+        },
+        backend: {
+          baseUrl: 'https://example.com/extra-path',
+        },
+        pagerDuty: {
+          apiToken: 'test-token',
+          oauth: {
+            clientId: 'test-client-id',
+            clientSecret: 'test-client',
+            subDomain: 'test-subdomain',
+            region: 'EU',
           },
         },
-      });
+      },
+    });
 
+    store = await createDatabase();
     const router = await createRouter({
       logger: mockServices.rootLogger.mock(),
       config: configReader,
-      store: await createDatabase(),
+      store,
       discovery: mockServices.discovery(),
+      catalogApi: catalogApi,
     });
     app = express().use(router);
   });
@@ -1109,244 +1223,6 @@ describe('createRouter', () => {
         );
       });
 
-      it('creates mapping reference dictionary from service-ids', async () => {
-        const mockEntitiesResponse = {
-          items: [
-            {
-              metadata: {
-                namespace: 'default',
-                annotations: {
-                  'pagerduty.com/integration-key':
-                    'PAGERDUTY-INTEGRATION-KEY-1',
-                  'pagerduty.com/service-id': 'S3RV1CE1D',
-                },
-                name: 'ENTITY1',
-                uid: '00000000-0000-4000-0000-000000000001',
-              },
-              apiVersion: 'backstage.io/v1alpha1',
-              kind: 'Component',
-              spec: {
-                type: 'website',
-                lifecycle: 'experimental',
-                owner: 'OWNER1',
-                system: 'SYSTEM1',
-              },
-              relations: [
-                {
-                  type: 'ownedBy',
-                  targetRef: 'group:default/OWNER1',
-                  target: {
-                    kind: 'group',
-                    namespace: 'default',
-                    name: 'OWNER1',
-                  },
-                },
-                {
-                  type: 'partOf',
-                  targetRef: 'system:default/SYSTEM1',
-                  target: {
-                    kind: 'system',
-                    namespace: 'default',
-                    name: 'SYSTEM1',
-                  },
-                },
-              ],
-            },
-            {
-              metadata: {
-                namespace: 'default',
-                annotations: {
-                  'pagerduty.com/integration-key':
-                    'PAGERDUTY-INTEGRATION-KEY-2',
-                  'pagerduty.com/service-id': 'S3RV1CE2D',
-                },
-                name: 'ENTITY2',
-                uid: '00000000-0000-4000-0000-000000000002',
-              },
-              apiVersion: 'backstage.io/v1alpha1',
-              kind: 'Component',
-              spec: {
-                type: 'website',
-                lifecycle: 'experimental',
-                owner: 'OWNER2',
-                system: 'SYSTEM1',
-              },
-              relations: [
-                {
-                  type: 'ownedBy',
-                  targetRef: 'group:default/OWNER2',
-                  target: {
-                    kind: 'group',
-                    namespace: 'default',
-                    name: 'OWNER2',
-                  },
-                },
-                {
-                  type: 'partOf',
-                  targetRef: 'system:default/SYSTEM1',
-                  target: {
-                    kind: 'system',
-                    namespace: 'default',
-                    name: 'SYSTEM1',
-                  },
-                },
-              ],
-            },
-          ],
-        };
-
-        const expectedReferenceDictionary: Record<
-          string,
-          { ref: string; name: string }
-        > = {
-          S3RV1CE1D: { ref: 'component:default/entity1', name: 'ENTITY1' },
-          S3RV1CE2D: { ref: 'component:default/entity2', name: 'ENTITY2' },
-        };
-
-        const result = await createComponentEntitiesReferenceDict(
-          mockEntitiesResponse,
-        );
-
-        expect(result).toEqual(expectedReferenceDictionary);
-      });
-
-      it('creates mapping reference dictionary from integration keys', async () => {
-        mocked(fetch).mockReturnValue(
-          mockedResponse(200, {
-            services: [
-              {
-                id: 'S3RV1CE1D',
-                name: 'Test Service 1',
-                description: 'Test Service Description 1',
-                html_url: 'https://example.pagerduty.com/services/S3RV1CE1D',
-                escalation_policy: {
-                  id: 'P0L1CY1D',
-                  name: 'Test Escalation Policy 1',
-                  html_url:
-                    'https://example.pagerduty.com/escalation_policies/P0L1CY1D',
-                },
-              },
-            ],
-          }),
-        );
-
-        const mockEntitiesResponse = {
-          items: [
-            {
-              metadata: {
-                namespace: 'default',
-                annotations: {
-                  'pagerduty.com/integration-key':
-                    'PAGERDUTY-INTEGRATION-KEY-1',
-                },
-                name: 'ENTITY1',
-                uid: '00000000-0000-4000-0000-000000000001',
-              },
-              apiVersion: 'backstage.io/v1alpha1',
-              kind: 'Component',
-              spec: {
-                type: 'website',
-                lifecycle: 'experimental',
-                owner: 'OWNER1',
-                system: 'SYSTEM1',
-              },
-              relations: [
-                {
-                  type: 'ownedBy',
-                  targetRef: 'group:default/OWNER1',
-                  target: {
-                    kind: 'group',
-                    namespace: 'default',
-                    name: 'OWNER1',
-                  },
-                },
-                {
-                  type: 'partOf',
-                  targetRef: 'system:default/SYSTEM1',
-                  target: {
-                    kind: 'system',
-                    namespace: 'default',
-                    name: 'SYSTEM1',
-                  },
-                },
-              ],
-            },
-          ],
-        };
-
-        const expectedReferenceDictionary: Record<
-          string,
-          { ref: string; name: string }
-        > = {
-          S3RV1CE1D: { ref: 'component:default/entity1', name: 'ENTITY1' },
-        };
-
-        const result = await createComponentEntitiesReferenceDict(
-          mockEntitiesResponse,
-        );
-
-        expect(result).toEqual(expectedReferenceDictionary);
-      });
-
-      it('ignores invalid integration keys when building entity mapping reference', async () => {
-        mocked(fetch).mockReturnValue(mockedResponse(200, { services: [] }));
-
-        const mockEntitiesResponse = {
-          items: [
-            {
-              metadata: {
-                namespace: 'default',
-                annotations: {
-                  'pagerduty.com/integration-key':
-                    'PAGERDUTY-INTEGRATION-KEY-1',
-                },
-                name: 'ENTITY1',
-                uid: '00000000-0000-4000-0000-000000000001',
-              },
-              apiVersion: 'backstage.io/v1alpha1',
-              kind: 'Component',
-              spec: {
-                type: 'website',
-                lifecycle: 'experimental',
-                owner: 'OWNER1',
-                system: 'SYSTEM1',
-              },
-              relations: [
-                {
-                  type: 'ownedBy',
-                  targetRef: 'group:default/OWNER1',
-                  target: {
-                    kind: 'group',
-                    namespace: 'default',
-                    name: 'OWNER1',
-                  },
-                },
-                {
-                  type: 'partOf',
-                  targetRef: 'system:default/SYSTEM1',
-                  target: {
-                    kind: 'system',
-                    namespace: 'default',
-                    name: 'SYSTEM1',
-                  },
-                },
-              ],
-            },
-          ],
-        };
-
-        const expectedReferenceDictionary: Record<
-          string,
-          { ref: string; name: string }
-        > = {};
-
-        const result = await createComponentEntitiesReferenceDict(
-          mockEntitiesResponse,
-        );
-
-        expect(result).toEqual(expectedReferenceDictionary);
-      });
-
       it('builds entity mapping response for with InSync status when ONLY config mapping exists', async () => {
         const mockEntityMappings: RawDbEntityResultRow[] = [];
 
@@ -2271,6 +2147,1312 @@ describe('createRouter', () => {
         );
 
         expect(result).toEqual(expectedResponse);
+      });
+    });
+
+    describe('POST /mapping/entities - paginated entity mappings', () => {
+      it('returns 400 if offset is negative', async () => {
+        const response = await request(app)
+          .post('/mapping/entities')
+          .send({ offset: -1, limit: 10 });
+
+        expect(response.status).toEqual(400);
+        expect(response.body).toEqual({
+          errors: ["Bad Request: 'offset' and 'limit' must be valid numbers"],
+        });
+      });
+
+      it('returns 400 if limit is zero', async () => {
+        const response = await request(app)
+          .post('/mapping/entities')
+          .send({ offset: 0, limit: 0 });
+
+        expect(response.status).toEqual(400);
+        expect(response.body).toEqual({
+          errors: ["Bad Request: 'offset' and 'limit' must be valid numbers"],
+        });
+      });
+
+      it('returns 400 if limit is negative', async () => {
+        const response = await request(app)
+          .post('/mapping/entities')
+          .send({ offset: 0, limit: -10 });
+
+        expect(response.status).toEqual(400);
+        expect(response.body).toEqual({
+          errors: ["Bad Request: 'offset' and 'limit' must be valid numbers"],
+        });
+      });
+
+      it('returns 400 if offset is not a number', async () => {
+        const response = await request(app)
+          .post('/mapping/entities')
+          .send({ offset: 'invalid', limit: 10 });
+
+        expect(response.status).toEqual(400);
+        expect(response.body).toEqual({
+          errors: ["Bad Request: 'offset' and 'limit' must be valid numbers"],
+        });
+      });
+
+      it('returns 400 if limit is not a number', async () => {
+        const response = await request(app)
+          .post('/mapping/entities')
+          .send({ offset: 0, limit: 'invalid' });
+
+        expect(response.status).toEqual(400);
+        expect(response.body).toEqual({
+          errors: ["Bad Request: 'offset' and 'limit' must be valid numbers"],
+        });
+      });
+
+      it('returns paginated entities with default parameters', async () => {
+        mocked(fetch).mockReturnValue(
+          mockedResponse(200, {
+            services: [
+              {
+                id: 'S3RV1CE1D',
+                name: 'Test Service 1',
+                description: 'Test Service Description 1',
+                html_url: 'https://example.pagerduty.com/services/S3RV1CE1D',
+                escalation_policy: {
+                  id: 'P0L1CY1D',
+                  name: 'Test Escalation Policy 1',
+                  html_url:
+                    'https://example.pagerduty.com/escalation_policies/P0L1CY1D',
+                  type: 'escalation_policy_reference',
+                },
+                teams: [
+                  {
+                    id: 'T34M1D',
+                    name: 'Test Team 1',
+                  },
+                ],
+              },
+            ],
+          }),
+        );
+
+        const response = await request(app)
+          .post('/mapping/entities')
+          .send({ offset: 0, limit: 10 });
+
+        const entity = response.body.entities[0];
+
+        expect(entity).toEqual({
+          account: '',
+          annotations: {
+            'pagerduty.com/integration-key': '',
+            'pagerduty.com/service-id': 'S3RV1CE1D',
+          },
+          escalationPolicy: 'Test Escalation Policy 1',
+          id: 'test-uid-1',
+          lifecycle: '"production"',
+          name: 'test-component',
+          namespace: 'default',
+          owner: '"team-a"',
+          serviceName: 'Test Service 1',
+          serviceUrl: 'https://example.pagerduty.com/services/S3RV1CE1D',
+          status: 'InSync',
+          system: '',
+          team: 'Test Team 1',
+          type: 'Component',
+        });
+      });
+
+      it('returns paginated entities with custom offset and limit', async () => {
+        mocked(fetch).mockReturnValue(
+          mockedResponse(200, {
+            services: [
+              {
+                id: 'S3RV1CE1D',
+                name: 'Test Service 1',
+                description: 'Test Service Description 1',
+                html_url: 'https://example.pagerduty.com/services/S3RV1CE1D',
+                escalation_policy: {
+                  id: 'P0L1CY1D',
+                  name: 'Test Escalation Policy 1',
+                  html_url:
+                    'https://example.pagerduty.com/escalation_policies/P0L1CY1D',
+                  type: 'escalation_policy_reference',
+                },
+                teams: [
+                  {
+                    id: 'T34M1D',
+                    name: 'Test Team 1',
+                  },
+                ],
+              },
+            ],
+          }),
+        );
+
+        const response = await request(app)
+          .post('/mapping/entities')
+          .send({ offset: 20, limit: 5 });
+
+        expect(response.body.entities[0]).toEqual({
+          account: '',
+          annotations: {
+            'pagerduty.com/integration-key': '',
+            'pagerduty.com/service-id': 'S3RV1CE1D',
+          },
+          escalationPolicy: 'Test Escalation Policy 1',
+          id: 'test-uid-1',
+          lifecycle: '"production"',
+          name: 'test-component',
+          namespace: 'default',
+          owner: '"team-a"',
+          serviceName: 'Test Service 1',
+          serviceUrl: 'https://example.pagerduty.com/services/S3RV1CE1D',
+          status: 'InSync',
+          system: '',
+          team: 'Test Team 1',
+          type: 'Component',
+        });
+      });
+
+      it('returns entities with correct status when mapped to PagerDuty service', async () => {
+        mocked(fetch).mockReturnValue(
+          mockedResponse(200, {
+            services: [
+              {
+                id: 'S3RV1CE1D',
+                name: 'Test Service 1',
+                description: 'Test Service Description 1',
+                html_url: 'https://example.pagerduty.com/services/S3RV1CE1D',
+                escalation_policy: {
+                  id: 'P0L1CY1D',
+                  name: 'Test Escalation Policy 1',
+                  html_url:
+                    'https://example.pagerduty.com/escalation_policies/P0L1CY1D',
+                  type: 'escalation_policy_reference',
+                },
+                teams: [
+                  {
+                    id: 'T34M1D',
+                    name: 'Test Team 1',
+                  },
+                ],
+              },
+            ],
+          }),
+        );
+
+        const response = await request(app)
+          .post('/mapping/entities')
+          .send({ offset: 0, limit: 10 });
+
+        expect(response.body.entities[0]).toEqual({
+          name: 'test-component',
+          id: 'test-uid-1',
+          namespace: 'default',
+          type: 'Component',
+          system: '',
+          owner: '"team-a"',
+          lifecycle: '"production"',
+          annotations: {
+            'pagerduty.com/integration-key': '',
+            'pagerduty.com/service-id': 'S3RV1CE1D',
+          },
+          status: 'InSync',
+          serviceName: 'Test Service 1',
+          serviceUrl: 'https://example.pagerduty.com/services/S3RV1CE1D',
+          team: 'Test Team 1',
+          escalationPolicy: 'Test Escalation Policy 1',
+          account: '',
+        });
+      });
+
+      describe('serviceName filter', () => {
+        beforeEach(async () => {
+          await store.insertEntityMapping({
+            serviceId: 'S3RV1CE1D',
+            entityRef: 'component:default/test-component',
+            integrationKey: 'integration-key-1',
+            account: '',
+          });
+        });
+
+        it('returns filtered entities when serviceName filter matches services', async () => {
+          mocked(Pagerduty.getServicesIdsByPartialName).mockResolvedValue(['S3RV1CE1D']);
+
+          mocked(fetch).mockReturnValue(
+            mockedResponse(200, {
+              services: [
+                {
+                  id: 'S3RV1CE1D',
+                  name: 'Test Service 1',
+                  description: 'Test Service Description 1',
+                  html_url: 'https://example.pagerduty.com/services/S3RV1CE1D',
+                  escalation_policy: {
+                    id: 'P0L1CY1D',
+                    name: 'Test Escalation Policy 1',
+                    html_url: 'https://example.pagerduty.com/escalation_policies/P0L1CY1D',
+                    type: 'escalation_policy_reference',
+                  },
+                  teams: [
+                    {
+                      id: 'T34M1D',
+                      name: 'Test Team 1',
+                    },
+                  ],
+                },
+              ],
+            }),
+          );
+
+          const response = await request(app)
+            .post('/mapping/entities')
+            .send({
+              offset: 0,
+              limit: 10,
+              filters: { serviceName: 'Test Servi' },
+            });
+
+          expect(response.status).toEqual(200);
+          expect(Pagerduty.getServicesIdsByPartialName).toHaveBeenCalledWith('Test Servi');
+          expect(response.body.entities).toHaveLength(1);
+          expect(response.body.entities[0].serviceName).toEqual('Test Service 1');
+        });
+
+        it('returns empty array when serviceName filter matches no services', async () => {
+          mocked(Pagerduty.getServicesIdsByPartialName).mockResolvedValue([]);
+
+          const response = await request(app)
+            .post('/mapping/entities')
+            .send({
+              offset: 0,
+              limit: 10,
+              filters: { serviceName: 'NonExistent Service' },
+            });
+
+          expect(response.status).toEqual(200);
+          expect(Pagerduty.getServicesIdsByPartialName).toHaveBeenCalledWith(
+            'NonExistent Service',
+          );
+          expect(response.body.entities).toEqual([]);
+          expect(response.body.totalCount).toEqual(0);
+        });
+
+        it('returns empty array when serviceName filter matches services but no entity mappings exist', async () => {
+          mocked(Pagerduty.getServicesIdsByPartialName).mockResolvedValue([
+            'UNMAPPED_SERVICE_ID',
+          ]);
+
+          const response = await request(app)
+            .post('/mapping/entities')
+            .send({
+              offset: 0,
+              limit: 10,
+              filters: { serviceName: 'Unmapped Service' },
+            });
+
+          expect(response.status).toEqual(200);
+          expect(response.body.entities).toEqual([]);
+          expect(response.body.totalCount).toEqual(0);
+        });
+
+        it('returns empty array when serviceName filter matches services with mappings but no entity refs', async () => {
+          // Create a mapping with no entity ref
+          await store.insertEntityMapping({
+            serviceId: 'SERVICE_NO_REF',
+            entityRef: '',
+            integrationKey: 'integration-key-2',
+            account: '',
+          });
+
+          mocked(Pagerduty.getServicesIdsByPartialName).mockResolvedValue([
+            'SERVICE_NO_REF',
+          ]);
+
+          const response = await request(app)
+            .post('/mapping/entities')
+            .send({
+              offset: 0,
+              limit: 10,
+              filters: { serviceName: 'No Ref Service' },
+            });
+
+          expect(response.status).toEqual(200);
+          expect(response.body.entities).toEqual([]);
+          expect(response.body.totalCount).toEqual(0);
+        });
+
+        it('handles serviceName filter with whitespace', async () => {
+          mocked(Pagerduty.getServicesIdsByPartialName).mockResolvedValue([
+            'S3RV1CE1D',
+          ]);
+
+          mocked(fetch).mockReturnValue(
+            mockedResponse(200, {
+              services: [
+                {
+                  id: 'S3RV1CE1D',
+                  name: 'Test Service 1',
+                  description: 'Test Service Description 1',
+                  html_url: 'https://example.pagerduty.com/services/S3RV1CE1D',
+                  escalation_policy: {
+                    id: 'P0L1CY1D',
+                    name: 'Test Escalation Policy 1',
+                    html_url: 'https://example.pagerduty.com/escalation_policies/P0L1CY1D',
+                    type: 'escalation_policy_reference',
+                  },
+                  teams: [
+                    {
+                      id: 'T34M1D',
+                      name: 'Test Team 1',
+                    },
+                  ],
+                },
+              ],
+            }),
+          );
+
+          const response = await request(app)
+            .post('/mapping/entities')
+            .send({
+              offset: 0,
+              limit: 10,
+              filters: { serviceName: '  Test Service  ' },
+            });
+
+          expect(response.status).toEqual(200);
+          expect(Pagerduty.getServicesIdsByPartialName).toHaveBeenCalledWith(
+            'Test Service',
+          );
+          expect(response.body.entities).toHaveLength(1);
+        });
+
+        it('ignores empty serviceName filter', async () => {
+          mocked(fetch).mockReturnValue(
+            mockedResponse(200, {
+              services: [
+                {
+                  id: 'S3RV1CE1D',
+                  name: 'Test Service 1',
+                  description: 'Test Service Description 1',
+                  html_url: 'https://example.pagerduty.com/services/S3RV1CE1D',
+                  escalation_policy: {
+                    id: 'P0L1CY1D',
+                    name: 'Test Escalation Policy 1',
+                    html_url: 'https://example.pagerduty.com/escalation_policies/P0L1CY1D',
+                    type: 'escalation_policy_reference',
+                  },
+                  teams: [
+                    {
+                      id: 'T34M1D',
+                      name: 'Test Team 1',
+                    },
+                  ],
+                },
+              ],
+            }),
+          );
+
+          const response = await request(app)
+            .post('/mapping/entities')
+            .send({
+              offset: 0,
+              limit: 10,
+              filters: { serviceName: '' },
+            });
+
+          expect(response.status).toEqual(200);
+          expect(Pagerduty.getServicesIdsByPartialName).not.toHaveBeenCalled();
+          expect(response.body.entities).toHaveLength(testEntities.length);
+        });
+
+        it('ignores whitespace-only serviceName filter', async () => {
+          mocked(fetch).mockReturnValue(
+            mockedResponse(200, {
+              services: [
+                {
+                  id: 'S3RV1CE1D',
+                  name: 'Test Service 1',
+                  description: 'Test Service Description 1',
+                  html_url: 'https://example.pagerduty.com/services/S3RV1CE1D',
+                  escalation_policy: {
+                    id: 'P0L1CY1D',
+                    name: 'Test Escalation Policy 1',
+                    html_url: 'https://example.pagerduty.com/escalation_policies/P0L1CY1D',
+                    type: 'escalation_policy_reference',
+                  },
+                  teams: [
+                    {
+                      id: 'T34M1D',
+                      name: 'Test Team 1',
+                    },
+                  ],
+                },
+              ],
+            }),
+          );
+
+          const response = await request(app)
+            .post('/mapping/entities')
+            .send({
+              offset: 0,
+              limit: 10,
+              filters: { serviceName: '   ' },
+            });
+
+          expect(response.status).toEqual(200);
+          expect(Pagerduty.getServicesIdsByPartialName).not.toHaveBeenCalled();
+          expect(response.body.entities).toHaveLength(testEntities.length);
+        });
+      });
+
+      describe('status filter', () => {
+        beforeEach(async () => {
+          // Insert entity mappings for testing
+          await store.insertEntityMapping({
+            serviceId: 'S3RV1CE1D',
+            entityRef: 'component:default/test-component',
+            integrationKey: 'integration-key-1',
+            account: '',
+          });
+        });
+
+        it('returns only entities with InSync status when filtered', async () => {
+          mocked(fetch).mockReturnValue(
+            mockedResponse(200, {
+              services: [
+                {
+                  id: 'S3RV1CE1D',
+                  name: 'Test Service 1',
+                  description: 'Test Service Description 1',
+                  html_url: 'https://example.pagerduty.com/services/S3RV1CE1D',
+                  escalation_policy: {
+                    id: 'P0L1CY1D',
+                    name: 'Test Escalation Policy 1',
+                    html_url: 'https://example.pagerduty.com/escalation_policies/P0L1CY1D',
+                    type: 'escalation_policy_reference',
+                  },
+                  teams: [
+                    {
+                      id: 'T34M1D',
+                      name: 'Test Team 1',
+                    },
+                  ],
+                },
+              ],
+            }),
+          );
+
+          const response = await request(app)
+            .post('/mapping/entities')
+            .send({
+              offset: 0,
+              limit: 10,
+              filters: { status: 'InSync' },
+            });
+
+          expect(response.status).toEqual(200);
+          expect(response.body.entities).toHaveLength(1);
+          expect(response.body.entities[0].status).toEqual('InSync');
+        });
+
+        it('returns only entities with NotMapped status when filtered', async () => {
+          mocked(fetch).mockReturnValue(
+            mockedResponse(200, {
+              services: [
+                {
+                  id: 'S3RV1CE1D',
+                  name: 'Test Service 1',
+                  description: 'Test Service Description 1',
+                  html_url: 'https://example.pagerduty.com/services/S3RV1CE1D',
+                  escalation_policy: {
+                    id: 'P0L1CY1D',
+                    name: 'Test Escalation Policy 1',
+                    html_url: 'https://example.pagerduty.com/escalation_policies/P0L1CY1D',
+                    type: 'escalation_policy_reference',
+                  },
+                  teams: [
+                    {
+                      id: 'T34M1D',
+                      name: 'Test Team 1',
+                    },
+                  ],
+                },
+                {
+                  id: 'SERVICE1',
+                  name: 'Test Service 1',
+                  description: 'Test Service Description 1',
+                  html_url: 'https://example.pagerduty.com/services/S3RV1CE1D',
+                  escalation_policy: {
+                    id: 'P0L1CY1D',
+                    name: 'Test Escalation Policy 1',
+                    html_url: 'https://example.pagerduty.com/escalation_policies/P0L1CY1D',
+                    type: 'escalation_policy_reference',
+                  },
+                  teams: [
+                    {
+                      id: 'T34M1D',
+                      name: 'Test Team 1',
+                    },
+                  ],
+                },
+                {
+                  id: 'SERVICE2',
+                  name: 'Test Service 2',
+                  description: 'Test Service Description 2',
+                  html_url: 'https://example.pagerduty.com/services/SERVICE2',
+                  escalation_policy: {
+                    id: 'P0L1CY1D',
+                    name: 'Test Escalation Policy 1',
+                    html_url: 'https://example.pagerduty.com/escalation_policies/P0L1CY1D',
+                    type: 'escalation_policy_reference',
+                  },
+                  teams: [
+                    {
+                      id: 'T34M1D',
+                      name: 'Test Team 1',
+                    },
+                  ],
+                },
+                {
+                  id: 'SERVICEDEFAULT',
+                  name: 'Test Service Default',
+                  description: 'Test Service Description Default',
+                  html_url: 'https://example.pagerduty.com/services/SERVICEDEFAULT',
+                  escalation_policy: {
+                    id: 'P0L1CY1D',
+                    name: 'Test Escalation Policy 1',
+                    html_url: 'https://example.pagerduty.com/escalation_policies/P0L1CY1D',
+                    type: 'escalation_policy_reference',
+                  },
+                  teams: [
+                    {
+                      id: 'T34M1D',
+                      name: 'Test Team 1',
+                    },
+                  ],
+                },
+                {
+                  id: 'SERVICEFILTERED',
+                  name: 'Test Service Filtered',
+                  description: 'Test Service Description Filtered',
+                  html_url: 'https://example.pagerduty.com/services/SERVICEFILTERED',
+                  escalation_policy: {
+                    id: 'P0L1CY1D',
+                    name: 'Test Escalation Policy 1',
+                    html_url: 'https://example.pagerduty.com/escalation_policies/P0L1CY1D',
+                    type: 'escalation_policy_reference',
+                  },
+                  teams: [
+                    {
+                      id: 'T34M1D',
+                      name: 'Test Team 1',
+                    },
+                  ],
+                },
+              ],
+            }),
+          );
+
+          const response = await request(app)
+            .post('/mapping/entities')
+            .send({
+              offset: 0,
+              limit: 10,
+              filters: { status: 'NotMapped' },
+            });
+
+          expect(response.status).toEqual(200);
+          expect(response.body.entities).toHaveLength(1);
+          expect(response.body.entities[0].status).toEqual('NotMapped');
+          expect(response.body.entities[0].name).toEqual('component-not-mapped');
+        });
+
+        it('returns empty array when no entities match status filter', async () => {
+          mocked(fetch).mockReturnValue(
+            mockedResponse(200, {
+              services: [
+                {
+                  id: 'S3RV1CE1D',
+                  name: 'Test Service 1',
+                  description: 'Test Service Description 1',
+                  html_url: 'https://example.pagerduty.com/services/S3RV1CE1D',
+                  escalation_policy: {
+                    id: 'P0L1CY1D',
+                    name: 'Test Escalation Policy 1',
+                    html_url:
+                      'https://example.pagerduty.com/escalation_policies/P0L1CY1D',
+                    type: 'escalation_policy_reference',
+                  },
+                  teams: [
+                    {
+                      id: 'T34M1D',
+                      name: 'Test Team 1',
+                    },
+                  ],
+                },
+              ],
+            }),
+          );
+
+          const response = await request(app)
+            .post('/mapping/entities')
+            .send({
+              offset: 0,
+              limit: 10,
+              filters: { status: 'OutOfSync' },
+            });
+
+          expect(response.status).toEqual(200);
+          expect(response.body.entities).toEqual([]);
+        });
+
+        it('handles status filter with whitespace', async () => {
+          mocked(fetch).mockReturnValue(
+            mockedResponse(200, {
+              services: [
+                {
+                  id: 'S3RV1CE1D',
+                  name: 'Test Service 1',
+                  description: 'Test Service Description 1',
+                  html_url: 'https://example.pagerduty.com/services/S3RV1CE1D',
+                  escalation_policy: {
+                    id: 'P0L1CY1D',
+                    name: 'Test Escalation Policy 1',
+                    html_url:
+                      'https://example.pagerduty.com/escalation_policies/P0L1CY1D',
+                    type: 'escalation_policy_reference',
+                  },
+                  teams: [
+                    {
+                      id: 'T34M1D',
+                      name: 'Test Team 1',
+                    },
+                  ],
+                },
+              ],
+            }),
+          );
+
+          const response = await request(app)
+            .post('/mapping/entities')
+            .send({
+              offset: 0,
+              limit: 10,
+              filters: { status: '  InSync  ' },
+            });
+
+          expect(response.status).toEqual(200);
+          expect(response.body.entities).toHaveLength(1);
+        });
+
+        it('applies correct pagination when status filter is used', async () => {
+          mocked(fetch).mockReturnValue(
+            mockedResponse(200, {
+              services: [
+                {
+                  id: 'S3RV1CE1D',
+                  name: 'Test Service 1',
+                  description: 'Test Service Description 1',
+                  html_url: 'https://example.pagerduty.com/services/S3RV1CE1D',
+                  escalation_policy: {
+                    id: 'P0L1CY1D',
+                    name: 'Test Escalation Policy 1',
+                    html_url: 'https://example.pagerduty.com/escalation_policies/P0L1CY1D',
+                    type: 'escalation_policy_reference',
+                  },
+                  teams: [
+                    {
+                      id: 'T34M1D',
+                      name: 'Test Team 1',
+                    },
+                  ],
+                },
+              ],
+            }),
+          );
+
+          const response = await request(app)
+            .post('/mapping/entities')
+            .send({
+              offset: 0,
+              limit: 1,
+              filters: { status: 'InSync' },
+            });
+
+          expect(response.status).toEqual(200);
+          expect(response.body.entities).toHaveLength(1);
+          expect(response.body.totalCount).toBeGreaterThanOrEqual(1);
+        });
+      });
+
+      describe('combined filters', () => {
+        beforeEach(async () => {
+          await store.insertEntityMapping({
+            serviceId: 'S3RV1CE1D',
+            entityRef: 'component:default/test-component',
+            integrationKey: 'integration-key-1',
+            account: '',
+          });
+        });
+
+        it('applies both serviceName and status filters', async () => {
+          mocked(Pagerduty.getServicesIdsByPartialName).mockResolvedValue([
+            'S3RV1CE1D',
+          ]);
+
+          mocked(fetch).mockReturnValue(
+            mockedResponse(200, {
+              services: [
+                {
+                  id: 'S3RV1CE1D',
+                  name: 'Test Service 1',
+                  description: 'Test Service Description 1',
+                  html_url: 'https://example.pagerduty.com/services/S3RV1CE1D',
+                  escalation_policy: {
+                    id: 'P0L1CY1D',
+                    name: 'Test Escalation Policy 1',
+                    html_url:
+                      'https://example.pagerduty.com/escalation_policies/P0L1CY1D',
+                    type: 'escalation_policy_reference',
+                  },
+                  teams: [
+                    {
+                      id: 'T34M1D',
+                      name: 'Test Team 1',
+                    },
+                  ],
+                },
+              ],
+            }),
+          );
+
+          const response = await request(app)
+            .post('/mapping/entities')
+            .send({
+              offset: 0,
+              limit: 10,
+              filters: { serviceName: 'Test Service', status: 'InSync' },
+            });
+
+          expect(response.status).toEqual(200);
+          expect(response.body.entities).toHaveLength(1);
+          expect(response.body.entities[0].status).toEqual('InSync');
+          expect(response.body.entities[0].serviceName).toEqual('Test Service 1',);
+        });
+
+        it('returns empty array when combined filters match no entities', async () => {
+          mocked(Pagerduty.getServicesIdsByPartialName).mockResolvedValue([
+            'S3RV1CE1D',
+          ]);
+
+          mocked(fetch).mockReturnValue(
+            mockedResponse(200, {
+              services: [
+                {
+                  id: 'S3RV1CE1D',
+                  name: 'Test Service 1',
+                  description: 'Test Service Description 1',
+                  html_url: 'https://example.pagerduty.com/services/S3RV1CE1D',
+                  escalation_policy: {
+                    id: 'P0L1CY1D',
+                    name: 'Test Escalation Policy 1',
+                    html_url:
+                      'https://example.pagerduty.com/escalation_policies/P0L1CY1D',
+                    type: 'escalation_policy_reference',
+                  },
+                  teams: [
+                    {
+                      id: 'T34M1D',
+                      name: 'Test Team 1',
+                    },
+                  ],
+                },
+              ],
+            }),
+          );
+
+          const response = await request(app)
+            .post('/mapping/entities')
+            .send({
+              offset: 0,
+              limit: 10,
+              filters: { serviceName: 'Test Service', status: 'OutOfSync' },
+            });
+
+          expect(response.status).toEqual(200);
+          expect(response.body.entities).toEqual([]);
+        });
+      });
+
+      // TODO: Test the rest of the filters when InMemoryCatalogApi supports fullTextSearch (https://pagerduty.atlassian.net/browse/DEVECO-623)
+
+      describe('sorting', () => {
+        beforeEach(async () => {
+          await store.insertEntityMapping({
+            serviceId: 'SERVICE1',
+            entityRef: 'component:default/component-1',
+            integrationKey: 'integration-key-1',
+            account: 'production',
+          });
+
+          await store.insertEntityMapping({
+            serviceId: 'SERVICE2',
+            entityRef: 'component:default/component-2',
+            integrationKey: 'integration-key-2',
+            account: 'development',
+          });
+        });
+
+        it('returns 400 if sort is not an object', async () => {
+          const response = await request(app)
+            .post('/mapping/entities')
+            .send({ offset: 0, limit: 10, sort: 'invalid' });
+
+          expect(response.status).toEqual(400);
+          expect(response.body).toEqual({
+            errors: ["Bad Request: 'sort' must be an object"],
+          });
+        });
+
+        it('returns 400 if sort.column is invalid', async () => {
+          const response = await request(app)
+            .post('/mapping/entities')
+            .send({
+              offset: 0,
+              limit: 10,
+              sort: { column: 'invalid', direction: 'ascending' }
+            });
+
+          expect(response.status).toEqual(400);
+          expect(response.body).toEqual({
+            errors: ["Bad Request: 'sort.column' must be one of: name, team, serviceName, status"],
+          });
+        });
+
+        it('returns 400 if sort.direction is invalid', async () => {
+          const response = await request(app)
+            .post('/mapping/entities')
+            .send({
+              offset: 0,
+              limit: 10,
+              sort: { column: 'name', direction: 'invalid' }
+            });
+
+          expect(response.status).toEqual(400);
+          expect(response.body).toEqual({
+            errors: ["Bad Request: 'sort.direction' must be one of: ascending, descending"],
+          });
+        });
+
+        it('sorts entities by name in ascending order', async () => {
+          mocked(fetch).mockReturnValue(
+            mockedResponse(200, { services: [] }),
+          );
+
+          const response = await request(app)
+            .post('/mapping/entities')
+            .send({
+              offset: 0,
+              limit: 10,
+              sort: { column: 'name', direction: 'ascending' }
+            });
+
+          expect(response.status).toEqual(200);
+          expect(response.body.entities).toBeDefined();
+
+          const responseNames = response.body.entities.map((e: { name: string }) => e.name);
+          const entitiesAscedingNames = testEntities.map(e => e.metadata.name).sort((a, b) => a.localeCompare(b));
+
+          expect(responseNames).toEqual(entitiesAscedingNames);
+        });
+
+        it('sorts entities by name in descending order', async () => {
+          mocked(fetch).mockReturnValue(
+            mockedResponse(200, {
+              services: [
+                {
+                  id: 'S3RV1CE1',
+                  name: 'Service A',
+                  html_url: 'https://example.pagerduty.com/services/S3RV1CE1',
+                  escalation_policy: {
+                    id: 'P0L1CY1D',
+                    name: 'Policy',
+                    html_url: 'https://example.pagerduty.com/escalation_policies/P0L1CY1D',
+                    type: 'escalation_policy_reference',
+                  },
+                  teams: [{ id: 'T34M1D', name: 'Team' }],
+                },
+              ],
+            }),
+          );
+
+          const response = await request(app)
+            .post('/mapping/entities')
+            .send({
+              offset: 0,
+              limit: 10,
+              sort: { column: 'name', direction: 'descending' }
+            });
+
+          expect(response.status).toEqual(200);
+          expect(response.body.entities).toBeDefined();
+
+          const responseNames = response.body.entities.map((e: { name: string }) => e.name);
+          const entitiesDescendingNames = testEntities.map(e => e.metadata.name).sort((a, b) => b.localeCompare(a));
+          
+          expect(responseNames).toEqual(entitiesDescendingNames);
+        });
+
+        it('sorts entities by serviceName in ascending order', async () => {
+          mocked(fetch).mockReturnValue(
+            mockedResponse(200, {
+              services: [
+                {
+                  id: 'SERVICE1',
+                  name: 'Alpha Service',
+                  html_url: 'https://example.pagerduty.com/services/SERVICE1',
+                  escalation_policy: {
+                    id: 'P0L1CY1D',
+                    name: 'Policy',
+                    html_url: 'https://example.pagerduty.com/escalation_policies/P0L1CY1D',
+                    type: 'escalation_policy_reference',
+                  },
+                  teams: [{ id: 'T34M1D', name: 'Team' }],
+                },
+                {
+                  id: 'SERVICE2',
+                  name: 'Beta Service',
+                  html_url: 'https://example.pagerduty.com/services/SERVICE2',
+                  escalation_policy: {
+                    id: 'P0L1CY1D',
+                    name: 'Policy',
+                    html_url: 'https://example.pagerduty.com/escalation_policies/P0L1CY1D',
+                    type: 'escalation_policy_reference',
+                  },
+                  teams: [{ id: 'T34M1D', name: 'Team' }],
+                },
+              ],
+            }),
+          );
+
+          const response = await request(app)
+            .post('/mapping/entities')
+            .send({
+              offset: 0,
+              limit: 10,
+              sort: { column: 'serviceName', direction: 'ascending' }
+            });
+
+          expect(response.status).toEqual(200);
+          expect(response.body.entities).toBeDefined();
+
+          const responseServiceNames = response.body.entities.map((e: { serviceName: string }) => e.serviceName);
+          const entitiesAscendingServiceNames = ['', '', '', '', 'Alpha Service', 'Beta Service'];
+          
+          expect(responseServiceNames).toEqual(entitiesAscendingServiceNames);
+        });
+
+        it('sorts entities by status in ascending order', async () => {
+          mocked(fetch).mockReturnValue(
+            mockedResponse(200, {
+              services: [
+                {
+                  id: 'S3RV1CE1D',
+                  name: 'Service A',
+                  html_url: 'https://example.pagerduty.com/services/S3RV1CE1D',
+                  escalation_policy: {
+                    id: 'P0L1CY1D',
+                    name: 'Policy',
+                    html_url: 'https://example.pagerduty.com/escalation_policies/P0L1CY1D',
+                    type: 'escalation_policy_reference',
+                  },
+                  teams: [{ id: 'T34M1D', name: 'Team' }],
+                },
+              ],
+            }),
+          );
+
+          const response = await request(app)
+            .post('/mapping/entities')
+            .send({
+              offset: 0,
+              limit: 10,
+              sort: { column: 'status', direction: 'ascending' }
+            });
+
+          expect(response.status).toEqual(200);
+          expect(response.body.entities).toBeDefined();
+
+          const responseStatuses = response.body.entities.map((e: { status: string }) => e.status);
+          const entitiesAscendingStatuses = ['NotMapped', 'NotMapped', 'NotMapped', 'NotMapped', 'NotMapped', 'InSync'];
+
+          expect(responseStatuses).toEqual(entitiesAscendingStatuses);
+        });
+
+      });
+    });
+
+    describe('POST /mapping/entities/bulk', () => {
+      it('returns 400 if mappings is not an array', async () => {
+        const response = await request(app)
+          .post('/mapping/entities/bulk')
+          .send({ mappings: 'invalid' });
+
+        expect(response.status).toEqual(400);
+        expect(response.body).toEqual({
+          error: "Bad Request: 'mappings' must be an array",
+        });
+      });
+
+      it('returns 200 if mappings array is empty', async () => {
+        const response = await request(app)
+          .post('/mapping/entities/bulk')
+          .send({ mappings: [] });
+
+        expect(response.status).toEqual(200);
+        expect(response.body.successCount).toEqual(0);
+      });
+
+      it('returns error for mappings without serviceId', async () => {
+        const response = await request(app)
+          .post('/mapping/entities/bulk')
+          .send({
+            mappings: [
+              {
+                entityRef: 'component:default/test',
+                integrationKey: 'TEST_KEY',
+              },
+            ],
+          });
+
+        expect(response.status).toEqual(200);
+        expect(response.body.errorCount).toEqual(1);
+        expect(response.body.errors[0]).toEqual({
+          entityRef: 'component:default/test',
+          error: 'Missing serviceId',
+        });
+      });
+
+      it('successfully creates new bulk mappings', async () => {
+        const mappings = [
+          {
+            serviceId: 'NEW_SERVICE_1',
+            entityRef: 'component:default/new-component-1',
+            integrationKey: 'INT_KEY_1',
+            account: 'test-account',
+          },
+          {
+            serviceId: 'NEW_SERVICE_2',
+            entityRef: 'component:default/new-component-2',
+            integrationKey: 'INT_KEY_2',
+            account: 'test-account',
+          },
+        ];
+
+        const response = await request(app)
+          .post('/mapping/entities/bulk')
+          .send({ mappings });
+
+        expect(response.status).toEqual(200);
+        expect(response.body.successCount).toEqual(2);
+        expect(response.body.skippedCount).toEqual(0);
+        expect(response.body.errorCount).toEqual(0);
+        expect(response.body.success).toHaveLength(2);
+        expect(response.body.success[0]).toMatchObject({
+          serviceId: 'NEW_SERVICE_1',
+          entityRef: 'component:default/new-component-1',
+          integrationKey: 'INT_KEY_1',
+        });
+      });
+
+      it('skips existing mappings based on serviceId', async () => {
+        // First, create a mapping
+        await request(app).post('/mapping/entity').send({
+          serviceId: 'EXISTING_SERVICE',
+          entityRef: 'component:default/existing',
+          integrationKey: 'EXISTING_KEY',
+          account: 'test-account',
+        });
+
+        // Try to bulk create including the existing one
+        const mappings = [
+          {
+            serviceId: 'EXISTING_SERVICE',
+            entityRef: 'component:default/existing',
+            integrationKey: 'EXISTING_KEY',
+            account: 'test-account',
+          },
+          {
+            serviceId: 'NEW_SERVICE_3',
+            entityRef: 'component:default/new-component-3',
+            integrationKey: 'INT_KEY_3',
+            account: 'test-account',
+          },
+        ];
+
+        const response = await request(app)
+          .post('/mapping/entities/bulk')
+          .send({ mappings });
+
+        expect(response.status).toEqual(200);
+        expect(response.body.successCount).toEqual(1);
+        expect(response.body.skippedCount).toEqual(1);
+        expect(response.body.errorCount).toEqual(0);
+        expect(response.body.skipped).toHaveLength(1);
+        expect(response.body.skipped[0]).toEqual({
+          entityRef: 'component:default/existing',
+          serviceId: 'EXISTING_SERVICE',
+          reason: 'Mapping already exists for this service ID',
+        });
+      });
+
+      it('creates integration key when mapping is defined without one', async () => {
+        mocked(fetch)
+          .mockReturnValueOnce(
+            mockedResponse(200, {
+              service: {
+                id: 'SERVICE_NO_INT',
+                name: 'Service Without Integration',
+                integrations: [],
+              },
+            }),
+          )
+          .mockReturnValueOnce(
+            mockedResponse(201, {
+              integration: {
+                integration_key: 'CREATED_INTEGRATION_KEY',
+              },
+            }),
+          );
+
+        const mappings = [
+          {
+            serviceId: 'SERVICE_NO_INT',
+            entityRef: 'component:default/test-component',
+            integrationKey: '',
+            account: 'test-account',
+          },
+        ];
+
+        const response = await request(app)
+          .post('/mapping/entities/bulk')
+          .send({ mappings });
+
+        expect(response.status).toEqual(200);
+        expect(response.body.successCount).toEqual(1);
+        expect(response.body.success[0].integrationKey).toEqual(
+          'CREATED_INTEGRATION_KEY',
+        );
+      });
+
+      it('uses existing integration key when available', async () => {
+        mocked(fetch).mockReturnValue(
+          mockedResponse(200, {
+            service: {
+              id: 'SERVICE_WITH_INT',
+              name: 'Service With Integration',
+              integrations: [
+                {
+                  vendor: {
+                    id: 'PRO19CT',
+                  },
+                  integration_key: 'EXISTING_BACKSTAGE_KEY',
+                },
+              ],
+            },
+          }),
+        );
+
+        const mappings = [
+          {
+            serviceId: 'SERVICE_WITH_INT',
+            entityRef: 'component:default/test-component',
+            integrationKey: '',
+            account: 'test-account',
+          },
+        ];
+
+        const response = await request(app)
+          .post('/mapping/entities/bulk')
+          .send({ mappings });
+
+        expect(response.status).toEqual(200);
+        expect(response.body.successCount).toEqual(1);
+        expect(response.body.success[0].integrationKey).toEqual(
+          'EXISTING_BACKSTAGE_KEY',
+        );
+      });
+
+      it('handles mixed success, skip, and error scenarios', async () => {
+        // Create an existing mapping
+        await request(app).post('/mapping/entity').send({
+          serviceId: 'EXISTING_MIXED',
+          entityRef: 'component:default/existing',
+          integrationKey: 'EXISTING_KEY',
+          account: 'test-account',
+        });
+
+        mocked(fetch).mockReturnValue(
+          mockedResponse(404, {
+            error: {
+              message: 'Service not found',
+            },
+          }),
+        );
+
+        const mappings = [
+          {
+            serviceId: 'EXISTING_MIXED',
+            entityRef: 'component:default/existing',
+            integrationKey: 'KEY',
+          },
+          {
+            serviceId: 'NEW_SERVICE_VALID',
+            entityRef: 'component:default/new-valid',
+            integrationKey: 'KEY_VALID',
+          },
+          {
+            entityRef: 'component:default/missing-service-id',
+            integrationKey: 'KEY',
+          },
+          {
+            serviceId: 'SERVICE_NEEDS_INT',
+            entityRef: 'component:default/needs-integration',
+            integrationKey: '',
+            account: 'test-account',
+          },
+        ];
+
+        const response = await request(app)
+          .post('/mapping/entities/bulk')
+          .send({ mappings });
+
+        expect(response.status).toEqual(200);
+        expect(response.body.total).toEqual(4);
+        expect(response.body.skippedCount).toEqual(1);
+        expect(response.body.errorCount).toBeGreaterThanOrEqual(1);
+        expect(response.body.successCount).toBeGreaterThanOrEqual(1);
+      });
+
+      it('returns proper response structure with all counts', async () => {
+        const mappings = [
+          {
+            serviceId: 'BULK_SERVICE_1',
+            entityRef: 'component:default/bulk-1',
+            integrationKey: 'BULK_KEY_1',
+          },
+        ];
+
+        const response = await request(app)
+          .post('/mapping/entities/bulk')
+          .send({ mappings });
+
+        expect(response.status).toEqual(200);
+        expect(response.body).toHaveProperty('success');
+        expect(response.body).toHaveProperty('skipped');
+        expect(response.body).toHaveProperty('errors');
+        expect(response.body).toHaveProperty('total');
+        expect(response.body).toHaveProperty('successCount');
+        expect(response.body).toHaveProperty('skippedCount');
+        expect(response.body).toHaveProperty('errorCount');
       });
     });
   });
