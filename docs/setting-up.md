@@ -18,6 +18,9 @@ Before starting the Backstage instance make sure you have the correct environmen
 export PAGERDUTY_CLIENT_ID=<your_oauth_2_client_id>
 export PAGERDUTY_CLIENT_SECRET=<your_oauth_2_client_secret>
 export PAGERDUTY_SUBDOMAIN=<your_pd_subdomain>
+export STATIC_API_TOKEN=<your_local_api_token>
+# optional - defaults to us, possible values: us, eu
+export PAGERDUTY_OAUTH_REGION=<your_region>
 ```
 
 Also, you should update your `examples/entities.yaml` file to use your own service ID.

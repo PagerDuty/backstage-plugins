@@ -22,6 +22,9 @@ import {
   PagerDutyChangeEvent,
   PagerDutyIncident,
   PagerDutyUser,
+  FormattedBackstageEntity,
+  PagerDutyEnhancedEntityMappingsResponse,
+  AutoMatchEntityMappingsResponse,
 } from '@pagerduty/backstage-plugin-common';
 import { Entity } from '@backstage/catalog-model';
 import { v4 as uuidv4 } from 'uuid';
@@ -37,32 +40,160 @@ export const mockPagerDutyApi: PagerDutyApi = {
   async storeSettings(settings) {
     return new Response(JSON.stringify(settings));
   },
-  async getEntityMappings() {
+
+  async autoMatchEntityMappings(options: {
+    team?: string;
+    threshold: number;
+    account?: string;
+  }): Promise<AutoMatchEntityMappingsResponse> {
     return {
-      mappings: [
+      matches: [
         {
-          serviceId: 'SERV1CE1D',
-          entityRef: 'ENTITY1D',
-          entityName: 'Entity1',
-          integrationKey: 'INTEGRAT1ONKEY1',
-          team: 'Team1',
-          serviceName: 'Service1',
-          serviceUrl: 'http://service1',
-          escalationPolicy: 'Escalation Policy 1',
-          status: 'InSync',
+          pagerDutyService: {
+            serviceId: 'PWM5PN9',
+            name: 'integration producer',
+            team: 'Team1',
+          },
+          backstageComponent: {
+            entityRef: 'component:default/integration-processor',
+            name: 'integration-processor',
+            owner: 'platform team',
+          },
+          score: 100,
+          confidence: 'exact',
+          scoreBreakdown: {
+            baseScore: 96,
+            exactMatch: false,
+            teamMatch: false,
+            acronymMatch: true,
+            rawScore: 101,
+          },
         },
         {
-          serviceId: 'SERV1CE1D',
-          entityRef: '',
-          entityName: 'Entity2',
-          integrationKey: 'INTEGRAT1ONKEY2',
-          status: 'NotMapped',
-          team: 'Team1',
-          serviceName: 'Service2',
-          serviceUrl: 'http://service2',
-          escalationPolicy: 'Escalation Policy 1',
+          pagerDutyService: {
+            serviceId: 'SERV1CE1D',
+            name: 'Service1',
+            team: 'Team1',
+          },
+          backstageComponent: {
+            entityRef: 'component:default/entity1',
+            name: 'Entity1',
+            owner: 'team-a',
+          },
+          score: 95,
+          confidence: 'high',
+          scoreBreakdown: {
+            baseScore: 92,
+            exactMatch: true,
+            teamMatch: true,
+            acronymMatch: false,
+            rawScore: 95,
+          },
         },
       ],
+      statistics: {
+        totalPagerDutyServices: 4,
+        totalBackstageComponents: 302,
+        totalPossibleComparisons: 1208,
+        matchesFound: 2,
+        exactMatches: 1,
+        highConfidenceMatches: 1,
+        mediumConfidenceMatches: 0,
+        threshold: options.threshold,
+        loadTimeMs: 906,
+        matchTimeMs: 5,
+        totalTimeMs: 911,
+      },
+    };
+  },
+
+  async getEntityMappingsWithPagination(options: {
+    offset: number;
+    limit: number;
+    searchFields?: string[];
+    filters?: {
+      name?: string;
+      serviceName?: string;
+      status?: string;
+      teamName?: string;
+    };
+  }): Promise<PagerDutyEnhancedEntityMappingsResponse> {
+    const mockEntities: FormattedBackstageEntity[] = [
+      {
+        name: 'Entity1',
+        id: 'entity-id-1',
+        namespace: 'default',
+        type: 'component',
+        system: 'system-a',
+        owner: 'team-a',
+        lifecycle: 'production',
+        annotations: {
+          'pagerduty.com/integration-key': 'INTEGRAT1ONKEY1',
+          'pagerduty.com/service-id': 'SERV1CE1D',
+        },
+        serviceName: 'Service1',
+        serviceUrl: 'http://service1',
+        team: 'Team1',
+        escalationPolicy: 'Escalation Policy 1',
+        status: 'InSync',
+        account: 'default',
+      },
+      {
+        name: 'Entity2',
+        id: 'entity-id-2',
+        namespace: 'default',
+        type: 'component',
+        system: 'system-b',
+        owner: 'team-b',
+        lifecycle: 'production',
+        annotations: {
+          'pagerduty.com/integration-key': 'INTEGRAT1ONKEY2',
+          'pagerduty.com/service-id': 'SERV1CE2D',
+        },
+        serviceName: 'Service2',
+        serviceUrl: 'http://service2',
+        team: 'Team1',
+        escalationPolicy: 'Escalation Policy 1',
+        status: 'InSync',
+        account: 'default',
+      },
+      {
+        name: 'Entity3',
+        id: 'entity-id-3',
+        namespace: 'default',
+        type: 'component',
+        system: 'system-c',
+        owner: 'team-c',
+        lifecycle: 'staging',
+        annotations: {
+          'pagerduty.com/integration-key': '',
+          'pagerduty.com/service-id': '',
+        },
+        status: 'NotMapped',
+      },
+    ];
+
+    let filteredEntities = [...mockEntities];
+
+    if (options.filters?.name?.trim()) {
+      filteredEntities = mockEntities.filter(
+        entity => entity.name.toLowerCase().includes(options.filters!.name!.toLowerCase())
+      );
+    }
+
+    if (options.filters?.teamName?.trim()) {
+      filteredEntities = mockEntities.filter(
+        entity => entity.owner.toLowerCase().includes(options.filters!.teamName!.toLowerCase())
+      );
+    }
+
+    const startIndex = options.offset;
+    const endIndex = options.offset + options.limit;
+    const paginatedEntities = filteredEntities.slice(startIndex, endIndex);
+
+    return {
+      entities: paginatedEntities,
+      totalCount: filteredEntities.length,
     };
   },
   async storeServiceMapping(serviceId, entityId) {
@@ -73,6 +204,25 @@ export const mockPagerDutyApi: PagerDutyApi = {
         service_id: serviceId,
         entity_id: entityId,
         id: uuid,
+      }),
+    );
+  },
+  async storeBulkServiceMappings(mappings) {
+    const results = mappings.map(mapping => ({
+      id: uuidv4(),
+      entityRef: mapping.entityRef,
+      serviceId: mapping.serviceId,
+      integrationKey: mapping.integrationKey,
+      account: mapping.account,
+    }));
+
+    return new Response(
+      JSON.stringify({
+        success: results,
+        errors: [],
+        total: mappings.length,
+        successCount: mappings.length,
+        errorCount: 0,
       }),
     );
   },
@@ -118,6 +268,23 @@ export const mockPagerDutyApi: PagerDutyApi = {
         status: 'warning',
       },
     };
+  },
+
+  async getAllServices() {
+    return [
+      {
+        name: 'SERV1CENAME',
+        id: 'random_id',
+        html_url: 'https://www.example.com',
+        escalation_policy: {
+          id: 'ESCALAT1ONP01ICY1D',
+          name: 'ep-one',
+          html_url:
+            'http://www.example.com/escalation-policy/ESCALAT1ONP01ICY1D',
+        },
+        status: 'warning',
+      },
+    ];
   },
 
   async getServiceById(serviceId: string) {
@@ -264,6 +431,38 @@ export const mockPagerDutyApi: PagerDutyApi = {
     return users;
   },
 
+  async getAllTeams(_account?: string) {
+    return [
+      {
+        id: 'team1',
+        name: 'Team Alpha',
+        html_url: 'https://www.example.com/teams/team1',
+      },
+      {
+        id: 'team2',
+        name: 'Team Beta',
+        html_url: 'https://www.example.com/teams/team2',
+      },
+    ];
+  },
+
+  async getFilteredServices(_teamIds?: string[], _query?: string, _limit?: number, _account?: string) {
+    return [
+      {
+        name: 'SERV1CENAME',
+        id: 'random_id',
+        html_url: 'https://www.example.com',
+        escalation_policy: {
+          id: 'ESCALAT1ONP01ICY1D',
+          name: 'ep-one',
+          html_url:
+            'http://www.example.com/escalation-policy/ESCALAT1ONP01ICY1D',
+        },
+        status: 'warning',
+      },
+    ];
+  },
+
   async triggerAlarm(request: PagerDutyTriggerAlarmRequest) {
     return new Response(request.description);
   },
@@ -279,7 +478,20 @@ export const mockPagerDutyApi: PagerDutyApi = {
     };
   },
 
+  async getAccounts() {
+    return [
+      {
+        id: 'account1',
+        isDefault: true,
+      },
+      {
+        id: 'account2',
+        isDefault: false,
+      },
+    ];
+  },
+
   async removeServiceMapping(_entityRef: string) {
     return true;
-  },
+  }
 };

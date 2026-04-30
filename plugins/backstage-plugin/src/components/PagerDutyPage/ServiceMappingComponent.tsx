@@ -1,73 +1,88 @@
-import { useEffect, useState } from 'react';
-import { PagerDutyEntityMapping } from '@pagerduty/backstage-plugin-common';
-import { useApi } from '@backstage/core-plugin-api';
-import { pagerDutyApiRef } from '../../api';
-import { catalogApiRef } from '@backstage/plugin-catalog-react';
-import { MappingTable } from './MappingTable';
-import { BackstageEntity, Annotations } from '../types';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import MappingsTable from './MappingsTable/MappingsTable';
+import { Card, CardBody, Select, Flex, Text } from '@backstage/ui';
+import { AccountProvider, useAccountContext } from './AccountContext';
+import { makeStyles } from '@material-ui/core';
 
-export const ServiceMappingComponent = () => {
-  const [entityMappings, setEntityMappings] = useState<
-    PagerDutyEntityMapping[]
-  >([]);
-  const [catalogEntities, setCatalogEntities] = useState<BackstageEntity[]>([]);
+const useStyles = makeStyles(theme => ({
+  accountCard: {
+    marginBottom: '16px',
+    width: 'fit-content',
+    borderRadius: '8px',
+  },
+  accountCardBody: {
+    padding: '16px 20px !important',
+  },
+  accountLabel: {
+    fontSize: '15px',
+    fontWeight: 600,
+    color: theme.palette.text.primary,
+    marginBottom: '8px',
+  },
+  requiredIndicator: {
+    display: 'inline-block',
+    color: '#dc3545',
+    fontWeight: 700,
+    marginLeft: '2px',
+  },
+  accountSelect: {
+    minWidth: '200px',
+  },
+  mainCard: {
+    borderRadius: '8px',
+  },
+  helpText: {
+    fontSize: '13px',
+    color: theme.palette.text.secondary,
+    fontStyle: 'italic',
+    marginTop: '6px',
+  },
+}));
 
-  const pagerDutyApi = useApi(pagerDutyApiRef);
-  const catalogApi = useApi(catalogApiRef);
-
-  // call fetchMappings() and fetchCatalogEntities() on useEffect hook
-  useEffect(() => {
-    function fetchMappings() {
-      pagerDutyApi.getEntityMappings().then(result => {
-        setEntityMappings(result.mappings);
-      });
-    }
-
-    function fetchCatalogEntities() {
-      catalogApi
-        .getEntities({
-          filter: { kind: 'Component' },
-        })
-        .then(result => {
-          const entities: BackstageEntity[] = [];
-          result.items.forEach(entity => {
-            const annotations: Annotations = {
-              'pagerduty.com/integration-key':
-                entity.metadata?.annotations?.[
-                  'pagerduty.com/integration-key'
-                ] ?? '',
-              'pagerduty.com/service-id':
-                entity.metadata?.annotations?.['pagerduty.com/service-id'] ??
-                '',
-            };
-
-            entities.push({
-              name: entity.metadata?.name,
-              id: entity.metadata?.uid ?? '',
-              namespace: entity.metadata?.namespace ?? '',
-              type: entity.kind ?? '',
-              system: entity.spec?.system
-                ? JSON.stringify(entity.spec?.system)
-                : '',
-              owner: entity.spec?.owner
-                ? JSON.stringify(entity.spec?.owner)
-                : '',
-              lifecycle: entity.spec?.lifecycle
-                ? JSON.stringify(entity.spec?.lifecycle)
-                : '',
-              annotations: annotations,
-            });
-          });
-
-          setCatalogEntities(entities);
-        });
-    }
-
-    fetchMappings();
-    fetchCatalogEntities();
-  }, [catalogApi, pagerDutyApi]);
+const ServiceMappingContent = () => {
+  const { selectedAccount, setSelectedAccount, accounts } = useAccountContext();
+  const classes = useStyles();
 
   return (
-    <MappingTable mappings={entityMappings} catalogEntities={catalogEntities} />
+    <>
+      {accounts.length > 0 && (
+        <Card className={classes.accountCard}>
+          <CardBody className={classes.accountCardBody}>
+            <Flex direction="column" gap="2">
+              <Text className={classes.accountLabel}>
+                Please Select an Account:
+                <div className={classes.requiredIndicator}>*</div>
+              </Text>
+              <Select
+                selectionMode="single"
+                size="small"
+                value={selectedAccount}
+                onChange={value => setSelectedAccount(value?.toString() || '')}
+                placeholder="Select account"
+                options={accounts}
+                className={classes.accountSelect}
+              />
+            </Flex>
+          </CardBody>
+        </Card>
+      )}
+      <Card className={classes.mainCard}>
+        <CardBody>
+          <MappingsTable key={selectedAccount} />
+        </CardBody>
+      </Card>
+    </>
+  );
+};
+
+export const ServiceMappingComponent = () => {
+  const queryClient = new QueryClient();
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AccountProvider>
+        <ServiceMappingContent />
+      </AccountProvider>
+    </QueryClientProvider>
   );
 };
