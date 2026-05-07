@@ -124,7 +124,11 @@ export const PagerDutyPage = () => {
             </>
           </TabbedLayout.Route>
           <TabbedLayout.Route path="/custom-fields" title="Custom Fields">
-            <CustomFieldsTab />
+            <Card className={descriptionCard}>
+              <CardContent>
+                <CustomFieldsTab />
+              </CardContent>
+            </Card>
           </TabbedLayout.Route>
           <TabbedLayout.Route path="/settings" title="Configuration">
             <>

@@ -1,23 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import {
   Box,
   Button,
-  ButtonIcon,
-  Cell,
   CellText,
-  Column,
   Flex,
-  Menu,
-  MenuItem,
-  MenuTrigger,
-  Row,
-  Skeleton,
   Table,
-  TableBody,
-  TableHeader,
   Text,
+  useTable,
+  type ColumnConfig,
 } from '@backstage/ui';
-import { RiEditLine, RiMoreLine } from '@remixicon/react';
+import { Edit } from '@mui/icons-material';
 import { makeStyles, createStyles } from '@material-ui/core/styles';
 import { BackstageTheme } from '@backstage/theme';
 import { useApi } from '@backstage/core-plugin-api';
@@ -27,11 +19,6 @@ import { CustomFieldModal, FieldErrors } from './CustomFieldModal';
 
 const useStyles = makeStyles<BackstageTheme>(theme =>
   createStyles({
-    root: {
-      padding: theme.spacing(3),
-      border: `1px solid ${theme.palette.divider}`,
-      borderRadius: theme.shape.borderRadius,
-    },
     title: {
       margin: 0,
       fontSize: '1.5rem',
@@ -73,37 +60,17 @@ const useStyles = makeStyles<BackstageTheme>(theme =>
     errorText: {
       color: theme.palette.error.main,
     },
-    tableWrapper: {
-      border: `1px solid ${theme.palette.divider}`,
-      borderRadius: theme.shape.borderRadius,
-      overflow: 'hidden',
-    },
-    loadingContainer: {
-      padding: theme.spacing(4),
-    },
-    actionsCell: {
-      textAlign: 'end',
-    },
     footer: {
       marginTop: theme.spacing(2),
     },
   }),
 );
 
-const COLUMNS = [
-  { id: 'name', label: 'Custom Field', isRowHeader: true, width: undefined },
-  { id: 'entityPath', label: 'Entity Path', isRowHeader: false, width: undefined },
-  { id: 'description', label: 'Description', isRowHeader: false, width: undefined },
-  { id: 'actions', label: '', isRowHeader: false, width: undefined },
-];
-
 /** @public */
 export const CustomFieldsTab = () => {
   const classes = useStyles();
   const pagerDutyApi = useApi(pagerDutyApiRef);
-  const [customFields, setCustomFields] = useState<BackstageCustomField[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<FieldErrors | null>(null);
   const [selectedCustomField, setSelectedCustomField] = useState<BackstageCustomField | null>(null);
@@ -127,23 +94,6 @@ export const CustomFieldsTab = () => {
     return { general: message };
   };
 
-  useEffect(() => {
-    (async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const response = await pagerDutyApi.getCustomFields();
-        setCustomFields(response.customFields);
-      } catch (err) {
-        setError({
-          general:
-            err instanceof Error ? err.message : 'Failed to load custom fields',
-        });
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [pagerDutyApi]);
 
   const handleOpenModal = (field: BackstageCustomField | null = null) => {
     if (field) {
@@ -176,8 +126,8 @@ export const CustomFieldsTab = () => {
     });
 
     if (result.status === 'ok') {
-      setCustomFields(prev => [...prev, result.data]);
       setIsModalOpen(false);
+      reload();
     } else {
       setError(toFieldErrors(result.error));
     }
@@ -211,11 +161,9 @@ export const CustomFieldsTab = () => {
     });
 
     if (result.status === 'ok') {
-      setCustomFields(prev =>
-        prev.map(f => (f.id === fieldId ? result.data : f)),
-      );
       setIsEditModalOpen(false);
       setSelectedCustomField(null);
+      reload();
     } else {
       setEditError(toFieldErrors(result.error));
     }
@@ -231,24 +179,64 @@ export const CustomFieldsTab = () => {
     // TODO: implement save
   };
 
-  const getCellContent = (
-    item: BackstageCustomField,
-    columnId: string,
-  ): string => {
-    switch (columnId) {
-      case 'name':
-        return item.pagerdutyCustomFieldDisplayName;
-      case 'entityPath':
-        return item.backstageEntityMappingPath;
-      case 'description':
-        return item.description ?? '';
-      default:
-        return '';
-    }
-  };
+  const columnConfig: ColumnConfig<BackstageCustomField>[] = useMemo(
+    () => [
+      {
+        id: 'name',
+        label: 'Custom Field',
+        isRowHeader: true,
+        isSortable: false,
+        cell: item => (
+          <CellText title={item.pagerdutyCustomFieldDisplayName} />
+        ),
+      },
+      {
+        id: 'entityPath',
+        label: 'Entity Path',
+        isRowHeader: false,
+        isSortable: false,
+        cell: item => <CellText title={item.backstageEntityMappingPath} />,
+      },
+      {
+        id: 'description',
+        label: 'Description',
+        isRowHeader: false,
+        isSortable: false,
+        cell: item => <CellText title={item.description ?? ''} />,
+      },
+      {
+        id: 'actions',
+        label: '',
+        isRowHeader: false,
+        isSortable: false,
+        cell: item => (
+          <CellText
+            leadingIcon={<Edit fontSize="small" />}
+            color="secondary"
+            style={{ paddingLeft: '25px', cursor: 'pointer', maxWidth: 'min-content' }}
+            title=""
+            onClick={() => handleOpenModal(item)}
+          />
+        ),
+      },
+    ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
+
+  const getData = useCallback(async () => {
+    setError(null);
+    const response = await pagerDutyApi.getCustomFields();
+    return response.customFields;
+  }, [pagerDutyApi]);
+
+  const { tableProps, reload } = useTable<BackstageCustomField>({
+    mode: 'complete',
+    getData,
+  });
 
   return (
-    <Box className={classes.root}>
+    <>
       {/* Data Sync header */}
       <Flex align="start" justify="between" style={{ marginBottom: 16 }}>
         <Text as="h2" className={classes.title}>
@@ -290,61 +278,10 @@ export const CustomFieldsTab = () => {
       )}
 
       {/* Table */}
-      <Box className={classes.tableWrapper}>
-        {loading ? (
-          <Flex direction="column" gap="2" className={classes.loadingContainer}>
-            <Skeleton />
-            <Skeleton />
-            <Skeleton />
-          </Flex>
-        ) : (
-          <Table aria-label="Custom fields">
-            <TableHeader columns={COLUMNS}>
-              {col => (
-                <Column key={col.id} id={col.id} isRowHeader={col.isRowHeader} width={col.width}>
-                  {col.label}
-                </Column>
-              )}
-            </TableHeader>
-            <TableBody
-              items={customFields}
-              renderEmptyState={() => 'No custom fields have been added'}
-            >
-              {item => (
-                <Row key={item.id} id={item.id} columns={COLUMNS}>
-                  {col =>
-                    col.id === 'actions' ? (
-                      <Cell key={col.id} className={classes.actionsCell}>
-                        <MenuTrigger>
-                          <ButtonIcon
-                            icon={<RiMoreLine />}
-                            aria-label="actions"
-                            variant="tertiary"
-                            size="small"
-                          />
-                          <Menu>
-                            <MenuItem
-                              iconStart={<RiEditLine />}
-                              onAction={() => handleOpenModal(item)}
-                            >
-                              Edit
-                            </MenuItem>
-                          </Menu>
-                        </MenuTrigger>
-                      </Cell>
-                    ) : (
-                      <CellText
-                        key={col.id}
-                        title={getCellContent(item, col.id)}
-                      />
-                    )
-                  }
-                </Row>
-              )}
-            </TableBody>
-          </Table>
-        )}
-      </Box>
+      <Table
+        columnConfig={columnConfig}
+        {...tableProps}
+      />
 
       {/* Custom Field Modal */}
       <CustomFieldModal
@@ -370,6 +307,6 @@ export const CustomFieldsTab = () => {
           Save
         </Button>
       </Flex>
-    </Box>
+    </>
   );
 };
