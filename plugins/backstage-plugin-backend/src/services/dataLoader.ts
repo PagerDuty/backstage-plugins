@@ -17,6 +17,7 @@ export class ServiceLoadError extends Error {
 
 export interface DataLoaderContext {
   catalogApi: CatalogApi;
+  teamFilter?: string;
 }
 
 export interface LoadedSources {
@@ -51,13 +52,19 @@ export async function loadPagerDutyServices(): Promise<NormalizedService[]> {
 
 export async function loadBackstageComponents({
   catalogApi,
+  teamFilter,
 }: DataLoaderContext): Promise<NormalizedService[]> {
   try {
+    const filter: Record<string, string | string[]> = {
+      kind: 'Component',
+    };
+
+    if (teamFilter) {
+      filter['spec.owner'] = teamFilter;
+    }
 
     const response = await catalogApi.getEntities({
-      filter: {
-        kind: 'Component',
-      },
+      filter,
     });
 
     const normalizedComponents: NormalizedService[] = response.items.map(

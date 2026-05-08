@@ -895,10 +895,12 @@ export async function createRouter(
       }
 
       const bestOnly: boolean = request.body.bestOnly ?? false;
+      const team: string | undefined = request.body.team;
 
       const loadStartTime = Date.now();
       const { pdServices, bsComponents } = await loadBothSources({
         catalogApi: catalogApi!,
+        teamFilter: team,
       });
 
       const filteredPdServices = account
