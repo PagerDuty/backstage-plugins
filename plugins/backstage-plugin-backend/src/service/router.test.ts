@@ -30,6 +30,7 @@ import { PagerDutyBackendDatabase } from '../db';
 import { mockServices, TestDatabases } from '@backstage/backend-test-utils';
 import { InMemoryCatalogClient } from '@backstage/catalog-client/testUtils';
 import * as Pagerduty from '../services/pagerduty';
+import * as PagerdutyApi from '../apis/pagerduty';
 
 jest.mock('node-fetch');
 
@@ -40,6 +41,11 @@ jest.mock('../auth/auth', () => ({
 
 jest.mock('../services/pagerduty', () => ({
   getServicesIdsByPartialName: jest.fn(),
+}));
+
+jest.mock('../apis/pagerduty', () => ({
+  ...jest.requireActual('../apis/pagerduty'),
+  getAllServices: jest.fn(),
 }));
 
 const testInputs = ['apiToken', 'oauth'];
@@ -3454,6 +3460,118 @@ describe('createRouter', () => {
         expect(response.body).toHaveProperty('skippedCount');
         expect(response.body).toHaveProperty('errorCount');
       });
+    });
+  });
+
+  describe('POST /mapping/entity/auto-match', () => {
+    beforeEach(() => {
+      (PagerdutyApi.getAllServices as jest.Mock).mockResolvedValue([
+        {
+          id: 'PD_SERVICE_1',
+          name: 'test-component',
+          html_url: 'https://test.pagerduty.com/services/PD_SERVICE_1',
+          escalation_policy: { id: 'EP1', name: 'Default' },
+          teams: [{ id: 'T1', name: 'Team A', summary: 'Team A' }],
+        },
+        {
+          id: 'PD_SERVICE_2',
+          name: 'component-1',
+          html_url: 'https://test.pagerduty.com/services/PD_SERVICE_2',
+          escalation_policy: { id: 'EP2', name: 'Default' },
+          teams: [{ id: 'T2', name: 'Team B', summary: 'Team B' }],
+        },
+      ]);
+    });
+
+    it('returns matches without team filter', async () => {
+      const response = await request(app)
+        .post('/mapping/entity/auto-match')
+        .send({ threshold: 100 });
+
+      expect(response.status).toEqual(200);
+      expect(response.body).toHaveProperty('matches');
+      expect(response.body).toHaveProperty('statistics');
+      expect(response.body.statistics.totalBackstageComponents).toBeGreaterThan(1);
+    });
+
+    it('filters backstage components by team using kebab-case name', async () => {
+      const response = await request(app)
+        .post('/mapping/entity/auto-match')
+        .send({ threshold: 100, team: 'team-a' });
+
+      expect(response.status).toEqual(200);
+      // team-a owns only test-component in testEntities
+      expect(response.body.statistics.totalBackstageComponents).toEqual(1);
+
+      const matchedEntityNames = response.body.matches.map(
+        (m: { backstageComponent: { name: string } }) => m.backstageComponent.name,
+      );
+      expect(matchedEntityNames).not.toContain('component-1');
+    });
+
+    it('filters backstage components by team-x and matches component-1', async () => {
+      const response = await request(app)
+        .post('/mapping/entity/auto-match')
+        .send({ threshold: 100, team: 'team-x' });
+
+      expect(response.status).toEqual(200);
+      // team-x owns only component-1 in testEntities
+      expect(response.body.statistics.totalBackstageComponents).toEqual(1);
+
+      const matchedEntityNames = response.body.matches.map(
+        (m: { backstageComponent: { name: string } }) => m.backstageComponent.name,
+      );
+      expect(matchedEntityNames).toContain('component-1');
+      expect(matchedEntityNames).not.toContain('test-component');
+    });
+
+    it('returns no matches when team filter has no matching components', async () => {
+      const response = await request(app)
+        .post('/mapping/entity/auto-match')
+        .send({ threshold: 100, team: 'nonexistent-team' });
+
+      expect(response.status).toEqual(200);
+      expect(response.body.matches).toHaveLength(0);
+      expect(response.body.statistics.totalBackstageComponents).toEqual(0);
+    });
+
+    it('returns 400 for invalid threshold', async () => {
+      const response = await request(app)
+        .post('/mapping/entity/auto-match')
+        .send({ threshold: 150 });
+
+      expect(response.status).toEqual(400);
+      expect(response.body.error).toMatch(/Invalid threshold/);
+    });
+
+    it('uses kebab-case team name format matching spec.owner', async () => {
+      // "search-team" is the owner of test-component-filtered in testEntities
+      const response = await request(app)
+        .post('/mapping/entity/auto-match')
+        .send({ threshold: 80, team: 'search-team' });
+
+      expect(response.status).toEqual(200);
+      expect(response.body.statistics.totalBackstageComponents).toEqual(1);
+    });
+
+    it('treats team filter as case-insensitive', async () => {
+      const response = await request(app)
+        .post('/mapping/entity/auto-match')
+        .send({ threshold: 80, team: 'Team-A' });
+
+      expect(response.status).toEqual(200);
+      // team-a owns test-component
+      expect(response.body.statistics.totalBackstageComponents).toEqual(1);
+    });
+
+    it('returns all components when team is not provided', async () => {
+      const response = await request(app)
+        .post('/mapping/entity/auto-match')
+        .send({ threshold: 80 });
+
+      expect(response.status).toEqual(200);
+      // All 6 testEntities are Components
+      expect(response.body.statistics.totalBackstageComponents).toEqual(6);
     });
   });
 });
