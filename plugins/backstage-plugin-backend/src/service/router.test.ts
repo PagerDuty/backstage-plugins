@@ -3491,7 +3491,11 @@ describe('createRouter', () => {
       expect(response.status).toEqual(200);
       expect(response.body).toHaveProperty('matches');
       expect(response.body).toHaveProperty('statistics');
-      expect(response.body.statistics.totalBackstageComponents).toBeGreaterThan(1);
+      const matchedEntityNames = response.body.matches.map(
+        (m: { backstageComponent: { name: string } }) => m.backstageComponent.name,
+      );
+      expect(matchedEntityNames).toContain('test-component');
+      expect(matchedEntityNames).toContain('component-1');
     });
 
     it('filters backstage components by team using kebab-case name', async () => {
@@ -3500,13 +3504,12 @@ describe('createRouter', () => {
         .send({ threshold: 100, team: 'team-a' });
 
       expect(response.status).toEqual(200);
-      // team-a owns only test-component in testEntities
-      expect(response.body.statistics.totalBackstageComponents).toEqual(1);
-
       const matchedEntityNames = response.body.matches.map(
         (m: { backstageComponent: { name: string } }) => m.backstageComponent.name,
       );
+      expect(matchedEntityNames).toContain('test-component');
       expect(matchedEntityNames).not.toContain('component-1');
+      expect(matchedEntityNames).not.toContain('component-2');
     });
 
     it('filters backstage components by team-x and matches component-1', async () => {
@@ -3515,14 +3518,12 @@ describe('createRouter', () => {
         .send({ threshold: 100, team: 'team-x' });
 
       expect(response.status).toEqual(200);
-      // team-x owns only component-1 in testEntities
-      expect(response.body.statistics.totalBackstageComponents).toEqual(1);
-
       const matchedEntityNames = response.body.matches.map(
         (m: { backstageComponent: { name: string } }) => m.backstageComponent.name,
       );
       expect(matchedEntityNames).toContain('component-1');
       expect(matchedEntityNames).not.toContain('test-component');
+      expect(matchedEntityNames).not.toContain('component-2');
     });
 
     it('returns no matches when team filter has no matching components', async () => {
@@ -3531,8 +3532,12 @@ describe('createRouter', () => {
         .send({ threshold: 100, team: 'nonexistent-team' });
 
       expect(response.status).toEqual(200);
-      expect(response.body.matches).toHaveLength(0);
-      expect(response.body.statistics.totalBackstageComponents).toEqual(0);
+      expect(response.body.matches).toEqual([]);
+      const matchedEntityNames = response.body.matches.map(
+        (m: { backstageComponent: { name: string } }) => m.backstageComponent.name,
+      );
+      expect(matchedEntityNames).not.toContain('test-component');
+      expect(matchedEntityNames).not.toContain('component-1');
     });
 
     it('returns 400 for invalid threshold', async () => {
@@ -3545,13 +3550,17 @@ describe('createRouter', () => {
     });
 
     it('uses kebab-case team name format matching spec.owner', async () => {
-      // "search-team" is the owner of test-component-filtered in testEntities
       const response = await request(app)
         .post('/mapping/entity/auto-match')
         .send({ threshold: 80, team: 'search-team' });
 
       expect(response.status).toEqual(200);
-      expect(response.body.statistics.totalBackstageComponents).toEqual(1);
+      const matchedEntityNames = response.body.matches.map(
+        (m: { backstageComponent: { name: string } }) => m.backstageComponent.name,
+      );
+      expect(matchedEntityNames).toContain('test-component-filtered');
+      expect(matchedEntityNames).not.toContain('test-component');
+      expect(matchedEntityNames).not.toContain('component-1');
     });
 
     it('treats team filter as case-insensitive', async () => {
@@ -3560,8 +3569,11 @@ describe('createRouter', () => {
         .send({ threshold: 80, team: 'Team-A' });
 
       expect(response.status).toEqual(200);
-      // team-a owns test-component
-      expect(response.body.statistics.totalBackstageComponents).toEqual(1);
+      const matchedEntityNames = response.body.matches.map(
+        (m: { backstageComponent: { name: string } }) => m.backstageComponent.name,
+      );
+      expect(matchedEntityNames).toContain('test-component');
+      expect(matchedEntityNames).not.toContain('component-1');
     });
 
     it('returns all components when team is not provided', async () => {
@@ -3570,8 +3582,15 @@ describe('createRouter', () => {
         .send({ threshold: 80 });
 
       expect(response.status).toEqual(200);
-      // All 6 testEntities are Components
-      expect(response.body.statistics.totalBackstageComponents).toEqual(6);
+      const matchedEntityNames = response.body.matches.map(
+        (m: { backstageComponent: { name: string } }) => m.backstageComponent.name,
+      );
+      expect(matchedEntityNames).toContain('test-component');
+      expect(matchedEntityNames).toContain('component-1');
+      expect(matchedEntityNames).toContain('component-2');
+      expect(matchedEntityNames).toContain('test-component-filtered');
+      expect(matchedEntityNames).toContain('test-default-search');
+      expect(matchedEntityNames).toContain('component-not-mapped');
     });
   });
 });
