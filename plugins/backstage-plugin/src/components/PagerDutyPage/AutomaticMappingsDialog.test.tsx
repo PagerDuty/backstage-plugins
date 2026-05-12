@@ -107,6 +107,12 @@ describe('AutomaticMappingsDialog', () => {
         filter: {
           kind: 'Group',
         },
+        order: [
+          {
+            field: 'metadata.name',
+            order: 'asc',
+          },
+        ],
       });
     });
   });
