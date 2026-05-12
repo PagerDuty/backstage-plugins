@@ -1,5 +1,6 @@
 import {
   AuthService,
+  CacheService,
   DiscoveryService,
   LoggerService,
   RootConfigService,
@@ -22,12 +23,9 @@ import {
   addServiceRelationsToService,
   removeServiceRelationsFromService,
 } from '../apis/pagerduty';
-import { loadBothSources, ServiceLoadError } from '../services/dataLoader';
-import {
-  findMatches,
-  filterToBestMatchPerService,
-  type MatchingConfig,
-} from '../services/matchingEngine';
+import { ServiceLoadError } from '../services/dataLoader';
+import { createAutoMatchRunner } from '../services/autoMatchRunner';
+import { AutoMatchJobRegistry } from '../services/autoMatchJobs';
 import {
   HttpError,
   PagerDutyChangeEventsResponse,
@@ -63,6 +61,7 @@ export interface RouterOptions {
   discovery: DiscoveryService;
   auth: AuthService;
   catalogApi?: CatalogApi;
+  cache?: CacheService;
 }
 
 export type Annotations = {
@@ -244,10 +243,14 @@ export async function buildEntityMappingsResponse(
 export async function createRouter(
   options: RouterOptions,
 ): Promise<express.Router> {
-  const { logger, config, store, catalogApi } = options;
+  const { logger, config, store, catalogApi, cache } = options;
 
   if (!catalogApi) {
     throw new Error('Catalog API is required to start the PagerDuty plugin backend');
+  }
+
+  if (!cache) {
+    throw new Error('Cache service is required to start the PagerDuty plugin backend');
   }
 
   // Get authentication Config
@@ -259,6 +262,9 @@ export async function createRouter(
   // Create the router
   const router = Router();
   router.use(express.json());
+
+  const runAutoMatch = createAutoMatchRunner(catalogApi);
+  const autoMatchJobs = new AutoMatchJobRegistry(cache, runAutoMatch);
 
   // DELETE /dependencies/service/:serviceId
   router.delete(
@@ -889,77 +895,14 @@ export async function createRouter(
       const bestOnly: boolean = request.body.bestOnly ?? false;
       const team: string | undefined = request.body.team;
 
-      const loadStartTime = Date.now();
-      const { pdServices, bsComponents } = await loadBothSources({
-        catalogApi: catalogApi!,
-        teamFilter: team,
+      const result = await runAutoMatch({
+        threshold,
+        bestOnly,
+        team,
+        account,
       });
 
-      const filteredPdServices = account
-        ? pdServices.filter(service => service.account === account)
-        : pdServices;
-
-      const loadTime = Date.now() - loadStartTime;
-
-      const matchStartTime = Date.now();
-      const matchingConfig: MatchingConfig = { threshold };
-      let matches = findMatches(filteredPdServices, bsComponents, matchingConfig);
-
-      if (bestOnly) {
-        matches = filterToBestMatchPerService(matches);
-      }
-
-      const matchTime = Date.now() - matchStartTime;
-
-      const totalComparisons = filteredPdServices.length * bsComponents.length;
-      const exactMatches = matches.filter(m => m.score === 100).length;
-      const highConfidence = matches.filter(
-        m => m.score >= 90 && m.score < 100,
-      ).length;
-      const mediumConfidence = matches.filter(
-        m => m.score >= 80 && m.score < 90,
-      ).length;
-
-      const getConfidenceLevel = (
-        score: number,
-      ): 'exact' | 'high' | 'medium' | 'low' => {
-        if (score === 100) return 'exact';
-        if (score >= 90) return 'high';
-        if (score >= 80) return 'medium';
-        return 'low';
-      };
-
-      response.json({
-        matches: matches.map(m => ({
-          pagerDutyService: {
-            serviceId: m.pagerDutyService.sourceId,
-            name: m.pagerDutyService.rawName,
-            team: m.pagerDutyService.teamName,
-            account: m.pagerDutyService.account,
-          },
-          backstageComponent: {
-            entityRef: m.backstageComponent.sourceId,
-            name: m.backstageComponent.rawName,
-            owner: m.backstageComponent.teamName,
-          },
-          score: m.score,
-          confidence: getConfidenceLevel(m.score),
-          scoreBreakdown: m.scoreBreakdown,
-        })),
-        statistics: {
-          totalPagerDutyServices: filteredPdServices.length,
-          totalBackstageComponents: bsComponents.length,
-          totalPossibleComparisons: totalComparisons,
-          matchesFound: matches.length,
-          exactMatches,
-          highConfidenceMatches: highConfidence,
-          mediumConfidenceMatches: mediumConfidence,
-          threshold,
-          loadTimeMs: loadTime,
-          matchTimeMs: matchTime,
-          totalTimeMs: loadTime + matchTime,
-        },
-      });
+      response.json(result);
     } catch (error) {
       logger.error(`Auto-match failed: ${error}`);
       if (error instanceof HttpError) {
@@ -978,6 +921,56 @@ export async function createRouter(
         });
       }
     }
+  });
+
+  // POST /mapping/entity/auto-match/start
+  router.post('/mapping/entity/auto-match/start', async (request, response) => {
+    const threshold: number = request.body.threshold ?? 100;
+
+    if (typeof threshold !== 'number' || threshold < 0 || threshold > 100) {
+      response.status(400).json({
+        error: 'Invalid threshold. Must be a number between 0 and 100.',
+      });
+      return;
+    }
+
+    const bestOnly: boolean = request.body.bestOnly ?? false;
+    const team: string | undefined = request.body.team;
+    const account: string | undefined = request.body.account;
+
+    const job = await autoMatchJobs.start({
+      threshold,
+      bestOnly,
+      team,
+      account,
+    });
+
+    response.status(202).json({
+      jobId: job.id,
+      status: job.status,
+    });
+  });
+
+  // GET /mapping/entity/auto-match/:jobId
+  router.get('/mapping/entity/auto-match/:jobId', async (request, response) => {
+    const jobId = request.params.jobId;
+    const job = await autoMatchJobs.get(jobId);
+
+    if (!job) {
+      response.status(404).json({
+        error: `Auto-match job ${jobId} not found.`,
+      });
+      return;
+    }
+
+    response.json({
+      jobId: job.id,
+      status: job.status,
+      createdAt: job.createdAt,
+      completedAt: job.completedAt,
+      result: job.result,
+      error: job.error,
+    });
   });
 
   // GET /escalation_policies

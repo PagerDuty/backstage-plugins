@@ -28,6 +28,8 @@ import {
   PagerDutyTeam,
   PagerDutyEnhancedEntityMappingsResponse,
   AutoMatchEntityMappingsResponse,
+  AutoMatchStartResponse,
+  AutoMatchStatusResponse,
 } from '@pagerduty/backstage-plugin-common';
 import { DiscoveryApi, FetchApi } from '@backstage/core-plugin-api';
 import { Entity } from '@backstage/catalog-model';
@@ -235,6 +237,20 @@ export interface PagerDutyApi {
     threshold: number;
     account?: string;
   }): Promise<AutoMatchEntityMappingsResponse>;
+
+  /**
+   * Starts an async auto-match job and returns a jobId to poll.
+   */
+  startAutoMatchEntityMappings(options: {
+    team?: string;
+    threshold: number;
+    account?: string;
+  }): Promise<AutoMatchStartResponse>;
+
+  /**
+   * Fetches the current status (and result, when complete) of an auto-match job.
+   */
+  getAutoMatchStatus(jobId: string): Promise<AutoMatchStatusResponse>;
 
   /**
    * Fetches the list of configured PagerDuty accounts.

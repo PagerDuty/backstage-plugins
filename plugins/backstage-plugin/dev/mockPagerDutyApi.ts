@@ -107,6 +107,25 @@ export const mockPagerDutyApi: PagerDutyApi = {
     };
   },
 
+  async startAutoMatchEntityMappings() {
+    return {
+      jobId: 'mock-job-id',
+      status: 'pending' as const,
+    };
+  },
+
+  async getAutoMatchStatus(jobId: string) {
+    return {
+      jobId,
+      status: 'completed' as const,
+      createdAt: new Date().toISOString(),
+      completedAt: new Date().toISOString(),
+      result: await mockPagerDutyApi.autoMatchEntityMappings({
+        threshold: 100,
+      }),
+    };
+  },
+
   async getEntityMappingsWithPagination(options: {
     offset: number;
     limit: number;

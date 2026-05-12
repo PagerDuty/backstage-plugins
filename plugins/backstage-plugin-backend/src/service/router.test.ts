@@ -197,6 +197,22 @@ describe('createRouter', () => {
     });
 
     store = await createDatabase();
+    const cacheStore = new Map<string, unknown>();
+    const cache = {
+      async get(key: string) {
+        return cacheStore.get(key) as never;
+      },
+      async set(key: string, value: unknown) {
+        cacheStore.set(key, value);
+      },
+      async delete(key: string) {
+        cacheStore.delete(key);
+      },
+      withOptions() {
+        return cache;
+      },
+    } as never;
+
     const router = await createRouter({
       logger: mockServices.rootLogger.mock(),
       config: configReader,
@@ -204,6 +220,7 @@ describe('createRouter', () => {
       discovery: mockServices.discovery(),
       auth: mockServices.auth(),
       catalogApi: catalogApi,
+      cache,
     });
     app = express().use(router);
   });
@@ -3592,6 +3609,76 @@ describe('createRouter', () => {
       expect(matchedEntityNames).toContain('test-component-filtered');
       expect(matchedEntityNames).toContain('test-default-search');
       expect(matchedEntityNames).toContain('component-not-mapped');
+    });
+  });
+
+  describe('async auto-match job endpoints', () => {
+    beforeEach(() => {
+      (PagerdutyApi.getAllServices as jest.Mock).mockResolvedValue([
+        {
+          id: 'PD_SERVICE_1',
+          name: 'test-component',
+          html_url: 'https://test.pagerduty.com/services/PD_SERVICE_1',
+          escalation_policy: { id: 'EP1', name: 'Default' },
+          teams: [{ id: 'T1', name: 'Team A', summary: 'Team A' }],
+        },
+      ]);
+    });
+
+    const waitForJob = async (jobId: string, timeoutMs = 2000) => {
+      const deadline = Date.now() + timeoutMs;
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const res = await request(app).get(
+          `/mapping/entity/auto-match/${jobId}`,
+        );
+        if (res.body.status === 'completed' || res.body.status === 'failed') {
+          return res;
+        }
+        if (Date.now() > deadline) {
+          throw new Error(`Timed out waiting for job ${jobId}`);
+        }
+        await new Promise(r => setTimeout(r, 25));
+      }
+    };
+
+    it('POST /start returns 202 with a jobId', async () => {
+      const response = await request(app)
+        .post('/mapping/entity/auto-match/start')
+        .send({ threshold: 100 });
+
+      expect(response.status).toEqual(202);
+      expect(typeof response.body.jobId).toBe('string');
+      expect(['pending', 'running']).toContain(response.body.status);
+    });
+
+    it('POST /start rejects invalid threshold', async () => {
+      const response = await request(app)
+        .post('/mapping/entity/auto-match/start')
+        .send({ threshold: 150 });
+
+      expect(response.status).toEqual(400);
+      expect(response.body.error).toMatch(/Invalid threshold/);
+    });
+
+    it('GET /:jobId returns 404 for unknown job', async () => {
+      const response = await request(app).get(
+        '/mapping/entity/auto-match/does-not-exist',
+      );
+      expect(response.status).toEqual(404);
+    });
+
+    it('GET /:jobId eventually returns completed job with result', async () => {
+      const start = await request(app)
+        .post('/mapping/entity/auto-match/start')
+        .send({ threshold: 100 });
+
+      const final = await waitForJob(start.body.jobId);
+      expect(final.status).toEqual(200);
+      expect(final.body.status).toEqual('completed');
+      expect(final.body.result).toHaveProperty('matches');
+      expect(final.body.result).toHaveProperty('statistics');
+      expect(final.body.completedAt).toBeDefined();
     });
   });
 });

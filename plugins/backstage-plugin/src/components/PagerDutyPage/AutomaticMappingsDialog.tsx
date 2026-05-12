@@ -11,6 +11,7 @@ import {
 } from '@backstage/ui';
 import { Dispatch, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import type { AutoMatchEntityMappingsResponse } from '@pagerduty/backstage-plugin-common';
 import { useApi } from '@backstage/core-plugin-api';
 import { catalogApiRef } from '@backstage/plugin-catalog-react';
 import { pagerDutyApiRef } from '../../api';
@@ -49,6 +50,7 @@ export default function AutomaticMappingsDialog({
   const { selectedAccount } = useAccountContext();
   const [selectedTeam, setSelectedTeam] = useState<string>('all');
   const [selectedThreshold, setSelectedThreshold] = useState<string>('');
+  const [activeJobId, setActiveJobId] = useState<string | undefined>();
 
   const { data: groups, isLoading: isGroupsLoading } = useQuery({
     queryKey: ['catalog', 'groups'],
@@ -64,60 +66,95 @@ export default function AutomaticMappingsDialog({
     enabled: isOpen,
   });
 
-  const { mutateAsync: autoMatch, isPending: isAutoMatching } = useMutation({
-    mutationFn: async (params: { team?: string; threshold: number; account?: string }) =>
-      pagerDutyApi.autoMatchEntityMappings(params),
-    onSuccess: data => {
-      const matchMap: Record<
-        string,
-        {
-          score: number;
-          serviceId: string;
-          account: string;
-          serviceName: string;
-          entity?: {
-            name: string;
-            entityRef: string;
-            owner: string;
+  const handleAutoMatchResult = (data: AutoMatchEntityMappingsResponse) => {
+    const matchMap: Record<
+      string,
+      {
+        score: number;
+        serviceId: string;
+        account: string;
+        serviceName: string;
+        entity?: {
+          name: string;
+          entityRef: string;
+          owner: string;
+        };
+      }
+    > = {};
+
+    const matches = data?.matches;
+
+    if (Array.isArray(matches)) {
+      matches.forEach(match => {
+        const entityName = match.backstageComponent?.name;
+        const score = match.score;
+
+        const serviceId = match.pagerDutyService?.serviceId;
+        const serviceName = match.pagerDutyService?.name;
+        const account = match.pagerDutyService?.account || '';
+        const entityRef = match.backstageComponent?.entityRef;
+        const owner = match.backstageComponent?.owner;
+
+        if (entityName && score !== undefined && serviceId) {
+          matchMap[entityName] = {
+            score,
+            serviceId,
+            account,
+            serviceName,
+            entity: {
+              name: entityName,
+              entityRef: entityRef || '',
+              owner: owner || '',
+            },
           };
         }
-      > = {};
-
-      const matches = data?.matches;
-
-      if (Array.isArray(matches)) {
-        matches.forEach(match => {
-          const entityName = match.backstageComponent?.name;
-          const score = match.score;
-
-          const serviceId = match.pagerDutyService?.serviceId;
-          const serviceName = match.pagerDutyService?.name;
-          const account = match.pagerDutyService?.account || '';
-          const entityRef = match.backstageComponent?.entityRef;
-          const owner = match.backstageComponent?.owner;
-
-          if (entityName && score !== undefined && serviceId) {
-            matchMap[entityName] = {
-              score,
-              serviceId,
-              account,
-              serviceName,
-              entity: {
-                name: entityName,
-                entityRef: entityRef || '',
-                owner: owner || '',
-              },
-            };
-          }
-        });
-      }
-      onAutoMatchComplete(matchMap);
-      queryClient.invalidateQueries({
-        queryKey: ['pagerduty', 'enhancedEntityMappings'],
       });
-      setIsOpen(false);
+    }
+    onAutoMatchComplete(matchMap);
+    queryClient.invalidateQueries({
+      queryKey: ['pagerduty', 'enhancedEntityMappings'],
+    });
+    setActiveJobId(undefined);
+    setIsOpen(false);
+  };
+
+  const { mutateAsync: startAutoMatch, isPending: isStartingAutoMatch } =
+    useMutation({
+      mutationFn: async (params: {
+        team?: string;
+        threshold: number;
+        account?: string;
+      }) => pagerDutyApi.startAutoMatchEntityMappings(params),
+      onSuccess: data => {
+        setActiveJobId(data.jobId);
+      },
+    });
+
+  const { data: jobStatus, error: jobStatusError } = useQuery({
+    queryKey: ['pagerduty', 'autoMatchJob', activeJobId],
+    queryFn: async () => {
+      const status = await pagerDutyApi.getAutoMatchStatus(activeJobId!);
+      if (status.status === 'completed' && status.result) {
+        handleAutoMatchResult(status.result);
+      }
+      return status;
     },
+    enabled: Boolean(activeJobId),
+    refetchInterval: query => {
+      const status = query.state.data?.status;
+      if (status === 'completed' || status === 'failed') {
+        return false;
+      }
+      return 2000;
+    },
+    refetchIntervalInBackground: true,
   });
+
+  const isAutoMatching =
+    isStartingAutoMatch ||
+    (Boolean(activeJobId) &&
+      jobStatus?.status !== 'completed' &&
+      jobStatus?.status !== 'failed');
 
   const teamOptions = [
     { value: 'all', label: 'All Teams' },
@@ -136,12 +173,19 @@ export default function AutomaticMappingsDialog({
   const handleBegin = async () => {
     if (!selectedThreshold) return;
 
-    await autoMatch({
+    await startAutoMatch({
       team: selectedTeam,
       threshold: parseInt(selectedThreshold, 10),
       account: selectedAccount,
     });
   };
+
+  let failureMessage: string | undefined;
+  if (jobStatus?.status === 'failed') {
+    failureMessage = jobStatus.error || 'Auto-match failed';
+  } else if (jobStatusError instanceof Error) {
+    failureMessage = jobStatusError.message;
+  }
 
   return (
     <Dialog isOpen={isOpen} onOpenChange={setIsOpen} style={{ width: '460px' }}>
@@ -229,6 +273,17 @@ export default function AutomaticMappingsDialog({
                 isDisabled={isAutoMatching}
               />
             </Box>
+            {isAutoMatching && (
+              <Text variant="body-small" style={{ color: '#6B7280' }}>
+                Running auto-match in the background. This may take a few
+                minutes for large amounts of PagerDuty services.
+              </Text>
+            )}
+            {failureMessage && (
+              <Text variant="body-small" style={{ color: '#B91C1C' }}>
+                {failureMessage}
+              </Text>
+            )}
           </Flex>
         </Box>
       </DialogBody>
