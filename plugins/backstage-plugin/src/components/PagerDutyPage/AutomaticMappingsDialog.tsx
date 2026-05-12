@@ -57,6 +57,7 @@ export default function AutomaticMappingsDialog({
         filter: {
           kind: 'Group',
         },
+        order: [{ field: 'metadata.name', order: 'asc' }],
       });
       return response.items;
     },
