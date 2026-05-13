@@ -490,7 +490,7 @@ export class PagerDutyClient implements PagerDutyApi {
     )}/mapping/entity/auto-match/start`;
 
     const body = JSON.stringify({
-      team: options.team === 'all' ? undefined : options.team,
+      team: options.team,
       threshold: options.threshold,
       bestOnly: true,
       account: options.account,

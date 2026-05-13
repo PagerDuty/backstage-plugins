@@ -3627,19 +3627,15 @@ describe('createRouter', () => {
 
     const waitForJob = async (jobId: string, timeoutMs = 2000) => {
       const deadline = Date.now() + timeoutMs;
-      // eslint-disable-next-line no-constant-condition
-      while (true) {
-        const res = await request(app).get(
-          `/mapping/entity/auto-match/${jobId}`,
-        );
-        if (res.body.status === 'completed' || res.body.status === 'failed') {
-          return res;
-        }
+      let res = await request(app).get(`/mapping/entity/auto-match/${jobId}`);
+      while (res.body.status !== 'completed' && res.body.status !== 'failed') {
         if (Date.now() > deadline) {
           throw new Error(`Timed out waiting for job ${jobId}`);
         }
-        await new Promise(r => setTimeout(r, 25));
+        await new Promise(r => setTimeout(r, 50));
+        res = await request(app).get(`/mapping/entity/auto-match/${jobId}`);
       }
+      return res;
     };
 
     it('POST /start returns 202 with a jobId', async () => {

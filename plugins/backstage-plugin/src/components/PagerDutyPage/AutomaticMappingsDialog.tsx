@@ -9,7 +9,7 @@ import {
   Text,
   Box,
 } from '@backstage/ui';
-import { Dispatch, useState } from 'react';
+import { Dispatch, useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AutoMatchEntityMappingsResponse } from '@pagerduty/backstage-plugin-common';
 import { useApi } from '@backstage/core-plugin-api';
@@ -132,23 +132,24 @@ export default function AutomaticMappingsDialog({
 
   const { data: jobStatus, error: jobStatusError } = useQuery({
     queryKey: ['pagerduty', 'autoMatchJob', activeJobId],
-    queryFn: async () => {
-      const status = await pagerDutyApi.getAutoMatchStatus(activeJobId!);
-      if (status.status === 'completed' && status.result) {
-        handleAutoMatchResult(status.result);
-      }
-      return status;
-    },
+    queryFn: () => pagerDutyApi.getAutoMatchStatus(activeJobId!),
     enabled: Boolean(activeJobId),
     refetchInterval: query => {
       const status = query.state.data?.status;
       if (status === 'completed' || status === 'failed') {
         return false;
       }
-      return 2000;
+      return 5000;
     },
     refetchIntervalInBackground: true,
   });
+
+  useEffect(() => {
+    if (jobStatus?.status === 'completed' && jobStatus.result) {
+      handleAutoMatchResult(jobStatus.result);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [jobStatus?.status]);
 
   const isAutoMatching =
     isStartingAutoMatch ||
@@ -174,7 +175,7 @@ export default function AutomaticMappingsDialog({
     if (!selectedThreshold) return;
 
     await startAutoMatch({
-      team: selectedTeam,
+      team: selectedTeam === 'all' ? undefined : selectedTeam,
       threshold: parseInt(selectedThreshold, 10),
       account: selectedAccount,
     });

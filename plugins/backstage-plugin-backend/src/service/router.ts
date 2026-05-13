@@ -61,7 +61,7 @@ export interface RouterOptions {
   discovery: DiscoveryService;
   auth: AuthService;
   catalogApi?: CatalogApi;
-  cache?: CacheService;
+  cache: CacheService;
 }
 
 export type Annotations = {

@@ -1,5 +1,6 @@
 import { v4 as uuid } from 'uuid';
 import { CacheService } from '@backstage/backend-plugin-api';
+import { JsonValue } from '@backstage/types';
 import {
   AutoMatchEntityMappingsResponse,
   AutoMatchJobStatus,
@@ -52,18 +53,11 @@ export class AutoMatchJobRegistry {
   }
 
   async get(jobId: string): Promise<AutoMatchJob | undefined> {
-    const raw = (await this.cache.get(key(jobId))) as
-      | AutoMatchJob
-      | undefined;
-    return raw ?? undefined;
+    return (await this.cache.get(key(jobId))) as AutoMatchJob | undefined;
   }
 
   private async write(job: AutoMatchJob): Promise<void> {
-    await this.cache.set(
-      key(job.id),
-      job as unknown as Parameters<CacheService['set']>[1],
-      { ttl: this.ttlMs },
-    );
+    await this.cache.set(key(job.id), job as unknown as JsonValue, { ttl: this.ttlMs });
   }
 
   private async execute(
