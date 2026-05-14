@@ -1,105 +1,28 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
-  Box,
   Button,
   ButtonIcon,
-  Cell,
+  Card,
+  CardBody,
   CellText,
-  Column,
   Flex,
   Menu,
   MenuItem,
   MenuTrigger,
-  Row,
-  Skeleton,
   Table,
-  TableBody,
-  TableHeader,
   Text,
+  useTable,
+  type ColumnConfig,
 } from '@backstage/ui';
-import { RiEditLine, RiMoreLine } from '@remixicon/react';
-import { makeStyles, createStyles } from '@material-ui/core/styles';
-import { BackstageTheme } from '@backstage/theme';
+import { Edit, MoreVert } from '@mui/icons-material';
 import { useApi } from '@backstage/core-plugin-api';
 import { pagerDutyApiRef } from '../../api';
 import { BackstageCustomField } from '@pagerduty/backstage-plugin-common';
 import { CustomFieldModal, FieldErrors } from './CustomFieldModal';
-
-const useStyles = makeStyles<BackstageTheme>(theme =>
-  createStyles({
-    root: {
-      padding: theme.spacing(3),
-      border: `1px solid ${theme.palette.divider}`,
-      borderRadius: theme.shape.borderRadius,
-    },
-    title: {
-      margin: 0,
-      fontSize: '1.5rem',
-      fontWeight: 700,
-    },
-    divider: {
-      border: 'none',
-      borderTop: `1px solid ${theme.palette.divider}`,
-      margin: `0 0 ${theme.spacing(2)}px 0`,
-    },
-    tabsRow: {
-      marginBottom: theme.spacing(2),
-    },
-    tabActive: {
-      margin: 0,
-      fontWeight: 700,
-      paddingBottom: theme.spacing(0.5),
-      borderBottom: `2px solid ${theme.palette.text.primary}`,
-      cursor: 'default',
-    },
-    tabInactive: {
-      margin: 0,
-      color: theme.palette.text.secondary,
-      cursor: 'default',
-    },
-    manageRow: {
-      marginBottom: theme.spacing(1.5),
-    },
-    manageText: {
-      margin: 0,
-      color: theme.palette.text.secondary,
-    },
-    errorBox: {
-      padding: `${theme.spacing(1)}px ${theme.spacing(1.5)}px`,
-      backgroundColor: 'rgba(255,0,0,0.08)',
-      borderRadius: theme.shape.borderRadius,
-      marginBottom: theme.spacing(1.5),
-    },
-    errorText: {
-      color: theme.palette.error.main,
-    },
-    tableWrapper: {
-      border: `1px solid ${theme.palette.divider}`,
-      borderRadius: theme.shape.borderRadius,
-      overflow: 'hidden',
-    },
-    loadingContainer: {
-      padding: theme.spacing(4),
-    },
-    actionsCell: {
-      textAlign: 'end',
-    },
-    footer: {
-      marginTop: theme.spacing(2),
-    },
-  }),
-);
-
-const COLUMNS = [
-  { id: 'name', label: 'Custom Field', isRowHeader: true, width: undefined },
-  { id: 'entityPath', label: 'Entity Path', isRowHeader: false, width: undefined },
-  { id: 'description', label: 'Description', isRowHeader: false, width: undefined },
-  { id: 'actions', label: '', isRowHeader: false, width: undefined },
-];
+import { TableSkeleton } from './MappingsTable/TableSkeleton';
 
 /** @public */
 export const CustomFieldsTab = () => {
-  const classes = useStyles();
   const pagerDutyApi = useApi(pagerDutyApiRef);
   const [customFields, setCustomFields] = useState<BackstageCustomField[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -110,6 +33,25 @@ export const CustomFieldsTab = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState<FieldErrors | null>(null);
+
+  const customFieldsRef = useRef(customFields);
+  customFieldsRef.current = customFields;
+
+  const { tableProps, reload } = useTable<BackstageCustomField>({
+    mode: 'offset',
+    getData: async ({ offset, pageSize }) => ({
+      data: customFieldsRef.current.slice(offset, offset + pageSize),
+      totalCount: customFieldsRef.current.length,
+    }),
+    paginationOptions: {
+      pageSize: 10,
+      pageSizeOptions: [10, 25, 50],
+    },
+  });
+
+  useEffect(() => {
+    reload();
+  }, [customFields, reload]);
 
   const toFieldErrors = (message: string): FieldErrors => {
     const lower = message.toLowerCase();
@@ -145,7 +87,7 @@ export const CustomFieldsTab = () => {
     })();
   }, [pagerDutyApi]);
 
-  const handleOpenModal = (field: BackstageCustomField | null = null) => {
+  const handleOpenModal = useCallback((field: BackstageCustomField | null = null) => {
     if (field) {
       setSelectedCustomField(field);
       setEditError(null);
@@ -154,7 +96,7 @@ export const CustomFieldsTab = () => {
       setIsModalOpen(true);
       setError(null);
     }
-  };
+  }, []);
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
@@ -231,145 +173,128 @@ export const CustomFieldsTab = () => {
     // TODO: implement save
   };
 
-  const getCellContent = (
-    item: BackstageCustomField,
-    columnId: string,
-  ): string => {
-    switch (columnId) {
-      case 'name':
-        return item.pagerdutyCustomFieldDisplayName;
-      case 'entityPath':
-        return item.backstageEntityMappingPath;
-      case 'description':
-        return item.description ?? '';
-      default:
-        return '';
-    }
-  };
+  const columnConfig: ColumnConfig<BackstageCustomField>[] = useMemo(() => [
+    {
+      id: 'name',
+      label: 'Custom Field',
+      isRowHeader: true,
+      isSortable: false,
+      cell: item => <CellText title={item.pagerdutyCustomFieldDisplayName} />,
+    },
+    {
+      id: 'entityPath',
+      label: 'Entity Path',
+      isRowHeader: false,
+      isSortable: false,
+      cell: item => <CellText title={item.backstageEntityMappingPath} />,
+    },
+    {
+      id: 'description',
+      label: 'Description',
+      isRowHeader: false,
+      isSortable: false,
+      cell: item => <CellText title={item.description ?? ''} />,
+    },
+    {
+      id: 'actions',
+      label: '',
+      isRowHeader: false,
+      isSortable: false,
+      cell: item => (
+        <CellText
+          style={{ textAlign: 'end' }}
+          title=""
+          leadingIcon={
+            <MenuTrigger>
+              <ButtonIcon
+                icon={<MoreVert fontSize="small" />}
+                aria-label="actions"
+                variant="tertiary"
+                size="small"
+              />
+              <Menu>
+                <MenuItem
+                  iconStart={<Edit fontSize="small" />}
+                  onAction={() => handleOpenModal(item)}
+                >
+                  Edit
+                </MenuItem>
+              </Menu>
+            </MenuTrigger>
+          }
+        />
+      ),
+    },
+  ], [handleOpenModal]);
 
   return (
-    <Box className={classes.root}>
-      {/* Data Sync header */}
-      <Flex align="start" justify="between" style={{ marginBottom: 16 }}>
-        <Text as="h2" className={classes.title}>
-          Data Sync
-        </Text>
-        <Button variant="secondary" onClick={handleStartDataSync}>
-          Start Data Sync
-        </Button>
-      </Flex>
-
-      <hr className={classes.divider} />
-
-      {/* Custom Fields / Activity Logs tabs */}
-      <Flex align="center" justify="between" className={classes.tabsRow}>
-        <Flex gap="4" align="center">
-          <Text as="p" className={classes.tabActive}>
-            Custom Fields
-          </Text>
-          <Text as="p" className={classes.tabInactive}>
-            Activity Logs
-          </Text>
+    <Card>
+      <CardBody>
+        <Flex align="start" justify="between" style={{ marginBottom: 16 }}>
+          <Text variant="title-medium" style={{ fontWeight: 700 }}>Data Sync</Text>
+          <Button variant="secondary" onClick={handleStartDataSync}>
+            Start Data Sync
+          </Button>
         </Flex>
-      </Flex>
 
-      {/* Manage row */}
-      <Flex align="center" justify="between" className={classes.manageRow}>
-        <Text as="p" className={classes.manageText}>
-          Manage your custom fields
-        </Text>
-        <Button variant="secondary" size="small" onClick={() => handleOpenModal()}>
-          + Add New
-        </Button>
-      </Flex>
+        <hr style={{ border: 'none', borderTop: '1px solid rgba(0,0,0,0.12)', margin: '0 0 16px 0' }} />
 
-      {error?.general && (
-        <Box className={classes.errorBox}>
-          <Text className={classes.errorText}>{error.general}</Text>
-        </Box>
-      )}
-
-      {/* Table */}
-      <Box className={classes.tableWrapper}>
-        {loading ? (
-          <Flex direction="column" gap="2" className={classes.loadingContainer}>
-            <Skeleton />
-            <Skeleton />
-            <Skeleton />
+        <Flex align="center" justify="between" style={{ marginBottom: 12 }}>
+          <Flex gap="4" align="center">
+            <Text as="p" style={{ margin: 0, fontWeight: 700, borderBottom: '2px solid currentColor', paddingBottom: 4, cursor: 'default' }}>
+              Custom Fields
+            </Text>
+            <Text as="p" style={{ margin: 0, opacity: 0.6, cursor: 'default' }}>
+              Activity Logs
+            </Text>
           </Flex>
-        ) : (
-          <Table aria-label="Custom fields">
-            <TableHeader columns={COLUMNS}>
-              {col => (
-                <Column key={col.id} id={col.id} isRowHeader={col.isRowHeader} width={col.width}>
-                  {col.label}
-                </Column>
-              )}
-            </TableHeader>
-            <TableBody
-              items={customFields}
-              renderEmptyState={() => 'No custom fields have been added'}
-            >
-              {item => (
-                <Row key={item.id} id={item.id} columns={COLUMNS}>
-                  {col =>
-                    col.id === 'actions' ? (
-                      <Cell key={col.id} className={classes.actionsCell}>
-                        <MenuTrigger>
-                          <ButtonIcon
-                            icon={<RiMoreLine />}
-                            aria-label="actions"
-                            variant="tertiary"
-                            size="small"
-                          />
-                          <Menu>
-                            <MenuItem
-                              iconStart={<RiEditLine />}
-                              onAction={() => handleOpenModal(item)}
-                            >
-                              Edit
-                            </MenuItem>
-                          </Menu>
-                        </MenuTrigger>
-                      </Cell>
-                    ) : (
-                      <CellText
-                        key={col.id}
-                        title={getCellContent(item, col.id)}
-                      />
-                    )
-                  }
-                </Row>
-              )}
-            </TableBody>
-          </Table>
+        </Flex>
+
+        <Flex align="center" justify="between" style={{ marginBottom: 12 }}>
+          <Text as="p" style={{ margin: 0, opacity: 0.7 }}>Manage your custom fields</Text>
+          <Button variant="secondary" size="small" onClick={() => handleOpenModal()}>
+            + Add New
+          </Button>
+        </Flex>
+
+        {error?.general && (
+          <Text style={{ color: 'red', marginBottom: 12 }}>{error.general}</Text>
         )}
-      </Box>
 
-      {/* Custom Field Modal */}
-      <CustomFieldModal
-        open={isEditModalOpen || isModalOpen}
-        saving={isEditModalOpen ? editSaving : saving}
-        error={isEditModalOpen ? editError : error}
-        onClose={isEditModalOpen ? handleCloseEditModal : handleCloseModal}
-        onSave={isEditModalOpen ? handleUpdateCustomField : handleSaveCustomField}
-        mode={isEditModalOpen ? 'edit' : 'add'}
-        initialValues={
-          selectedCustomField
-            ? {
-                name: selectedCustomField.pagerdutyCustomFieldDisplayName,
-                entityPath: selectedCustomField.backstageEntityMappingPath,
-                description: selectedCustomField.description ?? '',
-              }
-            : undefined
-        }
-      />
+        {loading ? (
+          <TableSkeleton />
+        ) : (
+          <Table
+            columnConfig={columnConfig}
+            {...tableProps}
+            emptyState={<Text>No custom fields have been added</Text>}
+          />
+        )}
 
-      <Flex justify="end" className={classes.footer}>
-        <Button variant="primary" onClick={handleSave} isDisabled>
-          Save
-        </Button>
-      </Flex>
-    </Box>
+        <CustomFieldModal
+          open={isEditModalOpen || isModalOpen}
+          saving={isEditModalOpen ? editSaving : saving}
+          error={isEditModalOpen ? editError : error}
+          onClose={isEditModalOpen ? handleCloseEditModal : handleCloseModal}
+          onSave={isEditModalOpen ? handleUpdateCustomField : handleSaveCustomField}
+          mode={isEditModalOpen ? 'edit' : 'add'}
+          initialValues={
+            selectedCustomField
+              ? {
+                  name: selectedCustomField.pagerdutyCustomFieldDisplayName,
+                  entityPath: selectedCustomField.backstageEntityMappingPath,
+                  description: selectedCustomField.description ?? '',
+                }
+              : undefined
+          }
+        />
+
+        <Flex justify="end" style={{ marginTop: 16 }}>
+          <Button variant="primary" onClick={handleSave} isDisabled>
+            Save
+          </Button>
+        </Flex>
+      </CardBody>
+    </Card>
   );
 };
