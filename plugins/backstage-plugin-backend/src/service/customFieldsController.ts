@@ -189,7 +189,7 @@ export class CustomFieldsController {
         } catch (rollbackError) {
           this.logger.error(
             `CRITICAL: Failed to rollback Backstage record (id=${id}) after PagerDuty failure. Manual intervention required.`,
-            rollbackError as Error,
+            rollbackError,
           );
         }
 
