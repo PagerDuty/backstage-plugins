@@ -21,6 +21,20 @@ import { BackstageCustomField } from '@pagerduty/backstage-plugin-common';
 import { CustomFieldModal, FieldErrors } from './CustomFieldModal';
 import { TableSkeleton } from './MappingsTable/TableSkeleton';
 
+const styles = {
+  header: { marginBottom: 16 },
+  title: { fontWeight: 700 },
+  divider: { border: 'none', borderTop: '1px solid rgba(0,0,0,0.12)', margin: '0 0 16px 0' },
+  tabsRow: { marginBottom: 12 },
+  activeTab: { margin: 0, fontWeight: 700, borderBottom: '2px solid currentColor', paddingBottom: 4, cursor: 'default' },
+  inactiveTab: { margin: 0, opacity: 0.6, cursor: 'default' },
+  subheader: { marginBottom: 12 },
+  subheaderText: { margin: 0, opacity: 0.7 },
+  errorText: { color: 'red', marginBottom: 12 },
+  actionsCell: { textAlign: 'end' },
+  footer: { marginTop: 16 },
+};
+
 /** @public */
 export const CustomFieldsTab = () => {
   const pagerDutyApi = useApi(pagerDutyApiRef);
@@ -202,7 +216,6 @@ export const CustomFieldsTab = () => {
       isSortable: false,
       cell: item => (
         <CellText
-          style={{ textAlign: 'end' }}
           title=""
           leadingIcon={
             <MenuTrigger>
@@ -230,35 +243,35 @@ export const CustomFieldsTab = () => {
   return (
     <Card>
       <CardBody>
-        <Flex align="start" justify="between" style={{ marginBottom: 16 }}>
-          <Text variant="title-medium" style={{ fontWeight: 700 }}>Data Sync</Text>
+        <Flex align="start" justify="between" style={styles.header}>
+          <Text variant="title-medium" style={styles.title}>Data Sync</Text>
           <Button variant="secondary" onClick={handleStartDataSync}>
             Start Data Sync
           </Button>
         </Flex>
 
-        <hr style={{ border: 'none', borderTop: '1px solid rgba(0,0,0,0.12)', margin: '0 0 16px 0' }} />
+        <hr style={styles.divider} />
 
-        <Flex align="center" justify="between" style={{ marginBottom: 12 }}>
+        <Flex align="center" justify="between" style={styles.tabsRow}>
           <Flex gap="4" align="center">
-            <Text as="p" style={{ margin: 0, fontWeight: 700, borderBottom: '2px solid currentColor', paddingBottom: 4, cursor: 'default' }}>
+            <Text as="p" style={styles.activeTab}>
               Custom Fields
             </Text>
-            <Text as="p" style={{ margin: 0, opacity: 0.6, cursor: 'default' }}>
+            <Text as="p" style={styles.inactiveTab}>
               Activity Logs
             </Text>
           </Flex>
         </Flex>
 
-        <Flex align="center" justify="between" style={{ marginBottom: 12 }}>
-          <Text as="p" style={{ margin: 0, opacity: 0.7 }}>Manage your custom fields</Text>
+        <Flex align="center" justify="between" style={styles.subheader}>
+          <Text as="p" style={styles.subheaderText}>Manage your custom fields</Text>
           <Button variant="secondary" size="small" onClick={() => handleOpenModal()}>
             + Add New
           </Button>
         </Flex>
 
         {error?.general && (
-          <Text style={{ color: 'red', marginBottom: 12 }}>{error.general}</Text>
+          <Text style={styles.errorText}>{error.general}</Text>
         )}
 
         {loading ? (
@@ -289,7 +302,7 @@ export const CustomFieldsTab = () => {
           }
         />
 
-        <Flex justify="end" style={{ marginTop: 16 }}>
+        <Flex justify="end" style={styles.footer}>
           <Button variant="primary" onClick={handleSave} isDisabled>
             Save
           </Button>
