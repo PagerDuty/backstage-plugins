@@ -14,12 +14,20 @@ import {
   getServiceStandards,
   getServiceMetrics,
   getAllServices,
+  getAllTeams,
+  getFilteredServices,
   loadPagerDutyEndpointsFromConfig,
   createServiceIntegration,
   getServiceRelationshipsById,
   addServiceRelationsToService,
   removeServiceRelationsFromService,
 } from '../apis/pagerduty';
+import { loadBothSources, ServiceLoadError } from '../services/dataLoader';
+import {
+  findMatches,
+  filterToBestMatchPerService,
+  type MatchingConfig,
+} from '../services/matchingEngine';
 import {
   HttpError,
   PagerDutyChangeEventsResponse,
@@ -42,10 +50,10 @@ import {
 } from '../db/PagerDutyBackendDatabase';
 import * as express from 'express';
 import Router from 'express-promise-router';
-import type {
-  CatalogApi,
-  GetEntitiesResponse,
-} from '@backstage/catalog-client';
+import type { CatalogApi, GetEntitiesResponse } from '@backstage/catalog-client';
+
+import * as MappingsController from '../controllers/mappings-controller';
+import * as CatalogEntityUtils from '../utils/catalog-entity';
 import { MiddlewareFactory } from '@backstage/backend-defaults/rootHttpRouter';
 
 export interface RouterOptions {
@@ -62,48 +70,6 @@ export type Annotations = {
   'pagerduty.com/service-id': string;
   'pagerduty.com/account': string;
 };
-
-export async function createComponentEntitiesReferenceDict({
-  items: componentEntities,
-}: GetEntitiesResponse): Promise<
-  Record<string, { ref: string; name: string }>
-> {
-  const componentEntitiesDict: Record<string, { ref: string; name: string }> =
-    {};
-
-  await Promise.all(
-    componentEntities.map(async entity => {
-      const serviceId =
-        entity.metadata.annotations?.['pagerduty.com/service-id'];
-      const integrationKey =
-        entity.metadata.annotations?.['pagerduty.com/integration-key'];
-      const account = entity.metadata.annotations?.['pagerduty.com/account'];
-
-      if (serviceId !== undefined && serviceId !== '') {
-        componentEntitiesDict[serviceId] = {
-          ref: `${entity.kind}:${entity.metadata.namespace}/${entity.metadata.name}`.toLowerCase(),
-          name: entity.metadata.name,
-        };
-      } else if (integrationKey !== undefined && integrationKey !== '') {
-        // get service id from integration key, we ignore errors here since we're focused
-        // only on building a mapping between valid service IDs and the corresponding Backstage entity
-        const service = await getServiceByIntegrationKey(
-          integrationKey,
-          account,
-        ).catch(() => undefined);
-
-        if (service !== undefined) {
-          componentEntitiesDict[service.id] = {
-            ref: `${entity.kind}:${entity.metadata.namespace}/${entity.metadata.name}`.toLowerCase(),
-            name: entity.metadata.name,
-          };
-        }
-      }
-    }),
-  );
-
-  return componentEntitiesDict;
-}
 
 export async function buildEntityMappingsResponse(
   entityMappings: RawDbEntityResultRow[],
@@ -279,6 +245,10 @@ export async function createRouter(
   options: RouterOptions,
 ): Promise<express.Router> {
   const { logger, config, store, catalogApi } = options;
+
+  if (!catalogApi) {
+    throw new Error('Catalog API is required to start the PagerDuty plugin backend');
+  }
 
   // Get authentication Config
   await loadAuthConfig(config, logger);
@@ -631,11 +601,154 @@ export async function createRouter(
         response.status(error.status).json({
           errors: [`${error.message}`],
         });
+      } else {
+        logger.error(
+          `Unexpected error occurred while processing request: ${error}`,
+        );
+        response.status(500).json({
+          errors: [error instanceof Error ? error.message : String(error)],
+        });
       }
     }
   });
 
-  // GET /mapping/entity
+  // POST /mapping/entities/bulk
+  router.post('/mapping/entities/bulk', async (request, response) => {
+    try {
+      const { mappings } = request.body;
+
+      if (!Array.isArray(mappings)) {
+        response.status(400).json({
+          error: "Bad Request: 'mappings' must be an array",
+        });
+        return;
+      }
+
+      const existingMappings = await store.getAllEntityMappings();
+      const existingServiceIds = new Set(
+        existingMappings.map(m => m.serviceId),
+      );
+
+      const newMappings: PagerDutyEntityMapping[] = [];
+      const skipped: PagerDutyEntityMapping[] = [];
+      const errors = [];
+
+      for (const entity of mappings) {
+        if (!entity.serviceId) {
+          errors.push({
+            entityRef: entity.entityRef,
+            error: 'Missing serviceId',
+          });
+          continue;
+        }
+
+        if (existingServiceIds.has(entity.serviceId)) {
+          skipped.push(entity);
+          continue;
+        }
+
+        if (
+          entity.entityRef !== '' &&
+          (entity.integrationKey === '' || entity.integrationKey === undefined)
+        ) {
+          try {
+            const backstageVendorId = 'PRO19CT';
+            const service = await getServiceById(
+              entity.serviceId,
+              entity.account,
+            );
+            const backstageIntegration = service.integrations?.find(
+              integration => integration.vendor?.id === backstageVendorId,
+            );
+
+            if (!backstageIntegration) {
+              const integrationKey = await createServiceIntegration({
+                serviceId: entity.serviceId,
+                vendorId: backstageVendorId,
+                account: entity.account,
+              });
+
+              entity.integrationKey = integrationKey;
+            } else {
+              entity.integrationKey = backstageIntegration.integration_key;
+            }
+          } catch (error) {
+            errors.push({
+              entityRef: entity.entityRef,
+              serviceId: entity.serviceId,
+              error:
+                error instanceof Error
+                  ? `Failed to create integration: ${error.message}`
+                  : 'Failed to create integration',
+            });
+            continue;
+          }
+        }
+
+        newMappings.push(entity);
+      }
+
+      let insertedIds: string[] = [];
+      if (newMappings.length > 0) {
+        try {
+          insertedIds = await store.bulkInsertEntityMappings(newMappings);
+
+          await Promise.all(
+            newMappings.map(async entity => {
+              if (entity.entityRef !== '') {
+                await catalogApi?.refreshEntity(entity.entityRef);
+              }
+            }),
+          );
+        } catch (error) {
+          logger.error(`Bulk insert failed: ${error}`);
+          response.status(500).json({
+            errors: ['Bulk insert failed'],
+          });
+          return;
+        }
+      }
+
+      const results = newMappings.map((entity, index) => ({
+        id: insertedIds[index],
+        entityRef: entity.entityRef,
+        integrationKey: entity.integrationKey,
+        serviceId: entity.serviceId,
+        status: entity.status,
+        account: entity.account,
+      }));
+
+      response.json({
+        success: results,
+        skipped: skipped.map(entity => ({
+          entityRef: entity.entityRef,
+          serviceId: entity.serviceId,
+          reason: 'Mapping already exists for this service ID',
+        })),
+        errors: errors,
+        total: mappings.length,
+        successCount: results.length,
+        skippedCount: skipped.length,
+        errorCount: errors.length,
+      });
+    } catch (error) {
+      if (error instanceof HttpError) {
+        logger.error(
+          `Error occurred while processing bulk mappings: ${error.message}`,
+        );
+        response.status(error.status).json({
+          errors: [`${error.message}`],
+        });
+      } else {
+        logger.error(`Unexpected error: ${error}`);
+        response.status(500).json({
+          errors: ['Internal server error'],
+        });
+      }
+    }
+  });
+
+  // DEPRECATED: GET /mapping/entity
   router.get('/mapping/entity', async (_, response) => {
     try {
       // Get all the entity mappings from the database
@@ -652,7 +765,7 @@ export async function createRouter(
       const componentEntitiesDict: Record<
         string,
         { ref: string; name: string }
-      > = await createComponentEntitiesReferenceDict(componentEntities);
+      > = await CatalogEntityUtils.createComponentEntitiesReferenceDict(componentEntities);
 
       // Get all services from PagerDuty
       const pagerDutyServices = await getAllServices();
@@ -675,6 +788,8 @@ export async function createRouter(
       }
     }
   });
+
+  router.post('/mapping/entities', MappingsController.getMappingEntities(store, catalogApi));
 
   // GET /mapping/entity
   router.get(
@@ -756,6 +871,112 @@ export async function createRouter(
       }
     },
   );
+
+  // POST /mapping/entity/auto-match
+  router.post('/mapping/entity/auto-match', async (request, response) => {
+    try {
+      // Default 100% threshold ensures only exact matches, customers can adjust if needed
+      const threshold: number = request.body.threshold ?? 100;
+      const account: string | undefined = request.body.account;
+
+      if (typeof threshold !== 'number' || threshold < 0 || threshold > 100) {
+        response.status(400).json({
+          error: 'Invalid threshold. Must be a number between 0 and 100.',
+        });
+        return;
+      }
+
+      const bestOnly: boolean = request.body.bestOnly ?? false;
+
+      const loadStartTime = Date.now();
+      const { pdServices, bsComponents } = await loadBothSources({
+        catalogApi: catalogApi!,
+      });
+
+      const filteredPdServices = account
+        ? pdServices.filter(service => service.account === account)
+        : pdServices;
+
+      const loadTime = Date.now() - loadStartTime;
+
+      const matchStartTime = Date.now();
+      const matchingConfig: MatchingConfig = { threshold };
+      let matches = findMatches(filteredPdServices, bsComponents, matchingConfig);
+
+      if (bestOnly) {
+        matches = filterToBestMatchPerService(matches);
+      }
+
+      const matchTime = Date.now() - matchStartTime;
+
+      const totalComparisons = filteredPdServices.length * bsComponents.length;
+      const exactMatches = matches.filter(m => m.score === 100).length;
+      const highConfidence = matches.filter(
+        m => m.score >= 90 && m.score < 100,
+      ).length;
+      const mediumConfidence = matches.filter(
+        m => m.score >= 80 && m.score < 90,
+      ).length;
+
+      const getConfidenceLevel = (
+        score: number,
+      ): 'exact' | 'high' | 'medium' | 'low' => {
+        if (score === 100) return 'exact';
+        if (score >= 90) return 'high';
+        if (score >= 80) return 'medium';
+        return 'low';
+      };
+
+      response.json({
+        matches: matches.map(m => ({
+          pagerDutyService: {
+            serviceId: m.pagerDutyService.sourceId,
+            name: m.pagerDutyService.rawName,
+            team: m.pagerDutyService.teamName,
+            account: m.pagerDutyService.account,
+          },
+          backstageComponent: {
+            entityRef: m.backstageComponent.sourceId,
+            name: m.backstageComponent.rawName,
+            owner: m.backstageComponent.teamName,
+          },
+          score: m.score,
+          confidence: getConfidenceLevel(m.score),
+          scoreBreakdown: m.scoreBreakdown,
+        })),
+        statistics: {
+          totalPagerDutyServices: filteredPdServices.length,
+          totalBackstageComponents: bsComponents.length,
+          totalPossibleComparisons: totalComparisons,
+          matchesFound: matches.length,
+          exactMatches,
+          highConfidenceMatches: highConfidence,
+          mediumConfidenceMatches: mediumConfidence,
+          threshold,
+          loadTimeMs: loadTime,
+          matchTimeMs: matchTime,
+          totalTimeMs: loadTime + matchTime,
+        },
+      });
+    } catch (error) {
+      logger.error(`Auto-match failed: ${error}`);
+      if (error instanceof HttpError) {
+        response.status(error.status).json({
+          errors: [`${error.message}`],
+        });
+      } else if (error instanceof ServiceLoadError) {
+        response.status(503).json({
+          error: 'Service temporarily unavailable',
+          message: error.message,
+        });
+      } else {
+        response.status(500).json({
+          error: 'Auto-match failed',
+          message: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+  });
 
   // GET /escalation_policies
   router.get('/escalation_policies', async (_, response) => {
@@ -855,36 +1076,80 @@ export async function createRouter(
     }
   });
 
-  // GET /services?integration_key=:integrationKey
-  router.get('/services', async (request, response) => {
+  // GET /teams?account=:account
+  router.get('/teams', async (request, response) => {
     try {
-      // Get the serviceId from the request parameters
-      const integrationKey: string =
-        (request.query.integration_key as string) || '';
-      const account = (request.query.account as string) || '';
-
-      if (integrationKey !== '') {
-        const service = await getServiceByIntegrationKey(
-          integrationKey,
-          account,
-        );
-        const serviceResponse: PagerDutyServiceResponse = {
-          service: service,
-        };
-
-        response.json(serviceResponse);
-      } else {
-        const services = await getAllServices();
-        const servicesResponse: PagerDutyServicesResponse = {
-          services: services,
-        };
-
-        response.json(servicesResponse);
-      }
+      const account = request.query.account as string | undefined;
+      const teams = await getAllTeams(account);
+      response.json(teams);
     } catch (error) {
       if (error instanceof HttpError) {
         response.status(error.status).json({
           errors: [`${error.message}`],
+        });
+      }
+    }
+  });
+
+
+  // GET /services - Unified endpoint for all service queries
+  // Query params:
+  //   - integration_key: fetch service by integration key
+  //   - team_id, query, limit, account: fetch filtered services
+  //   - no params: fetch all services
+  router.get('/services', async (request, response) => {
+    try {
+      const integrationKey = request.query.integration_key as string | undefined;
+      const teamId = request.query.team_id as string | undefined;
+      const query = request.query.query as string | undefined;
+      const limit = request.query.limit
+        ? parseInt(request.query.limit as string, 10)
+        : undefined;
+      const account = request.query.account as string | undefined;
+
+      // Case 1: Fetch by integration key
+      if (integrationKey) {
+        const service = await getServiceByIntegrationKey(
+          integrationKey,
+          account || '',
+        );
+        const serviceResponse: PagerDutyServiceResponse = {
+          service: service,
+        };
+        response.json(serviceResponse);
+        return;
+      }
+
+      // Case 2: Fetch filtered services (if team_id, query, or limit provided)
+      if (teamId || query || limit) {
+        const teamIdsArray: string[] | undefined = teamId ? [teamId] : undefined;
+        const services = await getFilteredServices(
+          teamIdsArray,
+          query,
+          limit || 100,
+          account,
+        );
+        response.json(services);
+        return;
+      }
+
+      // Case 3: Fetch all services (default)
+      const services = await getAllServices();
+      const servicesResponse: PagerDutyServicesResponse = {
+        services: services,
+      };
+      response.json(servicesResponse);
+    } catch (error) {
+      if (error instanceof HttpError) {
+        response.status(error.status).json({
+          errors: [`${error.message}`],
+        });
+      } else {
+        logger.error(
+          `Unexpected error occurred while processing request: ${error}`,
+        );
+        response.status(500).json({
+          errors: [error instanceof Error ? error.message : String(error)],
         });
       }
     }
@@ -1017,6 +1282,31 @@ export async function createRouter(
           errors: [`${error.message}`],
         });
       }
+    }
+  });
+
+  // GET /accounts
+  router.get('/accounts', async (_, response) => {
+    try {
+      const accountsConfig = config.getOptional('pagerDuty.accounts') as
+        | Array<{
+            id: string;
+            isDefault?: boolean;
+          }>
+        | undefined;
+
+      if (accountsConfig && accountsConfig.length > 0) {
+        const accounts = accountsConfig.map(account => ({
+          id: account.id,
+          isDefault: account.isDefault || false,
+        }));
+        response.status(200).json({ accounts });
+      } else {
+        response.status(200).json({ accounts: [] });
+      }
+    } catch (error) {
+      logger.error(`Failed to get accounts: ${error}`);
+      response.status(500).json({ error: 'Failed to get accounts' });
     }
   });
 

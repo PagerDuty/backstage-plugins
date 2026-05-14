@@ -1,5 +1,28 @@
 # @backstage/plugin-pagerduty
 
+## 0.19.0
+
+### Minor Changes
+
+- ae2a9c3: Refactor the service mappings screen and add an auto-matching functionality to mass map PagerDuty service to Backstage entities
+
+### Patch Changes
+
+- Updated dependencies [ae2a9c3]
+  - @pagerduty/backstage-plugin-common@0.3.0
+
+## 0.18.0
+
+### Minor Changes
+
+- 6bb3cca: Add capability to unmap PagerDuty service mappings when service is deleted or recreated. Fixes issue where Backstage services mapped to deleted PagerDuty services cannot be remapped to new services. Includes an "Unmap Service" button in the ServiceNotFoundError component to clean up stale mappings.
+
+### Patch Changes
+
+- 47afbbc: Make changesets mandatory for all the packages
+- Updated dependencies [47afbbc]
+  - @pagerduty/backstage-plugin-common@0.2.6
+
 ## 0.17.1
 
 ### Patch Changes

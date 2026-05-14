@@ -1,0 +1,955 @@
+// eslint-disable-next-line @backstage/no-undeclared-imports
+import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { renderInTestApp, TestApiRegistry } from '@backstage/test-utils';
+import { pagerDutyApiRef } from '../../../api';
+import MappingsTable from './MappingsTable';
+import { ApiProvider } from '@backstage/core-app-api';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { catalogApiRef } from '@backstage/plugin-catalog-react';
+import { AccountProvider } from '../AccountContext';
+
+describe('MappingsTable', () => {
+  beforeAll(() => {
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      value: jest.fn().mockImplementation(query => ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addListener: jest.fn(),
+        removeListener: jest.fn(),
+        addEventListener: jest.fn(),
+        removeEventListener: jest.fn(),
+        dispatchEvent: jest.fn(),
+      })),
+    });
+  });
+
+  const mockGetEntityMappingsWithPagination = jest.fn();
+  const mockGetAccounts = jest.fn();
+  const mockPagerDutyApi = {
+    getEntityMappingsWithPagination: mockGetEntityMappingsWithPagination,
+    getAccounts: mockGetAccounts,
+  };
+
+  const mockCatalogApi = {
+    getEntities: jest.fn(),
+  };
+
+  const apis = TestApiRegistry.from(
+    [pagerDutyApiRef, mockPagerDutyApi],
+    [catalogApiRef, mockCatalogApi],
+  );
+
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: false,
+      },
+    },
+  });
+
+  beforeEach(() => {
+    mockGetAccounts.mockResolvedValue([
+      { id: 'test-account', isDefault: true },
+    ]);
+  });
+
+  it('renders entities when API returns data', async () => {
+    const mockEntities = [
+      {
+        id: 'entity-1',
+        name: 'my-service',
+        namespace: 'default',
+        type: 'service',
+        system: 'core-platform',
+        owner: 'team-platform',
+        lifecycle: 'production',
+        annotations: {
+          'pagerduty.com/integration-key': 'int-key-123',
+          'pagerduty.com/service-id': 'PD123',
+        },
+        serviceName: 'My Service PD',
+        serviceUrl: 'https://pagerduty.com/services/PD123',
+        team: 'Platform Team',
+        escalationPolicy: 'Default',
+        status: 'InSync' as const,
+        account: 'my-account',
+      },
+      {
+        id: 'entity-2',
+        name: 'another-service',
+        namespace: 'default',
+        type: 'service',
+        system: 'payments',
+        owner: 'team-payments',
+        lifecycle: 'production',
+        annotations: {
+          'pagerduty.com/integration-key': 'int-key-456',
+          'pagerduty.com/service-id': 'PD456',
+        },
+        serviceName: 'Another Service PD',
+        serviceUrl: 'https://pagerduty.com/services/PD456',
+        team: 'Payments Team',
+        escalationPolicy: 'Critical',
+        status: 'NotMapped' as const,
+        account: 'my-account',
+      },
+    ];
+
+    mockGetEntityMappingsWithPagination.mockResolvedValue({
+      entities: mockEntities,
+      totalCount: 2,
+    });
+
+    await renderInTestApp(
+      <ApiProvider apis={apis}>
+        <QueryClientProvider client={queryClient}>
+          <AccountProvider>
+            <MappingsTable />
+          </AccountProvider>
+        </QueryClientProvider>
+      </ApiProvider>,
+    );
+
+    expect(screen.getByText('my-service')).toBeInTheDocument();
+    expect(screen.getByText('another-service')).toBeInTheDocument();
+    expect(screen.getByText('team-platform')).toBeInTheDocument();
+    expect(screen.getByText('team-payments')).toBeInTheDocument();
+  });
+
+  it('renders different status values correctly', async () => {
+    const mockEntities = [
+      {
+        id: 'entity-1',
+        name: 'in-sync-service',
+        namespace: 'default',
+        type: 'service',
+        system: 'core',
+        owner: 'team-a',
+        lifecycle: 'production',
+        annotations: {
+          'pagerduty.com/integration-key': 'key-1',
+          'pagerduty.com/service-id': 'PD1',
+        },
+        status: 'InSync' as const,
+      },
+      {
+        id: 'entity-2',
+        name: 'out-of-sync-service',
+        namespace: 'default',
+        type: 'service',
+        system: 'core',
+        owner: 'team-b',
+        lifecycle: 'production',
+        annotations: {
+          'pagerduty.com/integration-key': 'key-2',
+          'pagerduty.com/service-id': 'PD2',
+        },
+        status: 'OutOfSync' as const,
+      },
+      {
+        id: 'entity-3',
+        name: 'not-mapped-service',
+        namespace: 'default',
+        type: 'service',
+        system: 'core',
+        owner: 'team-c',
+        lifecycle: 'production',
+        annotations: {
+          'pagerduty.com/integration-key': 'key-3',
+          'pagerduty.com/service-id': 'PD3',
+        },
+        status: 'NotMapped' as const,
+      },
+      {
+        id: 'entity-4',
+        name: 'error-service',
+        namespace: 'default',
+        type: 'service',
+        system: 'core',
+        owner: 'team-d',
+        lifecycle: 'production',
+        annotations: {
+          'pagerduty.com/integration-key': 'key-4',
+          'pagerduty.com/service-id': 'PD4',
+        },
+        status: 'ErrorWhenFetchingService' as const,
+      },
+    ];
+
+    mockGetEntityMappingsWithPagination.mockResolvedValue({
+      entities: mockEntities,
+      totalCount: 4,
+    });
+
+    await renderInTestApp(
+      <ApiProvider apis={apis}>
+        <QueryClientProvider client={queryClient}>
+          <AccountProvider>
+            <MappingsTable />
+          </AccountProvider>
+        </QueryClientProvider>
+      </ApiProvider>,
+    );
+
+    expect(screen.getByText('In Sync')).toBeInTheDocument();
+    expect(screen.getByText('Out of Sync')).toBeInTheDocument();
+    expect(screen.getByText('Not Mapped')).toBeInTheDocument();
+    expect(
+      screen.getByText('Error occured while fetching service'),
+    ).toBeInTheDocument();
+  });
+
+  it('calls API with correct search parameters when search is performed', async () => {
+    jest.useFakeTimers();
+    mockGetEntityMappingsWithPagination.mockResolvedValue({
+      entities: [],
+      totalCount: 0,
+    });
+
+    await renderInTestApp(
+      <ApiProvider apis={apis}>
+        <QueryClientProvider client={queryClient}>
+          <AccountProvider>
+            <MappingsTable />
+          </AccountProvider>
+        </QueryClientProvider>
+      </ApiProvider>,
+    );
+
+    const filterButton = screen.getByRole('button', { name: 'Toggle filters' });
+    fireEvent.click(filterButton);
+
+    const serviceFilter = screen.getByPlaceholderText('Filter by name');
+    fireEvent.change(serviceFilter, { target: { value: 'my-component' } });
+
+    jest.advanceTimersByTime(500);
+
+    await waitFor(() => {
+      expect(mockGetEntityMappingsWithPagination).toHaveBeenCalledWith({
+        offset: 0,
+        limit: 10,
+        filters: {
+          name: 'my-component',
+          serviceName: '',
+          status: '',
+          teamName: '',
+        },
+        sort: undefined,
+        account: 'test-account',
+      });
+    });
+
+    jest.useRealTimers();
+  });
+
+  it('handles pagination correctly when navigating pages', async () => {
+    const mockEntities = Array.from({ length: 10 }, (_, i) => ({
+      id: `entity-${i}`,
+      name: `service-${i}`,
+      namespace: 'default',
+      type: 'service',
+      system: 'core',
+      owner: `team-${i}`,
+      lifecycle: 'production',
+      annotations: {
+        'pagerduty.com/integration-key': `key-${i}`,
+        'pagerduty.com/service-id': `PD${i}`,
+      },
+      status: 'InSync' as const,
+    }));
+
+    mockGetEntityMappingsWithPagination.mockResolvedValue({
+      entities: mockEntities,
+      totalCount: 25,
+    });
+
+    await renderInTestApp(
+      <ApiProvider apis={apis}>
+        <QueryClientProvider client={queryClient}>
+          <AccountProvider>
+            <MappingsTable />
+          </AccountProvider>
+        </QueryClientProvider>
+      </ApiProvider>,
+    );
+
+    expect(mockGetEntityMappingsWithPagination).toHaveBeenCalledWith({
+      offset: 0,
+      limit: 10,
+      filters: {
+        name: '',
+        serviceName: '',
+        status: '',
+        teamName: '',
+      },
+      sort: undefined,
+      account: 'test-account',
+    });
+
+    expect(screen.getByText('1 - 10 of 25')).toBeInTheDocument();
+
+    const nextButton = screen.getByLabelText('Next table page');
+    fireEvent.click(nextButton);
+
+    await waitFor(() => {
+      expect(mockGetEntityMappingsWithPagination).toHaveBeenCalledWith({
+        offset: 10,
+        limit: 10,
+        filters: {
+          name: '',
+          serviceName: '',
+          status: '',
+          teamName: '',
+          },
+        sort: undefined,
+        account: 'test-account',
+      });
+    });
+
+    const previousButton = screen.getByLabelText('Previous table page');
+    fireEvent.click(previousButton);
+
+    await waitFor(() => {
+      expect(mockGetEntityMappingsWithPagination).toHaveBeenCalledWith({
+        offset: 0,
+        limit: 10,
+        filters: {
+          name: '',
+          serviceName: '',
+          status: '',
+          teamName: '',
+          },
+        sort: undefined,
+        account: 'test-account',
+      });
+    });
+  });
+
+  it('calls API with correct filter parameters when filters are applied', async () => {
+    jest.useFakeTimers();
+    mockGetEntityMappingsWithPagination.mockResolvedValue({
+      entities: [],
+      totalCount: 0,
+    });
+
+    await renderInTestApp(
+      <ApiProvider apis={apis}>
+        <QueryClientProvider client={queryClient}>
+          <AccountProvider>
+            <MappingsTable />
+          </AccountProvider>
+        </QueryClientProvider>
+      </ApiProvider>,
+    );
+
+    const filterButton = screen.getByRole('button', { name: 'Toggle filters' });
+    fireEvent.click(filterButton);
+
+    const nameFilter = screen.getByPlaceholderText('Filter by name');
+    fireEvent.change(nameFilter, { target: { value: 'test-service' } });
+
+    // wait because of the debounce
+    jest.advanceTimersByTime(500);
+
+    await waitFor(() => {
+      expect(mockGetEntityMappingsWithPagination).toHaveBeenCalledWith(
+        expect.objectContaining({
+          filters: expect.objectContaining({
+            name: 'test-service',
+          }),
+        }),
+      );
+    });
+
+    jest.useRealTimers();
+  });
+
+  it('resets offset to 0 when filters change', async () => {
+    jest.useFakeTimers();
+    const mockEntities = Array.from({ length: 10 }, (_, i) => ({
+      id: `entity-${i}`,
+      name: `service-${i}`,
+      namespace: 'default',
+      type: 'service',
+      system: 'core',
+      owner: `team-${i}`,
+      lifecycle: 'production',
+      annotations: {
+        'pagerduty.com/integration-key': `key-${i}`,
+        'pagerduty.com/service-id': `PD${i}`,
+      },
+      status: 'InSync' as const,
+    }));
+
+    mockGetEntityMappingsWithPagination.mockResolvedValue({
+      entities: mockEntities,
+      totalCount: 25,
+    });
+
+    await renderInTestApp(
+      <ApiProvider apis={apis}>
+        <QueryClientProvider client={queryClient}>
+          <AccountProvider>
+            <MappingsTable />
+          </AccountProvider>
+        </QueryClientProvider>
+      </ApiProvider>,
+    );
+
+    // Wait for initial data to load
+    await waitFor(() => {
+      expect(screen.getByText('service-0')).toBeInTheDocument();
+    });
+
+    const nextButton = screen.getByLabelText('Next table page');
+    fireEvent.click(nextButton);
+
+    await waitFor(() => {
+      expect(mockGetEntityMappingsWithPagination).toHaveBeenCalledWith(
+        expect.objectContaining({
+          offset: 10,
+        }),
+      );
+    });
+
+    const filterButton = screen.getByRole('button', { name: 'Toggle filters' });
+    fireEvent.click(filterButton);
+
+    // Wait for filter inputs to appear
+    await waitFor(() => {
+      expect(
+        screen.getByPlaceholderText('Filter by service'),
+      ).toBeInTheDocument();
+    });
+
+    const serviceFilter = screen.getByPlaceholderText('Filter by service');
+    fireEvent.change(serviceFilter, { target: { value: 'pagerduty-service' } });
+
+    // wait because of the debounce
+    jest.advanceTimersByTime(500);
+
+    await waitFor(() => {
+      expect(mockGetEntityMappingsWithPagination).toHaveBeenCalledWith(
+        expect.objectContaining({
+          offset: 0,
+          filters: expect.objectContaining({
+            serviceName: 'pagerduty-service',
+              }),
+        }),
+      );
+    });
+
+    jest.useRealTimers();
+  });
+
+  it('calls API with correct teamName filter when team filter is applied', async () => {
+    jest.useFakeTimers();
+    mockGetEntityMappingsWithPagination.mockResolvedValue({
+      entities: [],
+      totalCount: 0,
+    });
+
+    await renderInTestApp(
+      <ApiProvider apis={apis}>
+        <QueryClientProvider client={queryClient}>
+          <AccountProvider>
+            <MappingsTable />
+          </AccountProvider>
+        </QueryClientProvider>
+      </ApiProvider>,
+    );
+
+    const filterButton = screen.getByRole('button', { name: 'Toggle filters' });
+    fireEvent.click(filterButton);
+
+    const teamFilter = screen.getByPlaceholderText('Filter by team');
+    fireEvent.change(teamFilter, { target: { value: 'team-platform' } });
+
+    // wait because of the debounce
+    jest.advanceTimersByTime(500);
+
+    await waitFor(() => {
+      expect(mockGetEntityMappingsWithPagination).toHaveBeenCalledWith(
+        expect.objectContaining({
+          filters: expect.objectContaining({
+            teamName: 'team-platform',
+          }),
+        }),
+      );
+    });
+
+    jest.useRealTimers();
+  });
+
+  it('renders all filter fields when filters are shown', async () => {
+    mockGetEntityMappingsWithPagination.mockResolvedValue({
+      entities: [],
+      totalCount: 0,
+    });
+
+    await renderInTestApp(
+      <ApiProvider apis={apis}>
+        <QueryClientProvider client={queryClient}>
+          <AccountProvider>
+            <MappingsTable />
+          </AccountProvider>
+        </QueryClientProvider>
+      </ApiProvider>,
+    );
+
+    const filterButton = screen.getByRole('button', { name: 'Toggle filters' });
+    fireEvent.click(filterButton);
+
+    expect(screen.getByPlaceholderText('Filter by name')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Filter by team')).toBeInTheDocument();
+    expect(
+      screen.getByPlaceholderText('Filter by service'),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText('All Statuses')).toBeInTheDocument();
+  });
+
+
+  describe('sorting', () => {
+    it('calls API with sort parameter when Name column header is clicked', async () => {
+      mockGetEntityMappingsWithPagination.mockResolvedValue({
+        entities: [],
+        totalCount: 0,
+      });
+
+      await renderInTestApp(
+        <ApiProvider apis={apis}>
+          <QueryClientProvider client={queryClient}>
+            <AccountProvider>
+              <MappingsTable />
+            </AccountProvider>
+          </QueryClientProvider>
+        </ApiProvider>,
+      );
+
+      const nameColumnHeader = screen.getByText('Name');
+      fireEvent.click(nameColumnHeader);
+
+      await waitFor(() => {
+        expect(mockGetEntityMappingsWithPagination).toHaveBeenCalledWith(
+          expect.objectContaining({
+            sort: { column: 'name', direction: 'ascending' },
+          }),
+        );
+      });
+    });
+
+    it('toggles sort direction when clicking the same column header twice', async () => {
+      mockGetEntityMappingsWithPagination.mockResolvedValue({
+        entities: [],
+        totalCount: 0,
+      });
+
+      await renderInTestApp(
+        <ApiProvider apis={apis}>
+          <QueryClientProvider client={queryClient}>
+            <AccountProvider>
+              <MappingsTable />
+            </AccountProvider>
+          </QueryClientProvider>
+        </ApiProvider>,
+      );
+
+      const nameColumnHeader = screen.getByText('Name');
+
+      // First click - ascending
+      fireEvent.click(nameColumnHeader);
+
+      await waitFor(() => {
+        expect(mockGetEntityMappingsWithPagination).toHaveBeenCalledWith(
+          expect.objectContaining({
+            sort: { column: 'name', direction: 'ascending' },
+          }),
+        );
+      });
+
+      // Second click - descending
+      fireEvent.click(nameColumnHeader);
+
+      await waitFor(() => {
+        expect(mockGetEntityMappingsWithPagination).toHaveBeenCalledWith(
+          expect.objectContaining({
+            sort: { column: 'name', direction: 'descending' },
+          }),
+        );
+      });
+    });
+
+    it('calls API with sort parameter when Team column header is clicked', async () => {
+      mockGetEntityMappingsWithPagination.mockResolvedValue({
+        entities: [],
+        totalCount: 0,
+      });
+
+      await renderInTestApp(
+        <ApiProvider apis={apis}>
+          <QueryClientProvider client={queryClient}>
+            <AccountProvider>
+              <MappingsTable />
+            </AccountProvider>
+          </QueryClientProvider>
+        </ApiProvider>,
+      );
+
+      const teamColumnHeader = screen.getByText('Team');
+      fireEvent.click(teamColumnHeader);
+
+      await waitFor(() => {
+        expect(mockGetEntityMappingsWithPagination).toHaveBeenCalledWith(
+          expect.objectContaining({
+            sort: { column: 'team', direction: 'ascending' },
+          }),
+        );
+      });
+    });
+
+    it('calls API with sort parameter when PagerDuty service column header is clicked', async () => {
+      mockGetEntityMappingsWithPagination.mockResolvedValue({
+        entities: [],
+        totalCount: 0,
+      });
+
+      await renderInTestApp(
+        <ApiProvider apis={apis}>
+          <QueryClientProvider client={queryClient}>
+            <AccountProvider>
+              <MappingsTable />
+            </AccountProvider>
+          </QueryClientProvider>
+        </ApiProvider>,
+      );
+
+      const serviceColumnHeader = screen.getByText('PagerDuty service');
+      fireEvent.click(serviceColumnHeader);
+
+      await waitFor(() => {
+        expect(mockGetEntityMappingsWithPagination).toHaveBeenCalledWith(
+          expect.objectContaining({
+            sort: { column: 'serviceName', direction: 'ascending' },
+          }),
+        );
+      });
+    });
+
+    it('calls API with sort parameter when Status column header is clicked', async () => {
+      mockGetEntityMappingsWithPagination.mockResolvedValue({
+        entities: [],
+        totalCount: 0,
+      });
+
+      await renderInTestApp(
+        <ApiProvider apis={apis}>
+          <QueryClientProvider client={queryClient}>
+            <AccountProvider>
+              <MappingsTable />
+            </AccountProvider>
+          </QueryClientProvider>
+        </ApiProvider>,
+      );
+
+      const statusColumnHeader = screen.getByText('Status');
+      fireEvent.click(statusColumnHeader);
+
+      await waitFor(() => {
+        expect(mockGetEntityMappingsWithPagination).toHaveBeenCalledWith(
+          expect.objectContaining({
+            sort: { column: 'status', direction: 'ascending' },
+          }),
+        );
+      });
+    });
+
+
+    it('switches sort column when clicking different column headers', async () => {
+      mockGetEntityMappingsWithPagination.mockResolvedValue({
+        entities: [],
+        totalCount: 0,
+      });
+
+      await renderInTestApp(
+        <ApiProvider apis={apis}>
+          <QueryClientProvider client={queryClient}>
+            <AccountProvider>
+              <MappingsTable />
+            </AccountProvider>
+          </QueryClientProvider>
+        </ApiProvider>,
+      );
+
+      // Sort by name
+      const nameColumnHeader = screen.getByText('Name');
+      fireEvent.click(nameColumnHeader);
+
+      await waitFor(() => {
+        expect(mockGetEntityMappingsWithPagination).toHaveBeenCalledWith(
+          expect.objectContaining({
+            sort: { column: 'name', direction: 'ascending' },
+          }),
+        );
+      });
+
+      // Switch to sort by team
+      const teamColumnHeader = screen.getByText('Team');
+      fireEvent.click(teamColumnHeader);
+
+      await waitFor(() => {
+        expect(mockGetEntityMappingsWithPagination).toHaveBeenCalledWith(
+          expect.objectContaining({
+            sort: { column: 'team', direction: 'ascending' },
+          }),
+        );
+      });
+    });
+
+    it('resets offset to 0 when sort changes', async () => {
+      const mockEntities = Array.from({ length: 10 }, (_, i) => ({
+        id: `entity-${i}`,
+        name: `service-${i}`,
+        namespace: 'default',
+        type: 'service',
+        system: 'core',
+        owner: `team-${i}`,
+        lifecycle: 'production',
+        annotations: {
+          'pagerduty.com/integration-key': `key-${i}`,
+          'pagerduty.com/service-id': `PD${i}`,
+        },
+        status: 'InSync' as const,
+      }));
+
+      mockGetEntityMappingsWithPagination.mockResolvedValue({
+        entities: mockEntities,
+        totalCount: 25,
+      });
+
+      await renderInTestApp(
+        <ApiProvider apis={apis}>
+          <QueryClientProvider client={queryClient}>
+            <AccountProvider>
+              <MappingsTable />
+            </AccountProvider>
+          </QueryClientProvider>
+        </ApiProvider>,
+      );
+
+      // Navigate to second page
+      const nextButton = screen.getByLabelText('Next table page');
+      fireEvent.click(nextButton);
+
+      await waitFor(() => {
+        expect(mockGetEntityMappingsWithPagination).toHaveBeenCalledWith(
+          expect.objectContaining({
+            offset: 10,
+          }),
+        );
+      });
+
+      // Click sort column - should reset to offset 0
+      const nameColumnHeader = screen.getByText('Name');
+      fireEvent.click(nameColumnHeader);
+
+      await waitFor(() => {
+        expect(mockGetEntityMappingsWithPagination).toHaveBeenCalledWith(
+          expect.objectContaining({
+            offset: 0,
+            sort: { column: 'name', direction: 'ascending' },
+          }),
+        );
+      });
+    });
+
+    it('maintains sort when filters are applied', async () => {
+      jest.useFakeTimers();
+      mockGetEntityMappingsWithPagination.mockResolvedValue({
+        entities: [],
+        totalCount: 0,
+      });
+
+      await renderInTestApp(
+        <ApiProvider apis={apis}>
+          <QueryClientProvider client={queryClient}>
+            <AccountProvider>
+              <MappingsTable />
+            </AccountProvider>
+          </QueryClientProvider>
+        </ApiProvider>,
+      );
+
+      // Apply sort first
+      const nameColumnHeader = screen.getByText('Name');
+      fireEvent.click(nameColumnHeader);
+
+      await waitFor(() => {
+        expect(mockGetEntityMappingsWithPagination).toHaveBeenCalledWith(
+          expect.objectContaining({
+            sort: { column: 'name', direction: 'ascending' },
+          }),
+        );
+      });
+
+      // Apply filter
+      const filterButton = screen.getByRole('button', {
+        name: 'Toggle filters',
+      });
+      fireEvent.click(filterButton);
+
+      const nameFilter = screen.getByPlaceholderText('Filter by name');
+      fireEvent.change(nameFilter, { target: { value: 'test-service' } });
+
+      jest.advanceTimersByTime(500);
+
+      await waitFor(() => {
+        expect(mockGetEntityMappingsWithPagination).toHaveBeenCalledWith(
+          expect.objectContaining({
+            filters: expect.objectContaining({
+              name: 'test-service',
+            }),
+            sort: { column: 'name', direction: 'ascending' },
+          }),
+        );
+      });
+
+      jest.useRealTimers();
+    });
+  });
+
+  describe('Loading states', () => {
+    it('displays skeleton on initial load', async () => {
+      mockGetEntityMappingsWithPagination.mockImplementation(
+        () =>
+          new Promise(resolve => {
+            setTimeout(() => {
+              resolve({
+                entities: [],
+                totalCount: 0,
+              });
+            }, 50);
+          }),
+      );
+
+      await renderInTestApp(
+        <ApiProvider apis={apis}>
+          <QueryClientProvider client={queryClient}>
+            <AccountProvider>
+              <MappingsTable />
+            </AccountProvider>
+          </QueryClientProvider>
+        </ApiProvider>,
+      );
+
+      expect(screen.getByTestId('mappings-table-skeleton')).toBeInTheDocument();
+
+      // Empty state message should not be visible during loading
+      expect(
+        screen.queryByText('No service mappings found'),
+      ).not.toBeInTheDocument();
+
+      // Wait for loading to complete
+      await waitFor(
+        () => {
+          expect(
+            screen.queryByTestId('mappings-table-skeleton'),
+          ).not.toBeInTheDocument();
+          // Empty state message should appear
+          expect(
+            screen.getByText('No service mappings found'),
+          ).toBeInTheDocument();
+        },
+        { timeout: 200 },
+      );
+    });
+
+    it('while loading the next page data goes stale and the rows disabled', async () => {
+      const mockEntities = Array.from({ length: 10 }, (_, i) => ({
+        id: `entity-${i}`,
+        name: `service-${i}`,
+        namespace: 'default',
+        type: 'service',
+        system: 'core',
+        owner: `team-${i}`,
+        lifecycle: 'production',
+        annotations: {
+          'pagerduty.com/integration-key': `key-${i}`,
+          'pagerduty.com/service-id': `PD${i}`,
+        },
+        serviceName: `Service ${i}`,
+        status: 'InSync' as const,
+        account: 'my-account',
+      }));
+
+      mockGetEntityMappingsWithPagination.mockResolvedValueOnce({
+        entities: mockEntities,
+        totalCount: 25,
+      });
+
+      await renderInTestApp(
+        <ApiProvider apis={apis}>
+          <QueryClientProvider client={queryClient}>
+            <AccountProvider>
+              <MappingsTable />
+            </AccountProvider>
+          </QueryClientProvider>
+        </ApiProvider>,
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('service-0')).toBeInTheDocument();
+      });
+
+      // Verify table is not stale initially
+      const table = screen.getByRole('grid');
+      expect(table).not.toHaveAttribute('data-stale', 'true');
+
+      mockGetEntityMappingsWithPagination.mockImplementation(
+        () =>
+          new Promise(resolve => {
+            setTimeout(() => {
+              resolve({
+                entities: mockEntities.map((e, i) => ({
+                  ...e,
+                  id: `entity-${i + 10}`,
+                  name: `service-${i + 10}`,
+                })),
+                totalCount: 25,
+              });
+            }, 100);
+          }),
+      );
+
+      // Click next page
+      const nextButton = screen.getByLabelText('Next table page');
+      fireEvent.click(nextButton);
+
+      // During loading: table should be marked as stale
+      await waitFor(() => {
+        const staleTable = screen.getByRole('grid');
+        expect(staleTable).toHaveAttribute('data-stale', 'true');
+      });
+
+      // Current page data should still be visible (stale state)
+      expect(screen.getByText('service-0')).toBeInTheDocument();
+
+      await waitFor(
+        () => {
+          expect(screen.getByText('service-10')).toBeInTheDocument();
+        },
+        { timeout: 200 },
+      );
+
+      // After loading: table should not be stale anymore
+      await waitFor(() => {
+        const freshTable = screen.getByRole('grid');
+        expect(freshTable).not.toHaveAttribute('data-stale', 'true');
+      });
+
+      // Old data should be gone
+      expect(screen.queryByText('service-0')).not.toBeInTheDocument();
+    });
+  });
+});

@@ -23,8 +23,11 @@ import {
   PagerDutyServiceMetricsResponse,
   PagerDutyServiceStandards,
   PagerDutyServiceMetrics,
-  PagerDutyEntityMappingsResponse,
   PagerDutySetting,
+  PagerDutyService,
+  PagerDutyTeam,
+  PagerDutyEnhancedEntityMappingsResponse,
+  AutoMatchEntityMappingsResponse,
 } from '@pagerduty/backstage-plugin-common';
 import { DiscoveryApi, FetchApi } from '@backstage/core-plugin-api';
 import { Entity } from '@backstage/catalog-model';
@@ -65,10 +68,21 @@ export interface PagerDutyApi {
    */
   storeSettings(settings: PagerDutySetting[]): Promise<Response>;
   /**
-   * Fetches all entity mappings.
+   * Fetches entity mappings with pagination and search support.
    *
    */
-  getEntityMappings(): Promise<PagerDutyEntityMappingsResponse>;
+  getEntityMappingsWithPagination(options: {
+    offset: number;
+    limit: number;
+    filters?: {
+      name?: string;
+      serviceName?: string;
+      status?: string;
+      teamName?: string;
+    };
+    sort?: { column: string; direction: 'ascending' | 'descending' };
+    account?: string;
+  }): Promise<PagerDutyEnhancedEntityMappingsResponse>;
 
   /**
    * Stores the service mapping in the database.
@@ -80,6 +94,37 @@ export interface PagerDutyApi {
     entityRef: string,
     account: string,
   ): Promise<Response>;
+
+  /**
+   * Fetches the service mapping for a specific entity.
+   *
+   */
+  getEntityMapping(entityRef: string): Promise<{
+    mapping: {
+      serviceId: string;
+      integrationKey: string;
+      entityRef: string;
+      account: string;
+    };
+  }>;
+
+  /**
+   * Removes the service mapping for an entity by setting entityRef to empty string.
+   * Uses the same approach as the admin page "None" option.
+   *
+   */
+  removeServiceMapping(entityRef: string): Promise<boolean>;
+  
+  /**  
+  * Stores multiple service mappings in the database.
+  *
+  */
+  storeBulkServiceMappings(mappings: Array<{
+    serviceId: string;
+    integrationKey: string;
+    entityRef: string;
+    account: string;
+  }>): Promise<Response>;
 
   /**
    * Fetches the service for the provided pager duty Entity.
@@ -123,6 +168,34 @@ export interface PagerDutyApi {
   ): Promise<PagerDutyChangeEventsResponse>;
 
   /**
+   * Fetches a list of PagerDuty services.
+   *
+   */
+  getAllServices(): Promise<PagerDutyService[]>;
+
+  /**
+   * Fetches a list of PagerDuty teams.
+   *
+   * @param account - The account ID to filter teams by
+   */
+  getAllTeams(account?: string): Promise<PagerDutyTeam[]>;
+
+  /**
+   * Fetches a filtered list of PagerDuty services.
+   *
+   * @param teamIds - Optional array of team IDs to filter by
+   * @param query - Optional search query for service name or ID
+   * @param limit - Optional maximum number of results (default: 100)
+   * @param account - The account ID to filter services by
+   */
+  getFilteredServices(
+    teamIds?: string[],
+    query?: string,
+    limit?: number,
+    account?: string,
+  ): Promise<PagerDutyService[]>;
+
+  /**
    * Fetches a list of standards for a provided service.
    *
    */
@@ -153,6 +226,20 @@ export interface PagerDutyApi {
    * Triggers an incident to whoever is on-call.
    */
   triggerAlarm(request: PagerDutyTriggerAlarmRequest): Promise<Response>;
+
+  /**
+   * Automatically matches unmapped entities to PagerDuty services.
+   */
+  autoMatchEntityMappings(options: {
+    team?: string;
+    threshold: number;
+    account?: string;
+  }): Promise<AutoMatchEntityMappingsResponse>;
+
+  /**
+   * Fetches the list of configured PagerDuty accounts.
+   */
+  getAccounts(): Promise<Array<{ id: string; isDefault: boolean }>>;
 }
 
 /** @public */

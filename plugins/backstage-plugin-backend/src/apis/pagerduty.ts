@@ -24,6 +24,8 @@ import {
   PagerDutyIntegrationResponse,
   PagerDutyServiceDependency,
   PagerDutyServiceDependencyResponse,
+  PagerDutyTeam,
+  PagerDutyTeamsResponse,
 } from '@pagerduty/backstage-plugin-common';
 
 import { DateTime } from 'luxon';
@@ -41,32 +43,42 @@ const EndpointConfig: Record<string, PagerDutyEndpointConfig> = {};
 let fallbackEndpointConfig: PagerDutyEndpointConfig;
 let isLegacyConfig = false;
 
-export function setFallbackEndpointConfig(account: PagerDutyAccountConfig) {
+const SubdomainConfig: Record<string, string> = {};
+let fallbackSubdomain: string | undefined;
+
+export function setFallbackAccountConfig(account: PagerDutyAccountConfig) {
   fallbackEndpointConfig = {
     eventsBaseUrl: account.eventsBaseUrl ?? 'https://events.pagerduty.com/v2',
     apiBaseUrl: account.apiBaseUrl ?? 'https://api.pagerduty.com',
   };
+
+  if (account.oauth?.subDomain) {
+    fallbackSubdomain = account.oauth.subDomain;
+  }
 }
 
-export function insertEndpointConfig(account: PagerDutyAccountConfig) {
+export function insertAccountConfig(account: PagerDutyAccountConfig) {
   EndpointConfig[account.id] = {
     eventsBaseUrl: account.eventsBaseUrl ?? 'https://events.pagerduty.com/v2',
     apiBaseUrl: account.apiBaseUrl ?? 'https://api.pagerduty.com',
   };
+
+  if (account.oauth?.subDomain) {
+    SubdomainConfig[account.id] = account.oauth.subDomain;
+  }
 }
 
 export function loadPagerDutyEndpointsFromConfig(
   config: RootConfigService,
   logger: LoggerService,
 ) {
-  if (config.getOptional('pagerDuty.accounts')) {
+  const accounts = config.getOptional<PagerDutyAccountConfig[]>('pagerDuty.accounts');
+
+  if (accounts) {
     logger.debug(
       `New accounts configuration detected. Loading PagerDuty endpoints from config.`,
     );
     isLegacyConfig = false;
-
-    const accounts =
-      config.getOptional<PagerDutyAccountConfig[]>('pagerDuty.accounts');
 
     if (accounts?.length === 1) {
       logger.debug(
@@ -82,16 +94,20 @@ export function loadPagerDutyEndpointsFromConfig(
             ? accounts[0].apiBaseUrl
             : 'https://api.pagerduty.com',
       };
+
+      if (accounts[0].oauth?.subDomain) {
+        SubdomainConfig.default = accounts[0].oauth.subDomain;
+      }
     } else {
       logger.debug(
         `Multiple account configuration detected. Loading PagerDuty endpoints from config.`,
       );
       accounts?.forEach(account => {
         if (account.isDefault) {
-          setFallbackEndpointConfig(account);
+          setFallbackAccountConfig(account);
         }
 
-        insertEndpointConfig(account);
+        insertAccountConfig(account);
       });
     }
   } else {
@@ -108,6 +124,12 @@ export function loadPagerDutyEndpointsFromConfig(
           ? config.getString('pagerDuty.apiBaseUrl')
           : 'https://api.pagerduty.com',
     };
+
+    const legacySubdomain = config.getOptionalString('pagerDuty.oauth.subDomain');
+
+    if (legacySubdomain) {
+      SubdomainConfig.default = legacySubdomain;
+    }
   }
 }
 
@@ -123,6 +145,30 @@ function getApiBaseUrl(account?: string): string {
   return fallbackEndpointConfig.apiBaseUrl;
 }
 
+function getSubdomain(account?: string): string {
+  if (isLegacyConfig === true) {
+    return SubdomainConfig.default;
+  }
+
+  if (account && account !== 'default') {
+    return SubdomainConfig[account] ?? fallbackSubdomain ?? SubdomainConfig.default;
+  }
+
+  return fallbackSubdomain ?? SubdomainConfig.default;
+}
+
+async function getDefaultHeaders(account?: string): Promise<Record<string, string>> {
+  const subdomain = getSubdomain(account);
+  const clientHeader = `"Backstage" <https://${subdomain}.backstage.com>`;
+
+  return {
+    Authorization: await getAuthToken(account),
+    Accept: 'application/vnd.pagerduty+json;version=2',
+    'Content-Type': 'application/json',
+    'X-PagerDuty-Client': clientHeader,
+  };
+}
+
 // Supporting router
 export async function addServiceRelationsToService(
   serviceRelations: PagerDutyServiceDependency[],
@@ -131,11 +177,7 @@ export async function addServiceRelationsToService(
   let response: Response;
   const options: RequestInit = {
     method: 'POST',
-    headers: {
-      Authorization: await getAuthToken(account),
-      Accept: 'application/vnd.pagerduty+json;version=2',
-      'Content-Type': 'application/json',
-    },
+    headers: await getDefaultHeaders(account),
     body: JSON.stringify({
       relationships: serviceRelations,
     }),
@@ -202,11 +244,7 @@ export async function removeServiceRelationsFromService(
   let response: Response;
   const options: RequestInit = {
     method: 'POST',
-    headers: {
-      Authorization: await getAuthToken(account),
-      Accept: 'application/vnd.pagerduty+json;version=2',
-      'Content-Type': 'application/json',
-    },
+    headers: await getDefaultHeaders(account),
     body: JSON.stringify({
       relationships: serviceRelations,
     }),
@@ -273,11 +311,7 @@ export async function getServiceRelationshipsById(
   let response: Response;
   const options: RequestInit = {
     method: 'GET',
-    headers: {
-      Authorization: await getAuthToken(account),
-      Accept: 'application/vnd.pagerduty+json;version=2',
-      'Content-Type': 'application/json',
-    },
+    headers: await getDefaultHeaders(account),
   };
 
   const apiBaseUrl = getApiBaseUrl(account);
@@ -343,11 +377,7 @@ async function getEscalationPolicies(
   const params = `total=true&sort_by=name&offset=${offset}&limit=${limit}`;
   const options: RequestInit = {
     method: 'GET',
-    headers: {
-      Authorization: await getAuthToken(account),
-      Accept: 'application/vnd.pagerduty+json;version=2',
-      'Content-Type': 'application/json',
-    },
+    headers: await getDefaultHeaders(account),
   };
 
   const apiBaseUrl = getApiBaseUrl(account);
@@ -450,11 +480,13 @@ export async function getAllEscalationPolicies(): Promise<
   return results;
 }
 
-export async function isEventNoiseReductionEnabled(
+async function getTeams(
+  offset: number,
+  limit: number,
   account?: string,
-): Promise<boolean> {
+): Promise<[boolean, PagerDutyTeam[]]> {
   let response: Response;
-  const baseUrl = 'https://api.pagerduty.com';
+  const params = `total=true&sort_by=name&offset=${offset}&limit=${limit}`;
   const options: RequestInit = {
     method: 'GET',
     headers: {
@@ -462,6 +494,109 @@ export async function isEventNoiseReductionEnabled(
       Accept: 'application/vnd.pagerduty+json;version=2',
       'Content-Type': 'application/json',
     },
+  };
+
+  const apiBaseUrl = getApiBaseUrl(account);
+  const baseUrl = `${apiBaseUrl}/teams`;
+
+  try {
+    response = await fetchWithRetries(`${baseUrl}?${params}`, options);
+  } catch (error) {
+    throw new Error(`Failed to retrieve teams: ${error}`);
+  }
+
+  if (response.status >= 500) {
+    throw new HttpError(
+      `Failed to list teams. PagerDuty API returned a server error. Retrying with the same arguments will not work.`,
+      response.status,
+    );
+  }
+
+  switch (response.status) {
+    case 400:
+      throw new HttpError(
+        'Failed to list teams. Caller provided invalid arguments.',
+        400,
+      );
+    case 401:
+      throw new HttpError(
+        'Failed to list teams. Caller did not supply credentials or did not provide the correct credentials.',
+        401,
+      );
+    case 403:
+      throw new HttpError(
+        'Failed to list teams. Caller is not authorized to view the requested resource.',
+        403,
+      );
+    case 429:
+      throw new HttpError('Failed to list teams. Rate limit exceeded.', 429);
+    default: // 200
+      break;
+  }
+
+  let result: PagerDutyTeamsResponse;
+  try {
+    result = (await response.json()) as PagerDutyTeamsResponse;
+
+    return [result.more ?? false, result.teams];
+  } catch (error) {
+    throw new HttpError(`Failed to parse team information: ${error}`, 500);
+  }
+}
+
+export async function getAllTeams(account?: string): Promise<PagerDutyTeam[]> {
+  const limit = 50;
+  let offset = 0;
+  let moreResults = false;
+  let results: PagerDutyTeam[] = [];
+
+  const accountsToFetch = account ? [account] : Object.keys(EndpointConfig);
+
+  await Promise.all(
+    accountsToFetch.map(async acc => {
+      try {
+        offset = 0;
+
+        do {
+          const res = await getTeams(offset, limit, acc);
+
+          res[1].forEach(team => {
+            team.account = acc;
+          });
+
+          results = results.concat(res[1]);
+
+          if (res[0] === true) {
+            moreResults = true;
+            offset += limit;
+          } else {
+            moreResults = false;
+          }
+        } while (moreResults === true);
+      } catch (error) {
+        if (error instanceof HttpError) {
+          throw error;
+        } else {
+          throw new HttpError(`${error}`, 500);
+        }
+      }
+    }),
+  );
+
+  // Sort teams alphabetically by name
+  results.sort((a, b) => a.name.localeCompare(b.name));
+
+  return results;
+}
+
+export async function isEventNoiseReductionEnabled(
+  account?: string,
+): Promise<boolean> {
+  let response: Response;
+  const baseUrl = 'https://api.pagerduty.com';
+  const options: RequestInit = {
+    method: 'GET',
+    headers: await getDefaultHeaders(account),
   };
 
   try {
@@ -517,11 +652,7 @@ export async function getOncallUsers(
   const params = `time_zone=UTC&include[]=users&escalation_policy_ids[]=${escalationPolicy}`;
   const options: RequestInit = {
     method: 'GET',
-    headers: {
-      Authorization: await getAuthToken(account),
-      Accept: 'application/vnd.pagerduty+json;version=2',
-      'Content-Type': 'application/json',
-    },
+    headers: await getDefaultHeaders(account),
   };
 
   const apiBaseUrl = getApiBaseUrl(account);
@@ -606,15 +737,10 @@ export async function getServiceById(
 ): Promise<PagerDutyService> {
   let response: Response;
   const params = `time_zone=UTC&include[]=integrations&include[]=escalation_policies`;
-  const token = await getAuthToken(account);
 
   const options: RequestInit = {
     method: 'GET',
-    headers: {
-      Authorization: token,
-      Accept: 'application/vnd.pagerduty+json;version=2',
-      'Content-Type': 'application/json',
-    },
+    headers: await getDefaultHeaders(account),
   };
 
   const apiBaseUrl = getApiBaseUrl(account);
@@ -671,12 +797,11 @@ export async function getServiceById(
   }
 }
 
-export async function getServiceByIntegrationKey(
-  integrationKey: string,
+export async function getSerivcesByIdsAndAccount(
+  serviceIds: string[],
   account?: string,
-): Promise<PagerDutyService> {
+): Promise<PagerDutyService[]> {
   let response: Response;
-  const params = `query=${integrationKey}&time_zone=UTC&include[]=integrations&include[]=escalation_policies`;
   const token = await getAuthToken(account);
 
   const options: RequestInit = {
@@ -686,6 +811,72 @@ export async function getServiceByIntegrationKey(
       Accept: 'application/vnd.pagerduty+json;version=2',
       'Content-Type': 'application/json',
     },
+  };
+
+  const apiBaseUrl = getApiBaseUrl(account);
+  const baseUrl = `${apiBaseUrl}/services`;
+
+  try {
+    response = await fetchWithRetries(
+      `${baseUrl}?id[]=${serviceIds.join('&id[]=')}`,
+      options,
+    );
+  } catch (error) {
+    throw new Error(`Failed to retrieve service: ${error}`);
+  }
+
+  if (response.status >= 500) {
+    throw new HttpError(
+      `Failed to get service. PagerDuty API returned a server error. Retrying with the same arguments will not work.`,
+      response.status,
+    );
+  }
+
+  switch (response.status) {
+    case 400:
+      throw new HttpError(
+        'Failed to get service. Caller provided invalid arguments.',
+        400,
+      );
+    case 401:
+      throw new HttpError(
+        'Failed to get service. Caller did not supply credentials or did not provide the correct credentials.',
+        401,
+      );
+    case 403:
+      throw new HttpError(
+        'Failed to get service. Caller is not authorized to view the requested resource.',
+        403,
+      );
+    case 404:
+      throw new HttpError(
+        'Failed to get service. The requested resource was not found.',
+        404,
+      );
+    default: // 200
+      break;
+  }
+
+  let result: PagerDutyServicesResponse;
+  try {
+    result = (await response.json()) as PagerDutyServicesResponse;
+
+    return result.services ?? [];
+  } catch (error) {
+    throw new HttpError(`Failed to parse service information: ${error}`, 500);
+  }
+}
+
+export async function getServiceByIntegrationKey(
+  integrationKey: string,
+  account?: string,
+): Promise<PagerDutyService> {
+  let response: Response;
+  const params = `query=${integrationKey}&time_zone=UTC&include[]=integrations&include[]=escalation_policies`;
+
+  const options: RequestInit = {
+    method: 'GET',
+    headers: await getDefaultHeaders(account),
   };
 
   const apiBaseUrl = getApiBaseUrl(account);
@@ -746,6 +937,18 @@ export async function getServiceByIntegrationKey(
   return result.services[0];
 }
 
+export async function getServicesByIds(
+  ids: string[],
+): Promise<PagerDutyService[]> {
+  let services: PagerDutyService[] = [];
+  await Promise.all(
+    Object.entries(EndpointConfig).map(async ([account, _]) => {
+      services = await getSerivcesByIdsAndAccount(ids, account);
+    }),
+  );
+  return services;
+}
+
 export async function getAllServices(): Promise<PagerDutyService[]> {
   const allServices: PagerDutyService[] = [];
 
@@ -753,6 +956,80 @@ export async function getAllServices(): Promise<PagerDutyService[]> {
     Object.entries(EndpointConfig).map(async ([account, _]) => {
       let response: Response;
       const params = `time_zone=UTC&include[]=integrations&include[]=escalation_policies&include[]=teams&total=true`;
+
+      const options: RequestInit = {
+        method: 'GET',
+        headers: await getDefaultHeaders(account),
+      };
+
+      const apiBaseUrl = getApiBaseUrl(account);
+      const baseUrl = `${apiBaseUrl}/services`;
+
+      let offset = 0;
+      const limit = 50;
+      let result: PagerDutyServicesAPIResponse;
+
+      try {
+        do {
+          const paginatedUrl = `${baseUrl}?${params}&offset=${offset}&limit=${limit}`;
+
+          response = await fetchWithRetries(paginatedUrl, options);
+
+          if (response.status >= 500) {
+            throw new HttpError(
+              `Failed to get services. PagerDuty API returned a server error. Retrying with the same arguments will not work.`,
+              response.status,
+            );
+          }
+
+          switch (response.status) {
+            case 400:
+              throw new HttpError(
+                'Failed to get services. Caller provided invalid arguments.',
+                400,
+              );
+            case 401:
+              throw new HttpError(
+                'Failed to get services. Caller did not supply credentials or did not provide the correct credentials.',
+                401,
+              );
+            case 403:
+              throw new HttpError(
+                'Failed to get services. Caller is not authorized to view the requested resource.',
+                403,
+              );
+            default: // 200
+              break;
+          }
+
+          result = (await response.json()) as PagerDutyServicesAPIResponse;
+
+          result.services.forEach(service => {
+            service.account = account;
+          });
+
+          allServices.push(...result.services);
+
+          offset += limit;
+        } while (offset < result.total!);
+      } catch (error) {
+        throw error;
+      }
+    }),
+  );
+
+  return allServices;
+}
+
+export async function getServicesByPartialName(
+  partialName: string,
+): Promise<PagerDutyService[]> {
+  const allServices: PagerDutyService[] = [];
+
+  await Promise.all(
+    Object.entries(EndpointConfig).map(async ([account, _]) => {
+      let response: Response;
+      const params = `query=${encodeURIComponent(partialName)}&time_zone=UTC&include[]=integrations&include[]=escalation_policies&include[]=teams&total=true`;
 
       const token = await getAuthToken(account);
 
@@ -807,7 +1084,6 @@ export async function getAllServices(): Promise<PagerDutyService[]> {
 
           result = (await response.json()) as PagerDutyServicesAPIResponse;
 
-          // set account
           result.services.forEach(service => {
             service.account = account;
           });
@@ -825,6 +1101,95 @@ export async function getAllServices(): Promise<PagerDutyService[]> {
   return allServices;
 }
 
+export async function getFilteredServices(
+  teamIds?: string[],
+  query?: string,
+  maxLimit?: number,
+  account?: string,
+): Promise<PagerDutyService[]> {
+  const allServices: PagerDutyService[] = [];
+  const limit = maxLimit || 100;
+
+  const accountsToFetch = account ? [account] : Object.keys(EndpointConfig);
+
+  await Promise.all(
+    accountsToFetch.map(async (acc) => {
+      let response: Response;
+      let params = `time_zone=UTC&limit=${limit}`;
+
+      if (teamIds && teamIds.length > 0) {
+        const teamIdsParam = teamIds
+          .map(id => `team_ids[]=${id}`)
+          .join('&');
+        params += `&${teamIdsParam}`;
+      }
+
+      if (query && query.trim() !== '') {
+        params += `&query=${encodeURIComponent(query.trim())}`;
+      }
+
+      const token = await getAuthToken(acc);
+
+      const options: RequestInit = {
+        method: 'GET',
+        headers: {
+          Authorization: token,
+          Accept: 'application/vnd.pagerduty+json;version=2',
+          'Content-Type': 'application/json',
+        },
+      };
+
+      const apiBaseUrl = getApiBaseUrl(acc);
+      const baseUrl = `${apiBaseUrl}/services`;
+
+      try {
+        // Fetch only ONE page with the specified limit
+        response = await fetchWithRetries(`${baseUrl}?${params}`, options);
+
+        if (response.status >= 500) {
+          throw new HttpError(
+            `Failed to get services. PagerDuty API returned a server error. Retrying with the same arguments will not work.`,
+            response.status,
+          );
+        }
+
+        switch (response.status) {
+          case 400:
+            throw new HttpError(
+              'Failed to get services. Caller provided invalid arguments.',
+              400,
+            );
+          case 401:
+            throw new HttpError(
+              'Failed to get services. Caller did not supply credentials or did not provide the correct credentials.',
+              401,
+            );
+          case 403:
+            throw new HttpError(
+              'Failed to get services. Caller is not authorized to view the requested resource.',
+              403,
+            );
+          default: // 200
+            break;
+        }
+
+        const result = (await response.json()) as PagerDutyServicesAPIResponse;
+
+        // set account for each service
+        result.services.forEach(service => {
+          service.account = acc;
+        });
+
+        allServices.push(...result.services);
+      } catch (error) {
+        throw error;
+      }
+    }),
+  );
+
+  return allServices;
+}
+
 export async function getChangeEvents(
   serviceId: string,
   account?: string,
@@ -833,11 +1198,7 @@ export async function getChangeEvents(
   const params = `limit=5&time_zone=UTC&sort_by=timestamp`;
   const options: RequestInit = {
     method: 'GET',
-    headers: {
-      Authorization: await getAuthToken(account),
-      Accept: 'application/vnd.pagerduty+json;version=2',
-      'Content-Type': 'application/json',
-    },
+    headers: await getDefaultHeaders(account),
   };
 
   const apiBaseUrl = getApiBaseUrl(account);
@@ -906,11 +1267,7 @@ export async function getIncidents(
 
   const options: RequestInit = {
     method: 'GET',
-    headers: {
-      Authorization: await getAuthToken(account),
-      Accept: 'application/vnd.pagerduty+json;version=2',
-      'Content-Type': 'application/json',
-    },
+    headers: await getDefaultHeaders(account),
   };
 
   const apiBaseUrl = getApiBaseUrl(account);
@@ -977,11 +1334,7 @@ export async function getServiceStandards(
 
   const options: RequestInit = {
     method: 'GET',
-    headers: {
-      Authorization: await getAuthToken(account),
-      Accept: 'application/vnd.pagerduty+json;version=2',
-      'Content-Type': 'application/json',
-    },
+    headers: await getDefaultHeaders(account),
   };
 
   const apiBaseUrl = getApiBaseUrl(account);
@@ -1051,11 +1404,7 @@ export async function getServiceMetrics(
 
   const options: RequestInit = {
     method: 'POST',
-    headers: {
-      Authorization: await getAuthToken(account),
-      Accept: 'application/vnd.pagerduty+json;version=2',
-      'Content-Type': 'application/json',
-    },
+    headers: await getDefaultHeaders(account),
     body: body,
   };
 
@@ -1117,7 +1466,6 @@ export async function createServiceIntegration({
 
   const apiBaseUrl = getApiBaseUrl(account);
   const baseUrl = `${apiBaseUrl}/services`;
-  const token = await getAuthToken(account);
 
   const options: RequestInit = {
     method: 'POST',
@@ -1134,11 +1482,7 @@ export async function createServiceIntegration({
         },
       },
     }),
-    headers: {
-      Authorization: token,
-      Accept: 'application/vnd.pagerduty+json;version=2',
-      'Content-Type': 'application/json',
-    },
+    headers: await getDefaultHeaders(account),
   };
 
   try {

@@ -31,6 +31,17 @@ export type BackstageEntity = {
   owner: string;
   lifecycle: string;
   annotations: Annotations;
+  // PagerDuty properties
+  serviceName?: string;
+  serviceUrl?: string;
+  team?: string;
+  escalationPolicy?: string;
+  status?: 'NotMapped' | 'InSync' | 'OutOfSync' | 'AutoMapped';
+  account?: string;
+  // Frontend only properties
+  mappingScore?: number;
+  autoMatchedServiceId?: string;
+  autoMatchedServiceName?: string;
 };
 
 export type Annotations = {
