@@ -87,6 +87,9 @@ const useStyles = makeStyles<BackstageTheme>(theme =>
     footer: {
       marginTop: theme.spacing(2),
     },
+    dataSyncHeader: {
+      marginBottom: theme.spacing(2),
+    },
   }),
 );
 
@@ -250,7 +253,7 @@ export const CustomFieldsTab = () => {
   return (
     <Box className={classes.root}>
       {/* Data Sync header */}
-      <Flex align="start" justify="between" style={{ marginBottom: 16 }}>
+      <Flex align="start" justify="between" className={classes.dataSyncHeader}>
         <Text as="h2" className={classes.title}>
           Data Sync
         </Text>
