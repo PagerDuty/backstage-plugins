@@ -32,7 +32,6 @@ import {
   PagerDutyEnhancedEntityMappingsResponse,
   PagerDutySetting,
   PagerDutyService,
-  AutoMatchEntityMappingsResponse,
   AutoMatchStartResponse,
   AutoMatchStatusResponse,
   PagerDutyTeam,
@@ -449,35 +448,6 @@ export class PagerDutyClient implements PagerDutyApi {
     const url = this.config.eventsBaseUrl ?? 'https://events.pagerduty.com/v2';
 
     return this.request(`${url}/enqueue`, options);
-  }
-
-  async autoMatchEntityMappings(options: {
-    team?: string;
-    threshold: number;
-    account?: string;
-  }): Promise<AutoMatchEntityMappingsResponse> {
-    const url = `${await this.config.discoveryApi.getBaseUrl(
-      'pagerduty',
-    )}/mapping/entity/auto-match`;
-
-    const body = JSON.stringify({
-      team: options.team === 'all' ? undefined : options.team,
-      threshold: options.threshold,
-      bestOnly: true,
-      account: options.account,
-    });
-
-    const requestOptions = {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json; charset=UTF-8',
-        Accept: 'application/json, text/plain, */*',
-      },
-      body,
-    };
-
-    const response = await this.request(url, requestOptions);
-    return response.json();
   }
 
   async startAutoMatchEntityMappings(options: {

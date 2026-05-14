@@ -144,12 +144,10 @@ export default function AutomaticMappingsDialog({
     refetchIntervalInBackground: true,
   });
 
-  useEffect(() => {
-    if (jobStatus?.status === 'completed' && jobStatus.result) {
-      handleAutoMatchResult(jobStatus.result);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [jobStatus?.status]);
+
+  if (jobStatus?.status === 'completed' && jobStatus.result) {
+    handleAutoMatchResult(jobStatus.result);
+  }
 
   const isAutoMatching =
     isStartingAutoMatch ||

@@ -23,7 +23,6 @@ import {
   addServiceRelationsToService,
   removeServiceRelationsFromService,
 } from '../apis/pagerduty';
-import { ServiceLoadError } from '../services/dataLoader';
 import { createAutoMatchRunner } from '../services/autoMatchRunner';
 import { AutoMatchJobRegistry } from '../services/autoMatchJobs';
 import {
@@ -877,51 +876,6 @@ export async function createRouter(
       }
     },
   );
-
-  // POST /mapping/entity/auto-match
-  router.post('/mapping/entity/auto-match', async (request, response) => {
-    try {
-      // Default 100% threshold ensures only exact matches, customers can adjust if needed
-      const threshold: number = request.body.threshold ?? 100;
-      const account: string | undefined = request.body.account;
-
-      if (typeof threshold !== 'number' || threshold < 0 || threshold > 100) {
-        response.status(400).json({
-          error: 'Invalid threshold. Must be a number between 0 and 100.',
-        });
-        return;
-      }
-
-      const bestOnly: boolean = request.body.bestOnly ?? false;
-      const team: string | undefined = request.body.team;
-
-      const result = await runAutoMatch({
-        threshold,
-        bestOnly,
-        team,
-        account,
-      });
-
-      response.json(result);
-    } catch (error) {
-      logger.error(`Auto-match failed: ${error}`);
-      if (error instanceof HttpError) {
-        response.status(error.status).json({
-          errors: [`${error.message}`],
-        });
-      } else if (error instanceof ServiceLoadError) {
-        response.status(503).json({
-          error: 'Service temporarily unavailable',
-          message: error.message,
-        });
-      } else {
-        response.status(500).json({
-          error: 'Auto-match failed',
-          message: error instanceof Error ? error.message : String(error),
-        });
-      }
-    }
-  });
 
   // POST /mapping/entity/auto-match/start
   router.post('/mapping/entity/auto-match/start', async (request, response) => {

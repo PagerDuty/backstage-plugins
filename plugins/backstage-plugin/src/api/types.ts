@@ -27,7 +27,6 @@ import {
   PagerDutyService,
   PagerDutyTeam,
   PagerDutyEnhancedEntityMappingsResponse,
-  AutoMatchEntityMappingsResponse,
   AutoMatchStartResponse,
   AutoMatchStatusResponse,
 } from '@pagerduty/backstage-plugin-common';
@@ -228,15 +227,6 @@ export interface PagerDutyApi {
    * Triggers an incident to whoever is on-call.
    */
   triggerAlarm(request: PagerDutyTriggerAlarmRequest): Promise<Response>;
-
-  /**
-   * Automatically matches unmapped entities to PagerDuty services.
-   */
-  autoMatchEntityMappings(options: {
-    team?: string;
-    threshold: number;
-    account?: string;
-  }): Promise<AutoMatchEntityMappingsResponse>;
 
   /**
    * Starts an async auto-match job and returns a jobId to poll.
