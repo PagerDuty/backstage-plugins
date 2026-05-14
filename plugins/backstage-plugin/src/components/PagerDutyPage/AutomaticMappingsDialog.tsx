@@ -250,6 +250,8 @@ export default function AutomaticMappingsDialog({
               options={teamOptions}
               value={selectedTeam}
               onChange={value => setSelectedTeam(value as string)}
+              searchable
+              searchPlaceholder='Search teams...'
             />
 
             <Box>
