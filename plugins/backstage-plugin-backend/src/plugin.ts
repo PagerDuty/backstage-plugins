@@ -42,8 +42,17 @@ export const pagerDutyPlugin = createBackendPlugin({
         database: coreServices.database,
         discovery: coreServices.discovery,
         auth: coreServices.auth,
+        cache: coreServices.cache,
       },
-      async init({ config, logger, httpRouter, database, discovery, auth }) {
+      async init({
+        config,
+        logger,
+        httpRouter,
+        database,
+        discovery,
+        auth,
+        cache,
+      }) {
         const pagerDutyBackendStore: PagerDutyBackendStore =
           await PagerDutyBackendDatabase.create(await database.getClient(), {
             skipMigrations: false,
@@ -56,6 +65,7 @@ export const pagerDutyPlugin = createBackendPlugin({
             store: pagerDutyBackendStore,
             discovery,
             auth,
+            cache,
             catalogApi: new CatalogClient({
               discoveryApi: discovery,
               fetchApi: new CatalogFetchApi(logger, auth),

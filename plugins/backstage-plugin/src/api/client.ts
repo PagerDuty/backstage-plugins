@@ -32,7 +32,8 @@ import {
   PagerDutyEnhancedEntityMappingsResponse,
   PagerDutySetting,
   PagerDutyService,
-  AutoMatchEntityMappingsResponse,
+  AutoMatchStartResponse,
+  AutoMatchStatusResponse,
   PagerDutyTeam,
 } from '@pagerduty/backstage-plugin-common';
 import { createApiRef, ConfigApi } from '@backstage/core-plugin-api';
@@ -449,17 +450,17 @@ export class PagerDutyClient implements PagerDutyApi {
     return this.request(`${url}/enqueue`, options);
   }
 
-  async autoMatchEntityMappings(options: {
+  async startAutoMatchEntityMappings(options: {
     team?: string;
     threshold: number;
     account?: string;
-  }): Promise<AutoMatchEntityMappingsResponse> {
+  }): Promise<AutoMatchStartResponse> {
     const url = `${await this.config.discoveryApi.getBaseUrl(
       'pagerduty',
-    )}/mapping/entity/auto-match`;
+    )}/mapping/entity/auto-match/start`;
 
     const body = JSON.stringify({
-      team: options.team === 'all' ? undefined : options.team,
+      team: options.team,
       threshold: options.threshold,
       bestOnly: true,
       account: options.account,
@@ -476,6 +477,14 @@ export class PagerDutyClient implements PagerDutyApi {
 
     const response = await this.request(url, requestOptions);
     return response.json();
+  }
+
+  async getAutoMatchStatus(jobId: string): Promise<AutoMatchStatusResponse> {
+    const url = `${await this.config.discoveryApi.getBaseUrl(
+      'pagerduty',
+    )}/mapping/entity/auto-match/${encodeURIComponent(jobId)}`;
+
+    return await this.findByUrl<AutoMatchStatusResponse>(url);
   }
 
   async getAccounts(): Promise<Array<{ id: string; isDefault: boolean }>> {

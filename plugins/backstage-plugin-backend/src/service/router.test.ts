@@ -30,6 +30,7 @@ import { PagerDutyBackendDatabase } from '../db';
 import { mockServices, TestDatabases } from '@backstage/backend-test-utils';
 import { InMemoryCatalogClient } from '@backstage/catalog-client/testUtils';
 import * as Pagerduty from '../services/pagerduty';
+import * as PagerdutyApi from '../apis/pagerduty';
 
 jest.mock('node-fetch');
 
@@ -40,6 +41,11 @@ jest.mock('../auth/auth', () => ({
 
 jest.mock('../services/pagerduty', () => ({
   getServicesIdsByPartialName: jest.fn(),
+}));
+
+jest.mock('../apis/pagerduty', () => ({
+  ...jest.requireActual('../apis/pagerduty'),
+  getAllServices: jest.fn(),
 }));
 
 const testInputs = ['apiToken', 'oauth'];
@@ -63,6 +69,7 @@ async function createDatabase(): Promise<PagerDutyBackendStore> {
 describe('createRouter', () => {
   let app: express.Express;
   let store: PagerDutyBackendStore;
+  let cacheStore: Map<string, unknown>;
 
   // Define test entities for the catalog
   const testEntities = [
@@ -191,6 +198,22 @@ describe('createRouter', () => {
     });
 
     store = await createDatabase();
+    cacheStore = new Map<string, unknown>();
+    const cache = {
+      async get(key: string) {
+        return cacheStore.get(key) as never;
+      },
+      async set(key: string, value: unknown) {
+        cacheStore.set(key, value);
+      },
+      async delete(key: string) {
+        cacheStore.delete(key);
+      },
+      withOptions() {
+        return cache;
+      },
+    } as never;
+
     const router = await createRouter({
       logger: mockServices.rootLogger.mock(),
       config: configReader,
@@ -198,6 +221,7 @@ describe('createRouter', () => {
       discovery: mockServices.discovery(),
       auth: mockServices.auth(),
       catalogApi: catalogApi,
+      cache,
     });
     app = express().use(router);
   });
@@ -3455,6 +3479,73 @@ describe('createRouter', () => {
         expect(response.body).toHaveProperty('skippedCount');
         expect(response.body).toHaveProperty('errorCount');
       });
+    });
+  });
+
+  describe('async auto-match job endpoints', () => {
+    beforeEach(() => {
+      cacheStore.clear();
+      (PagerdutyApi.getAllServices as jest.Mock).mockResolvedValue([
+        {
+          id: 'PD_SERVICE_1',
+          name: 'test-component',
+          html_url: 'https://test.pagerduty.com/services/PD_SERVICE_1',
+          escalation_policy: { id: 'EP1', name: 'Default' },
+          teams: [{ id: 'T1', name: 'Team A', summary: 'Team A' }],
+        },
+      ]);
+    });
+
+    const waitForJob = async (jobId: string, timeoutMs = 2000) => {
+      const deadline = Date.now() + timeoutMs;
+      let res = await request(app).get(`/mapping/entity/auto-match/${jobId}`);
+      while (res.body.status !== 'completed' && res.body.status !== 'failed') {
+        if (Date.now() > deadline) {
+          throw new Error(`Timed out waiting for job ${jobId}`);
+        }
+        await new Promise(r => setTimeout(r, 50));
+        res = await request(app).get(`/mapping/entity/auto-match/${jobId}`);
+      }
+      return res;
+    };
+
+    it('POST /start returns 202 with a jobId', async () => {
+      const response = await request(app)
+        .post('/mapping/entity/auto-match/start')
+        .send({ threshold: 100 });
+
+      expect(response.status).toEqual(202);
+      expect(typeof response.body.jobId).toBe('string');
+      await waitForJob(response.body.jobId);
+    });
+
+    it('POST /start rejects invalid threshold', async () => {
+      const response = await request(app)
+        .post('/mapping/entity/auto-match/start')
+        .send({ threshold: 150 });
+
+      expect(response.status).toEqual(400);
+      expect(response.body.error).toMatch(/Invalid threshold/);
+    });
+
+    it('GET /:jobId returns 404 for unknown job', async () => {
+      const response = await request(app).get(
+        '/mapping/entity/auto-match/does-not-exist',
+      );
+      expect(response.status).toEqual(404);
+    });
+
+    it('GET /:jobId eventually returns completed job with result', async () => {
+      const start = await request(app)
+        .post('/mapping/entity/auto-match/start')
+        .send({ threshold: 100 });
+
+      const final = await waitForJob(start.body.jobId);
+      expect(final.status).toEqual(200);
+      expect(final.body.status).toEqual('completed');
+      expect(final.body.result).toHaveProperty('matches');
+      expect(final.body.result).toHaveProperty('statistics');
+      expect(final.body.completedAt).toBeDefined();
     });
   });
 });
