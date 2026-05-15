@@ -196,6 +196,7 @@ describe('createRouter', () => {
       config: configReader,
       store,
       discovery: mockServices.discovery(),
+      auth: mockServices.auth(),
       catalogApi: catalogApi,
     });
     app = express().use(router);
@@ -3097,7 +3098,7 @@ describe('createRouter', () => {
 
           const responseNames = response.body.entities.map((e: { name: string }) => e.name);
           const entitiesDescendingNames = testEntities.map(e => e.metadata.name).sort((a, b) => b.localeCompare(a));
-          
+
           expect(responseNames).toEqual(entitiesDescendingNames);
         });
 
@@ -3146,7 +3147,7 @@ describe('createRouter', () => {
 
           const responseServiceNames = response.body.entities.map((e: { serviceName: string }) => e.serviceName);
           const entitiesAscendingServiceNames = ['', '', '', '', 'Alpha Service', 'Beta Service'];
-          
+
           expect(responseServiceNames).toEqual(entitiesAscendingServiceNames);
         });
 
