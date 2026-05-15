@@ -60,7 +60,11 @@ export async function loadBackstageComponents({
     };
 
     if (teamFilter) {
-      filter['spec.owner'] = teamFilter;
+      // Catalog may normalize owners to full entity refs (e.g. "group:default/foo")
+      // or store them as plain names ("foo"). Accept both forms.
+      const bare = teamFilter.replace(/^group:[^/]+\//i, '');
+      const full = teamFilter.includes(':') ? teamFilter : `group:default/${teamFilter}`;
+      filter['spec.owner'] = bare === full ? [bare] : [bare, full];
     }
 
     const response = await catalogApi.getEntities({

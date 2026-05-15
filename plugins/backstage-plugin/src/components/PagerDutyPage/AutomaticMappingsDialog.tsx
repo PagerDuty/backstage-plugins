@@ -9,7 +9,7 @@ import {
   Text,
   Box,
 } from '@backstage/ui';
-import { Dispatch, useState } from 'react';
+import { Dispatch, useCallback, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AutoMatchEntityMappingsResponse } from '@pagerduty/backstage-plugin-common';
 import { useApi } from '@backstage/core-plugin-api';
@@ -51,6 +51,20 @@ export default function AutomaticMappingsDialog({
   const [selectedTeam, setSelectedTeam] = useState<string>('all');
   const [selectedThreshold, setSelectedThreshold] = useState<string>('');
   const [activeJobId, setActiveJobId] = useState<string | undefined>();
+
+  const resetDialogState = useCallback(() => {
+    setSelectedTeam('all');
+    setSelectedThreshold('');
+    setActiveJobId(undefined);
+  }, []);
+
+  const handleOpenChange = useCallback(
+    (open: boolean) => {
+      if (!open) resetDialogState();
+      setIsOpen(open);
+    },
+    [resetDialogState, setIsOpen],
+  );
 
   const { data: groups, isLoading: isGroupsLoading } = useQuery({
     queryKey: ['catalog', 'groups'],
@@ -114,7 +128,7 @@ export default function AutomaticMappingsDialog({
     queryClient.invalidateQueries({
       queryKey: ['pagerduty', 'enhancedEntityMappings'],
     });
-    setActiveJobId(undefined);
+    resetDialogState();
     setIsOpen(false);
   };
 
@@ -133,15 +147,16 @@ export default function AutomaticMappingsDialog({
   const { data: jobStatus, error: jobStatusError } = useQuery({
     queryKey: ['pagerduty', 'autoMatchJob', activeJobId],
     queryFn: () => pagerDutyApi.getAutoMatchStatus(activeJobId!),
-    enabled: Boolean(activeJobId),
+    enabled: Boolean(activeJobId) && isOpen,
     refetchInterval: query => {
+      if (!isOpen) return false;
       const status = query.state.data?.status;
       if (status === 'completed' || status === 'failed') {
         return false;
       }
       return 5000;
     },
-    refetchIntervalInBackground: true,
+    refetchIntervalInBackground: false,
   });
 
 
@@ -187,7 +202,7 @@ export default function AutomaticMappingsDialog({
   }
 
   return (
-    <Dialog isOpen={isOpen} onOpenChange={setIsOpen} style={{ width: '460px' }}>
+    <Dialog isOpen={isOpen} onOpenChange={handleOpenChange} style={{ width: '460px' }}>
       <DialogHeader>Service Auto-Mapping</DialogHeader>
       <DialogBody>
         <Box p="0 24px 8px 24px">
