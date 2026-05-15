@@ -1,5 +1,24 @@
 # @pagerduty/backstage-plugin-backend
 
+## 0.13.0
+
+### Minor Changes
+
+- 9941800: Refactor the service mappings screen and add an auto-matching functionality to mass map PagerDuty service to Backstage entities
+- e1f99a7: Remove deprecated @backstage/backend-common library. This is a potential breaking change for users who are still on the old backend system:
+
+  - `createPagerDutyServiceAction(...)` now requires its `config` prop.
+  - `createRouter(...)` now requires its `auth` prop.
+
+  Note that none of this is breaking for users of the new backend system.
+
+### Patch Changes
+
+- ef0af04: Moved to a process/polling based loading of the automatic mapping matches
+- Updated dependencies [9941800]
+- Updated dependencies [ef0af04]
+  - @pagerduty/backstage-plugin-common@0.4.0
+
 ## 0.12.0
 
 ### Minor Changes
