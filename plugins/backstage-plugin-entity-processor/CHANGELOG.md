@@ -1,5 +1,13 @@
 # @pagerduty/backstage-plugin-entity-processor
 
+## 0.3.11
+
+### Patch Changes
+
+- Updated dependencies [9941800]
+- Updated dependencies [ef0af04]
+  - @pagerduty/backstage-plugin-common@0.4.0
+
 ## 0.3.10
 
 ### Patch Changes
