@@ -69,6 +69,7 @@ async function createDatabase(): Promise<PagerDutyBackendStore> {
 describe('createRouter', () => {
   let app: express.Express;
   let store: PagerDutyBackendStore;
+  let cacheStore: Map<string, unknown>;
 
   // Define test entities for the catalog
   const testEntities = [
@@ -197,7 +198,7 @@ describe('createRouter', () => {
     });
 
     store = await createDatabase();
-    const cacheStore = new Map<string, unknown>();
+    cacheStore = new Map<string, unknown>();
     const cache = {
       async get(key: string) {
         return cacheStore.get(key) as never;
@@ -3483,6 +3484,7 @@ describe('createRouter', () => {
 
   describe('async auto-match job endpoints', () => {
     beforeEach(() => {
+      cacheStore.clear();
       (PagerdutyApi.getAllServices as jest.Mock).mockResolvedValue([
         {
           id: 'PD_SERVICE_1',
@@ -3514,7 +3516,7 @@ describe('createRouter', () => {
 
       expect(response.status).toEqual(202);
       expect(typeof response.body.jobId).toBe('string');
-      expect(['pending', 'running']).toContain(response.body.status);
+      await waitForJob(response.body.jobId);
     });
 
     it('POST /start rejects invalid threshold', async () => {

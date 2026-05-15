@@ -9,7 +9,7 @@ import {
   Text,
   Box,
 } from '@backstage/ui';
-import { Dispatch, useEffect, useState } from 'react';
+import { Dispatch, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AutoMatchEntityMappingsResponse } from '@pagerduty/backstage-plugin-common';
 import { useApi } from '@backstage/core-plugin-api';
