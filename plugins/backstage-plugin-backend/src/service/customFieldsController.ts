@@ -1,7 +1,11 @@
 import { LoggerService } from '@backstage/backend-plugin-api';
 import { Request, Response } from 'express';
 import { PagerDutyBackendStore } from '../db/PagerDutyBackendDatabase';
-import { createCustomField, updateCustomField } from '../apis/pagerduty';
+import {
+  createCustomField,
+  setServiceCustomFieldValues,
+  updateCustomField,
+} from '../apis/pagerduty';
 import {
   BackstageCustomFieldCreateRequest,
   BackstageCustomFieldUpdateRequest,
@@ -9,6 +13,7 @@ import {
   HttpError,
   PagerDutyCustomFieldCreateRequest,
   PagerDutyCustomFieldUpdateRequest,
+  PagerDutyServiceCustomFieldValue,
 } from '@pagerduty/backstage-plugin-common';
 
 export interface CustomFieldsControllerOptions {
@@ -115,11 +120,56 @@ export class CustomFieldsController {
   async getCustomFields(request: Request, response: Response): Promise<void> {
     try {
       const subdomain = this.getSubdomainFromRequest(request);
-      const customFields = await this.store.getAllCustomFields(subdomain);
+      const enabled = parseEnabledQuery(request.query.enabled);
+      const customFields = await this.store.getAllCustomFields(subdomain, {
+        enabled,
+      });
       const responseData: BackstageCustomFieldsResponse = { customFields };
       response.status(200).json(responseData);
     } catch (error) {
       this.handleUnexpectedError(error, 'fetching custom fields', response);
+    }
+  }
+
+  async syncCustomFieldValues(
+    request: Request,
+    response: Response,
+  ): Promise<void> {
+    try {
+      const { serviceId, values } = request.body as {
+        serviceId?: string;
+        values?: PagerDutyServiceCustomFieldValue[];
+      };
+      const subdomain = this.getSubdomainFromRequest(request);
+
+      if (!serviceId) {
+        throw new HttpError('Missing required field: serviceId', 400);
+      }
+      if (!Array.isArray(values) || values.length === 0) {
+        response.status(204).end();
+        return;
+      }
+
+      try {
+        await setServiceCustomFieldValues({
+          serviceId,
+          request: { custom_fields: values },
+          account: subdomain,
+        });
+        this.logger.info(
+          `Synced ${values.length} custom field value(s) to PagerDuty service ${serviceId}`,
+        );
+        response.status(204).end();
+      } catch (error) {
+        if (error instanceof HttpError) this.handlePagerDutyError(error);
+        throw error;
+      }
+    } catch (error) {
+      this.handleUnexpectedError(
+        error,
+        'syncing custom field values',
+        response,
+      );
     }
   }
 
@@ -364,4 +414,10 @@ export class CustomFieldsController {
       });
     }
   }
+}
+
+function parseEnabledQuery(value: unknown): boolean | undefined {
+  if (value === 'true') return true;
+  if (value === 'false') return false;
+  return undefined;
 }

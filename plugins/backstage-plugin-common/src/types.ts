@@ -488,3 +488,19 @@ export type PagerDutyCustomFieldUpdateRequest = {
 export type BackstageCustomFieldsResponse = {
   customFields: BackstageCustomField[];
 };
+
+/** @public */
+export type PagerDutyServiceCustomFieldValue = {
+  id: string;
+  value: string | null;
+};
+
+/** @public */
+export type PagerDutyServiceCustomFieldValuesRequest = {
+  custom_fields: PagerDutyServiceCustomFieldValue[];
+};
+
+/** @public */
+export type PagerDutyServiceCustomFieldValuesResponse = {
+  custom_fields: PagerDutyServiceCustomFieldValue[];
+};

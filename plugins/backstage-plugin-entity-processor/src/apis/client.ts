@@ -3,11 +3,14 @@ import type { RequestInit, Response } from 'node-fetch';
 import type { EntityMapping } from '../types';
 import { AuthService, DiscoveryService, LoggerService } from '@backstage/backend-plugin-api';
 import {
+  BackstageCustomField,
+  BackstageCustomFieldsResponse,
   PagerDutyEntityMapping,
   PagerDutyEntityMappingResponse,
   PagerDutyServiceResponse,
   PagerDutyServiceDependency,
   PagerDutyServiceDependencyResponse,
+  PagerDutyServiceCustomFieldValue,
   PagerDutySetting,
   PagerDutyEntityMappingsResponse,
 } from '@pagerduty/backstage-plugin-common';
@@ -622,6 +625,102 @@ export class PagerDutyClient {
     } catch (error) {
       this.logger.error(`Error getting value for setting: ${error}`);
       throw new Error(`Error getting value for setting: ${error}`);
+    }
+  }
+
+  async getEnabledCustomFields(account?: string): Promise<BackstageCustomField[]> {
+    let response: Response;
+
+    if (this.baseUrl === '') {
+      this.baseUrl = await this.discovery.getBaseUrl('pagerduty');
+    }
+
+    const options: RequestInit = {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json; charset=UTF-8',
+        Accept: 'application/json, text/plain, */*',
+        Authorization: await this.generatePluginToPluginToken(),
+      },
+    };
+
+    const params = new URLSearchParams({ enabled: 'true' });
+    if (account) params.set('account', account);
+
+    const url = `${await this.discovery.getBaseUrl(
+      'pagerduty',
+    )}/custom-fields?${params.toString()}`;
+
+    try {
+      response = await fetchWithRetries(url, options);
+
+      if (response.status >= 500) {
+        throw new Error(
+          `Failed to get enabled custom fields. API returned a server error.`,
+        );
+      }
+
+      switch (response.status) {
+        case 400:
+          throw new Error(await response.text());
+        case 404:
+          return [];
+        default: {
+          const body: BackstageCustomFieldsResponse = await response.json();
+          return body.customFields ?? [];
+        }
+      }
+    } catch (error) {
+      this.logger.error(`Failed to retrieve enabled custom fields: ${error}`);
+      return [];
+    }
+  }
+
+  async pushCustomFieldValues(
+    serviceId: string,
+    values: PagerDutyServiceCustomFieldValue[],
+    account?: string,
+  ): Promise<void> {
+    if (values.length === 0) return;
+
+    if (this.baseUrl === '') {
+      this.baseUrl = await this.discovery.getBaseUrl('pagerduty');
+    }
+
+    const params = new URLSearchParams();
+    if (account) params.set('account', account);
+    const query = params.toString() ? `?${params.toString()}` : '';
+
+    const options: RequestInit = {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json; charset=UTF-8',
+        Accept: 'application/json, text/plain, */*',
+        Authorization: await this.generatePluginToPluginToken(),
+      },
+      body: JSON.stringify({ serviceId, values }),
+    };
+
+    const url = `${await this.discovery.getBaseUrl(
+      'pagerduty',
+    )}/custom-fields/sync${query}`;
+
+    try {
+      const response = await fetchWithRetries(url, options);
+
+      if (response.status >= 500) {
+        throw new Error(
+          `Failed to push custom field values for service ${serviceId}. API returned a server error.`,
+        );
+      }
+
+      if (!response.ok && response.status !== 204) {
+        throw new Error(await response.text());
+      }
+    } catch (error) {
+      this.logger.error(
+        `Failed to push custom field values for service ${serviceId}: ${error}`,
+      );
     }
   }
 

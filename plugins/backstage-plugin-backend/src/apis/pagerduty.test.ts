@@ -19,6 +19,7 @@ import {
   getServiceStandards,
   insertAccountConfig,
   setFallbackAccountConfig,
+  setServiceCustomFieldValues,
   updateCustomField,
 } from './pagerduty';
 
@@ -1672,6 +1673,65 @@ describe('PagerDuty API', () => {
             method: 'PUT',
           }),
         );
+      },
+    );
+  });
+
+  describe('setServiceCustomFieldValues', () => {
+    it.each(testInputs)(
+      'PUTs values to /services/:id/custom_fields/values and returns the response',
+      async () => {
+        const responseBody = {
+          custom_fields: [{ id: 'PD123', value: 'team-a' }],
+        };
+        mocked(fetch).mockReturnValue(mockedResponse(200, responseBody));
+
+        const result = await setServiceCustomFieldValues({
+          serviceId: 'PSERV1',
+          request: {
+            custom_fields: [{ id: 'PD123', value: 'team-a' }],
+          },
+        });
+
+        expect(fetch).toHaveBeenCalledTimes(1);
+        expect(fetch).toHaveBeenCalledWith(
+          expect.stringContaining('/services/PSERV1/custom_fields/values'),
+          expect.objectContaining({
+            method: 'PUT',
+            body: JSON.stringify({
+              custom_fields: [{ id: 'PD123', value: 'team-a' }],
+            }),
+          }),
+        );
+        expect(result).toEqual(responseBody);
+      },
+    );
+
+    it.each(testInputs)(
+      'throws HttpError with status 404 when service not found',
+      async () => {
+        mocked(fetch).mockReturnValue(mockedResponse(404, {}));
+
+        await expect(
+          setServiceCustomFieldValues({
+            serviceId: 'MISSING',
+            request: { custom_fields: [{ id: 'PD123', value: 'x' }] },
+          }),
+        ).rejects.toMatchObject({ status: 404 });
+      },
+    );
+
+    it.each(testInputs)(
+      'throws HttpError with status 400 when request invalid',
+      async () => {
+        mocked(fetch).mockReturnValue(mockedResponse(400, { error: 'bad' }));
+
+        await expect(
+          setServiceCustomFieldValues({
+            serviceId: 'PSERV1',
+            request: { custom_fields: [{ id: 'PD123', value: 'x' }] },
+          }),
+        ).rejects.toMatchObject({ status: 400 });
       },
     );
   });

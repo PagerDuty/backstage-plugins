@@ -11,6 +11,8 @@ import {
 } from '@backstage/plugin-catalog-node';
 import { LocationSpec } from '@backstage/plugin-catalog-common';
 import { PagerDutyClient } from '../apis/client';
+import { extractValueAtPath } from './extractEntityValue';
+import { PagerDutyServiceCustomFieldValue } from '@pagerduty/backstage-plugin-common';
 
 /**
  * A function which given an entity, determines if it should be processed for linguist tags.
@@ -199,6 +201,11 @@ export class PagerDutyEntityProcessor implements CatalogProcessor {
           entity.metadata.annotations?.['pagerduty.com/service-id'];
 
         if (serviceId) {
+          const account =
+            entity.metadata.annotations?.['pagerduty.com/account'];
+
+          await this.pushCustomFieldValues(entity, serviceId, account);
+
           const strategySetting =
             await client.getServiceDependencyStrategySetting();
 
@@ -218,8 +225,6 @@ export class PagerDutyEntityProcessor implements CatalogProcessor {
               await buildExistingDependencies(dependencyAnnotations);
 
             // Get dependencies from PagerDuty for the service
-            const account =
-              entity.metadata.annotations?.['pagerduty.com/account'];
             const dependencies = await client.getServiceDependencies(
               serviceId,
               account,
@@ -327,6 +332,43 @@ export class PagerDutyEntityProcessor implements CatalogProcessor {
     }
 
     return entity;
+  }
+
+  private async pushCustomFieldValues(
+    entity: Entity,
+    serviceId: string,
+    account: string | undefined,
+  ): Promise<void> {
+    try {
+      const fields = await client.getEnabledCustomFields(account);
+      if (fields.length === 0) return;
+
+      const values: PagerDutyServiceCustomFieldValue[] = [];
+      for (const field of fields) {
+        const result = extractValueAtPath(entity, field.backstageEntityMappingPath);
+        if (!result.ok) {
+          this.logger.warn(
+            `Skipping custom field "${field.pagerdutyCustomFieldDisplayName}" for entity ${entity.metadata.name} (service ${serviceId}): ${result.reason}`,
+          );
+          continue;
+        }
+        values.push({
+          id: field.pagerdutyCustomFieldId,
+          value: result.value,
+        });
+      }
+
+      if (values.length === 0) return;
+
+      await client.pushCustomFieldValues(serviceId, values, account);
+      this.logger.debug(
+        `Pushed ${values.length} custom field value(s) for service ${serviceId}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to push custom field values for entity ${entity.metadata.name} (service ${serviceId}): ${error}`,
+      );
+    }
   }
 }
 

@@ -3985,6 +3985,68 @@ describe('createRouter', () => {
         expect(Array.isArray(response.body.customFields)).toBe(true);
       },
     );
+
+    it('filters out disabled fields when enabled=true', async () => {
+      const filtered = await request(app).get('/custom-fields?enabled=true');
+      expect(filtered.status).toEqual(200);
+      filtered.body.customFields.forEach((f: { pagerdutyCustomFieldEnabled: boolean }) => {
+        expect(f.pagerdutyCustomFieldEnabled).toBe(true);
+      });
+    });
+  });
+
+  describe('POST /custom-fields/sync', () => {
+    it('returns 204 with no values', async () => {
+      const response = await request(app)
+        .post('/custom-fields/sync')
+        .send({ serviceId: 'PSERV1', values: [] });
+
+      expect(response.status).toEqual(204);
+      // PagerDuty should NOT be called when there are no values
+      expect(fetch).not.toHaveBeenCalled();
+    });
+
+    it('returns 400 when serviceId is missing', async () => {
+      const response = await request(app)
+        .post('/custom-fields/sync')
+        .send({ values: [{ id: 'PD123', value: 'x' }] });
+
+      expect(response.status).toEqual(400);
+    });
+
+    it('forwards values to PagerDuty and returns 204', async () => {
+      mocked(fetch).mockReturnValue(
+        mockedResponse(200, {
+          custom_fields: [{ id: 'PD123', value: 'team-a' }],
+        }),
+      );
+
+      const response = await request(app)
+        .post('/custom-fields/sync')
+        .send({
+          serviceId: 'PSERV1',
+          values: [{ id: 'PD123', value: 'team-a' }],
+        });
+
+      expect(response.status).toEqual(204);
+      expect(fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/services/PSERV1/custom_fields/values'),
+        expect.objectContaining({ method: 'PUT' }),
+      );
+    });
+
+    it('returns 404 when PagerDuty reports the service is missing', async () => {
+      mocked(fetch).mockReturnValue(mockedResponse(404, {}));
+
+      const response = await request(app)
+        .post('/custom-fields/sync')
+        .send({
+          serviceId: 'MISSING',
+          values: [{ id: 'PD123', value: 'x' }],
+        });
+
+      expect(response.status).toEqual(404);
+    });
   });
   });
 });
