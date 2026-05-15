@@ -26,7 +26,8 @@ describe('AutomaticMappingsDialog', () => {
   });
 
   const mockGetEntities = jest.fn();
-  const mockAutoMatchEntityMappings = jest.fn();
+  const mockStartAutoMatchEntityMappings = jest.fn();
+  const mockGetAutoMatchStatus = jest.fn();
   const mockGetAccounts = jest.fn();
   const mockOnAutoMatchComplete = jest.fn();
   const mockSetIsOpen = jest.fn();
@@ -36,7 +37,8 @@ describe('AutomaticMappingsDialog', () => {
   };
 
   const mockPagerDutyApi = {
-    autoMatchEntityMappings: mockAutoMatchEntityMappings,
+    startAutoMatchEntityMappings: mockStartAutoMatchEntityMappings,
+    getAutoMatchStatus: mockGetAutoMatchStatus,
     getAccounts: mockGetAccounts,
   };
 
@@ -107,6 +109,12 @@ describe('AutomaticMappingsDialog', () => {
         filter: {
           kind: 'Group',
         },
+        order: [
+          {
+            field: 'metadata.name',
+            order: 'asc',
+          },
+        ],
       });
     });
   });

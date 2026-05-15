@@ -1,13 +1,10 @@
 import {
   AuthService,
+  CacheService,
   DiscoveryService,
   LoggerService,
   RootConfigService,
 } from '@backstage/backend-plugin-api';
-import {
-  createLegacyAuthAdapters,
-  errorHandler,
-} from '@backstage/backend-common';
 import {
   getAllEscalationPolicies,
   getChangeEvents,
@@ -26,12 +23,8 @@ import {
   addServiceRelationsToService,
   removeServiceRelationsFromService,
 } from '../apis/pagerduty';
-import { loadBothSources, ServiceLoadError } from '../services/dataLoader';
-import {
-  findMatches,
-  filterToBestMatchPerService,
-  type MatchingConfig,
-} from '../services/matchingEngine';
+import { createAutoMatchRunner } from '../services/autoMatchRunner';
+import { AutoMatchJobRegistry } from '../services/autoMatchJobs';
 import {
   HttpError,
   PagerDutyChangeEventsResponse,
@@ -58,14 +51,16 @@ import type { CatalogApi, GetEntitiesResponse } from '@backstage/catalog-client'
 
 import * as MappingsController from '../controllers/mappings-controller';
 import * as CatalogEntityUtils from '../utils/catalog-entity';
+import { MiddlewareFactory } from '@backstage/backend-defaults/rootHttpRouter';
 
 export interface RouterOptions {
   logger: LoggerService;
   config: RootConfigService;
   store: PagerDutyBackendStore;
   discovery: DiscoveryService;
-  auth?: AuthService;
+  auth: AuthService;
   catalogApi?: CatalogApi;
+  cache: CacheService;
 }
 
 export type Annotations = {
@@ -247,15 +242,14 @@ export async function buildEntityMappingsResponse(
 export async function createRouter(
   options: RouterOptions,
 ): Promise<express.Router> {
-  const { logger, config, store, catalogApi } = options;
-  let { auth } = options;
-
-  if (!auth) {
-    auth = createLegacyAuthAdapters(options).auth;
-  }
+  const { logger, config, store, catalogApi, cache } = options;
 
   if (!catalogApi) {
     throw new Error('Catalog API is required to start the PagerDuty plugin backend');
+  }
+
+  if (!cache) {
+    throw new Error('Cache service is required to start the PagerDuty plugin backend');
   }
 
   // Get authentication Config
@@ -267,6 +261,9 @@ export async function createRouter(
   // Create the router
   const router = Router();
   router.use(express.json());
+
+  const runAutoMatch = createAutoMatchRunner(catalogApi);
+  const autoMatchJobs = new AutoMatchJobRegistry(cache, runAutoMatch);
 
   // DELETE /dependencies/service/:serviceId
   router.delete(
@@ -880,110 +877,54 @@ export async function createRouter(
     },
   );
 
-  // POST /mapping/entity/auto-match
-  router.post('/mapping/entity/auto-match', async (request, response) => {
-    try {
-      // Default 100% threshold ensures only exact matches, customers can adjust if needed
-      const threshold: number = request.body.threshold ?? 100;
-      const account: string | undefined = request.body.account;
+  // POST /mapping/entity/auto-match/start
+  router.post('/mapping/entity/auto-match/start', async (request, response) => {
+    const threshold: number = request.body.threshold ?? 100;
 
-      if (typeof threshold !== 'number' || threshold < 0 || threshold > 100) {
-        response.status(400).json({
-          error: 'Invalid threshold. Must be a number between 0 and 100.',
-        });
-        return;
-      }
-
-      const bestOnly: boolean = request.body.bestOnly ?? false;
-
-      const loadStartTime = Date.now();
-      const { pdServices, bsComponents } = await loadBothSources({
-        catalogApi: catalogApi!,
+    if (typeof threshold !== 'number' || threshold < 0 || threshold > 100) {
+      response.status(400).json({
+        error: 'Invalid threshold. Must be a number between 0 and 100.',
       });
-
-      const filteredPdServices = account
-        ? pdServices.filter(service => service.account === account)
-        : pdServices;
-
-      const loadTime = Date.now() - loadStartTime;
-
-      const matchStartTime = Date.now();
-      const matchingConfig: MatchingConfig = { threshold };
-      let matches = findMatches(filteredPdServices, bsComponents, matchingConfig);
-
-      if (bestOnly) {
-        matches = filterToBestMatchPerService(matches);
-      }
-
-      const matchTime = Date.now() - matchStartTime;
-
-      const totalComparisons = filteredPdServices.length * bsComponents.length;
-      const exactMatches = matches.filter(m => m.score === 100).length;
-      const highConfidence = matches.filter(
-        m => m.score >= 90 && m.score < 100,
-      ).length;
-      const mediumConfidence = matches.filter(
-        m => m.score >= 80 && m.score < 90,
-      ).length;
-
-      const getConfidenceLevel = (
-        score: number,
-      ): 'exact' | 'high' | 'medium' | 'low' => {
-        if (score === 100) return 'exact';
-        if (score >= 90) return 'high';
-        if (score >= 80) return 'medium';
-        return 'low';
-      };
-
-      response.json({
-        matches: matches.map(m => ({
-          pagerDutyService: {
-            serviceId: m.pagerDutyService.sourceId,
-            name: m.pagerDutyService.rawName,
-            team: m.pagerDutyService.teamName,
-            account: m.pagerDutyService.account,
-          },
-          backstageComponent: {
-            entityRef: m.backstageComponent.sourceId,
-            name: m.backstageComponent.rawName,
-            owner: m.backstageComponent.teamName,
-          },
-          score: m.score,
-          confidence: getConfidenceLevel(m.score),
-          scoreBreakdown: m.scoreBreakdown,
-        })),
-        statistics: {
-          totalPagerDutyServices: filteredPdServices.length,
-          totalBackstageComponents: bsComponents.length,
-          totalPossibleComparisons: totalComparisons,
-          matchesFound: matches.length,
-          exactMatches,
-          highConfidenceMatches: highConfidence,
-          mediumConfidenceMatches: mediumConfidence,
-          threshold,
-          loadTimeMs: loadTime,
-          matchTimeMs: matchTime,
-          totalTimeMs: loadTime + matchTime,
-        },
-      });
-    } catch (error) {
-      logger.error(`Auto-match failed: ${error}`);
-      if (error instanceof HttpError) {
-        response.status(error.status).json({
-          errors: [`${error.message}`],
-        });
-      } else if (error instanceof ServiceLoadError) {
-        response.status(503).json({
-          error: 'Service temporarily unavailable',
-          message: error.message,
-        });
-      } else {
-        response.status(500).json({
-          error: 'Auto-match failed',
-          message: error instanceof Error ? error.message : String(error),
-        });
-      }
+      return;
     }
+
+    const bestOnly: boolean = request.body.bestOnly ?? false;
+    const team: string | undefined = request.body.team;
+    const account: string | undefined = request.body.account;
+
+    const job = await autoMatchJobs.start({
+      threshold,
+      bestOnly,
+      team,
+      account,
+    });
+
+    response.status(202).json({
+      jobId: job.id,
+      status: job.status,
+    });
+  });
+
+  // GET /mapping/entity/auto-match/:jobId
+  router.get('/mapping/entity/auto-match/:jobId', async (request, response) => {
+    const jobId = request.params.jobId;
+    const job = await autoMatchJobs.get(jobId);
+
+    if (!job) {
+      response.status(404).json({
+        error: `Auto-match job ${jobId} not found.`,
+      });
+      return;
+    }
+
+    response.json({
+      jobId: job.id,
+      status: job.status,
+      createdAt: job.createdAt,
+      completedAt: job.completedAt,
+      result: job.result,
+      error: job.error,
+    });
   });
 
   // GET /escalation_policies
@@ -1324,7 +1265,7 @@ export async function createRouter(
   });
 
   // Add error handler
-  router.use(errorHandler());
+  router.use(MiddlewareFactory.create({ config, logger }).error());
 
   // Return the router
   return router;

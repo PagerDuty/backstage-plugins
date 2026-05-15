@@ -17,6 +17,7 @@ export class ServiceLoadError extends Error {
 
 export interface DataLoaderContext {
   catalogApi: CatalogApi;
+  teamFilter?: string;
 }
 
 export interface LoadedSources {
@@ -51,13 +52,23 @@ export async function loadPagerDutyServices(): Promise<NormalizedService[]> {
 
 export async function loadBackstageComponents({
   catalogApi,
+  teamFilter,
 }: DataLoaderContext): Promise<NormalizedService[]> {
   try {
+    const filter: Record<string, string | string[]> = {
+      kind: 'Component',
+    };
+
+    if (teamFilter) {
+      // Catalog may normalize owners to full entity refs (e.g. "group:default/foo")
+      // or store them as plain names ("foo"). Accept both forms.
+      const bare = teamFilter.replace(/^group:[^/]+\//i, '');
+      const full = teamFilter.includes(':') ? teamFilter : `group:default/${teamFilter}`;
+      filter['spec.owner'] = bare === full ? [bare] : [bare, full];
+    }
 
     const response = await catalogApi.getEntities({
-      filter: {
-        kind: 'Component',
-      },
+      filter,
     });
 
     const normalizedComponents: NormalizedService[] = response.items.map(

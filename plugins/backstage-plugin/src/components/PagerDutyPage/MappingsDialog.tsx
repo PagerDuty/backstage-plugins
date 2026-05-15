@@ -230,6 +230,8 @@ export default function MappingsDialog({
             placeholder="All Teams"
             options={teamOptions}
             value={selectedTeamId}
+            searchPlaceholder='Search teams...'
+            searchable
             onChange={value => {
               setSelectedTeamId(String(value || ''));
               setSelectedServiceId('');

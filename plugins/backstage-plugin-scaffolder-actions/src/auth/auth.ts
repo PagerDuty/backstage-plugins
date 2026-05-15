@@ -6,11 +6,9 @@ import {
   HttpError,
   PagerDutyAccountConfig,
 } from '@pagerduty/backstage-plugin-common';
-import { Config } from '@backstage/config';
 
 export type LoadAuthConfigProps = {
-  config: RootConfigService | undefined;
-  legacyConfig: Config;
+  config: RootConfigService;
   logger: LoggerService;
 };
 
@@ -30,15 +28,13 @@ type AccountTokenInfo = {
 type Auth = {
   accountTokens: Record<string, AccountTokenInfo>;
   defaultAccount?: string;
-  config?: RootConfigService;
-  legacyConfig?: Config;
+  config: RootConfigService;
   logger?: LoggerService;
 };
 
 let authPersistence: Auth;
 let isLegacyConfig = false;
-let _config: RootConfigService | undefined;
-let _legacyConfig: Config;
+let _config: RootConfigService;
 let _logger: LoggerService;
 
 async function checkForOAuthToken(tokenId: string): Promise<boolean> {
@@ -54,7 +50,6 @@ async function checkForOAuthToken(tokenId: string): Promise<boolean> {
     _logger.info('OAuth token expired, renewing');
     await loadAuthConfig({
       config: _config,
-      legacyConfig: _legacyConfig,
       logger: _logger,
     });
     return (
@@ -70,7 +65,6 @@ export async function getAuthToken(accountId?: string): Promise<string> {
     _logger.debug('Auth config not loaded. Loading auth config...');
     await loadAuthConfig({
       config: _config,
-      legacyConfig: _legacyConfig,
       logger: _logger,
     });
   }
@@ -117,7 +111,6 @@ export async function getAuthToken(accountId?: string): Promise<string> {
 
 export async function loadAuthConfig({
   config,
-  legacyConfig,
   logger,
 }: LoadAuthConfigProps) {
   try {
@@ -125,14 +118,12 @@ export async function loadAuthConfig({
 
     // set config and logger
     _config = config;
-    _legacyConfig = legacyConfig;
     _logger = logger;
 
     // initiliaze the authPersistence in-memory object
     authPersistence = {
       accountTokens: {},
       config: _config,
-      legacyConfig: _legacyConfig,
       logger: _logger,
     };
 
@@ -267,26 +258,14 @@ export async function loadAuthConfig({
 }
 
 function readOptionalString(key: string): string | undefined {
-  if (!_config) {
-    return _legacyConfig.getOptionalString(key);
-  }
-
   return _config.getOptionalString(key);
 }
 
 function readOptionalObject(key: string): JsonValue | undefined {
-  if (!_config) {
-    return _legacyConfig.getOptional(key);
-  }
-
   return _config.getOptional(key);
 }
 
 function readString(key: string): string {
-  if (!_config) {
-    return _legacyConfig.getString(key);
-  }
-
   return _config.getString(key);
 }
 
@@ -303,18 +282,18 @@ async function getOAuthToken(
 
   // define the scopes required for the OAuth token
   const scopes = `
-        abilities.read 
+        abilities.read
         analytics.read
-        change_events.read 
-        escalation_policies.read 
-        incidents.read 
-        oncalls.read 
-        schedules.read 
-        services.read 
-        services.write 
+        change_events.read
+        escalation_policies.read
+        incidents.read
+        oncalls.read
+        schedules.read
+        services.read
+        services.write
         standards.read
-        teams.read 
-        users.read 
+        teams.read
+        users.read
         vendors.read
     `;
 

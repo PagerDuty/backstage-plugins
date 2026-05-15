@@ -413,3 +413,26 @@ export type AutoMatchEntityMappingsResponse = {
   matches: AutoMatchEntityMapping[];
   statistics: AutoMatchStatistics;
 };
+
+/** @public */
+export type AutoMatchJobStatus =
+  | 'pending'
+  | 'running'
+  | 'completed'
+  | 'failed';
+
+/** @public */
+export type AutoMatchStartResponse = {
+  jobId: string;
+  status: AutoMatchJobStatus;
+};
+
+/** @public */
+export type AutoMatchStatusResponse = {
+  jobId: string;
+  status: AutoMatchJobStatus;
+  createdAt: string;
+  completedAt?: string;
+  result?: AutoMatchEntityMappingsResponse;
+  error?: string;
+};

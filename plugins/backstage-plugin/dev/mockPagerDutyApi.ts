@@ -24,7 +24,6 @@ import {
   PagerDutyUser,
   FormattedBackstageEntity,
   PagerDutyEnhancedEntityMappingsResponse,
-  AutoMatchEntityMappingsResponse,
 } from '@pagerduty/backstage-plugin-common';
 import { Entity } from '@backstage/catalog-model';
 import { v4 as uuidv4 } from 'uuid';
@@ -41,68 +40,77 @@ export const mockPagerDutyApi: PagerDutyApi = {
     return new Response(JSON.stringify(settings));
   },
 
-  async autoMatchEntityMappings(options: {
-    team?: string;
-    threshold: number;
-    account?: string;
-  }): Promise<AutoMatchEntityMappingsResponse> {
+  async startAutoMatchEntityMappings() {
     return {
-      matches: [
-        {
-          pagerDutyService: {
-            serviceId: 'PWM5PN9',
-            name: 'integration producer',
-            team: 'Team1',
+      jobId: 'mock-job-id',
+      status: 'pending' as const,
+    };
+  },
+
+  async getAutoMatchStatus(jobId: string) {
+    return {
+      jobId,
+      status: 'completed' as const,
+      createdAt: new Date().toISOString(),
+      completedAt: new Date().toISOString(),
+      result: {
+        matches: [
+          {
+            pagerDutyService: {
+              serviceId: 'PWM5PN9',
+              name: 'integration producer',
+              team: 'Team1',
+            },
+            backstageComponent: {
+              entityRef: 'component:default/integration-processor',
+              name: 'integration-processor',
+              owner: 'platform team',
+            },
+            score: 100,
+            confidence: 'exact' as const,
+            scoreBreakdown: {
+              baseScore: 96,
+              exactMatch: false,
+              teamMatch: false,
+              acronymMatch: true,
+              rawScore: 101,
+            },
           },
-          backstageComponent: {
-            entityRef: 'component:default/integration-processor',
-            name: 'integration-processor',
-            owner: 'platform team',
+          {
+            pagerDutyService: {
+              serviceId: 'SERV1CE1D',
+              name: 'Service1',
+              team: 'Team1',
+            },
+            backstageComponent: {
+              entityRef: 'component:default/entity1',
+              name: 'Entity1',
+              owner: 'team-a',
+            },
+            score: 95,
+            confidence: 'high' as const,
+            scoreBreakdown: {
+              baseScore: 92,
+              exactMatch: true,
+              teamMatch: true,
+              acronymMatch: false,
+              rawScore: 95,
+            },
           },
-          score: 100,
-          confidence: 'exact',
-          scoreBreakdown: {
-            baseScore: 96,
-            exactMatch: false,
-            teamMatch: false,
-            acronymMatch: true,
-            rawScore: 101,
-          },
+        ],
+        statistics: {
+          totalPagerDutyServices: 4,
+          totalBackstageComponents: 302,
+          totalPossibleComparisons: 1208,
+          matchesFound: 2,
+          exactMatches: 1,
+          highConfidenceMatches: 1,
+          mediumConfidenceMatches: 0,
+          threshold: 100,
+          loadTimeMs: 906,
+          matchTimeMs: 5,
+          totalTimeMs: 911,
         },
-        {
-          pagerDutyService: {
-            serviceId: 'SERV1CE1D',
-            name: 'Service1',
-            team: 'Team1',
-          },
-          backstageComponent: {
-            entityRef: 'component:default/entity1',
-            name: 'Entity1',
-            owner: 'team-a',
-          },
-          score: 95,
-          confidence: 'high',
-          scoreBreakdown: {
-            baseScore: 92,
-            exactMatch: true,
-            teamMatch: true,
-            acronymMatch: false,
-            rawScore: 95,
-          },
-        },
-      ],
-      statistics: {
-        totalPagerDutyServices: 4,
-        totalBackstageComponents: 302,
-        totalPossibleComparisons: 1208,
-        matchesFound: 2,
-        exactMatches: 1,
-        highConfidenceMatches: 1,
-        mediumConfidenceMatches: 0,
-        threshold: options.threshold,
-        loadTimeMs: 906,
-        matchTimeMs: 5,
-        totalTimeMs: 911,
       },
     };
   },

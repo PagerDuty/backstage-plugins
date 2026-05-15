@@ -3,8 +3,6 @@ import * as api from '../apis/pagerduty';
 import { CreateServiceResponse } from '../types';
 import { loadAuthConfig } from '../auth/auth';
 import { LoggerService, RootConfigService } from '@backstage/backend-plugin-api';
-import { Config } from '@backstage/config';
-import { loadBackendConfig } from '@backstage/backend-common';
 import {
   loadPagerDutyEndpointsFromConfig,
   getAccountByEscalationPolicyId,
@@ -15,7 +13,7 @@ export type CreatePagerDutyServiceActionProps = {
   logger: LoggerService;
 };
 
-export const createPagerDutyServiceAction = (props?: CreatePagerDutyServiceActionProps) => {
+export const createPagerDutyServiceAction = (props: CreatePagerDutyServiceActionProps) => {
   let loggerService: LoggerService;
 
   return createTemplateAction({
@@ -47,22 +45,15 @@ export const createPagerDutyServiceAction = (props?: CreatePagerDutyServiceActio
         loggerService = props?.logger ? props.logger : ctx.logger;
         const configService = props?.config;
 
-        const legacyConfig: Config = await loadBackendConfig({
-          logger: loggerService,
-          argv: [],
-        });
-
         // Load the auth configuration
         await loadAuthConfig({
           config: configService,
-          legacyConfig: legacyConfig,
           logger: loggerService,
         });
 
         // Load endpoint configuration
         loadPagerDutyEndpointsFromConfig({
           config: configService,
-          legacyConfig: legacyConfig,
           logger: loggerService,
         });
 
