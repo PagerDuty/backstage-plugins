@@ -60,7 +60,10 @@ export interface PagerDutyBackendStore {
   findSetting(settingId: string): Promise<PagerDutySetting | undefined>;
   getAllSettings(): Promise<PagerDutySetting[]>;
   insertCustomField(customField: Omit<BackstageCustomField, 'id' | 'createdAt' | 'updatedAt'>): Promise<BackstageCustomField>;
-  getAllCustomFields(subdomain: string): Promise<BackstageCustomField[]>;
+  getAllCustomFields(
+    subdomain: string,
+    options?: { enabled?: boolean },
+  ): Promise<BackstageCustomField[]>;
   findCustomFieldById(id: number): Promise<BackstageCustomField | undefined>;
   updateCustomField(
     id: number,
@@ -234,6 +237,13 @@ export class PagerDutyBackendDatabase implements PagerDutyBackendStore {
     return rawEntities;
   }
 
+  private toBackstageCustomField(row: RawDbCustomFieldRow): BackstageCustomField {
+    return {
+      ...row,
+      pagerdutyCustomFieldEnabled: Boolean(row.pagerdutyCustomFieldEnabled),
+    };
+  }
+
   async insertCustomField(
     customField: Omit<BackstageCustomField, 'id' | 'createdAt' | 'updatedAt'>,
   ): Promise<BackstageCustomField> {
@@ -262,17 +272,7 @@ export class PagerDutyBackendDatabase implements PagerDutyBackendStore {
       );
     }
 
-    return {
-      id: result.id,
-      pagerdutyCustomFieldId: result.pagerdutyCustomFieldId,
-      pagerdutyCustomFieldDisplayName: result.pagerdutyCustomFieldDisplayName,
-      pagerdutyCustomFieldEnabled: result.pagerdutyCustomFieldEnabled,
-      backstageEntityMappingPath: result.backstageEntityMappingPath,
-      pagerdutySubdomain: result.pagerdutySubdomain,
-      description: result.description,
-      createdAt: result.createdAt,
-      updatedAt: result.updatedAt,
-    };
+    return this.toBackstageCustomField(result);
   }
 
   async findCustomFieldById(id: number): Promise<BackstageCustomField | undefined> {
@@ -280,7 +280,9 @@ export class PagerDutyBackendDatabase implements PagerDutyBackendStore {
       .where('id', id)
       .first();
 
-    return result;
+    if (!result) return undefined;
+
+    return this.toBackstageCustomField(result);
   }
 
   async updateCustomField(
@@ -312,29 +314,27 @@ export class PagerDutyBackendDatabase implements PagerDutyBackendStore {
       throw new Error(`Failed to retrieve custom field after update for id: ${id}`);
     }
 
-    return result;
+    return this.toBackstageCustomField(result);
   }
 
-  async getAllCustomFields(subdomain: string): Promise<BackstageCustomField[]> {
-    const rawFields = await this.db<RawDbCustomFieldRow>(
-      'pagerduty_custom_fields',
-    ).where('pagerdutySubdomain', subdomain);
+  async getAllCustomFields(
+    subdomain: string,
+    options: { enabled?: boolean } = {},
+  ): Promise<BackstageCustomField[]> {
+    const query = this.db<RawDbCustomFieldRow>('pagerduty_custom_fields').where(
+      'pagerdutySubdomain',
+      subdomain,
+    );
+    if (options.enabled !== undefined) {
+      query.where('pagerdutyCustomFieldEnabled', options.enabled);
+    }
+    const rawFields = await query;
 
     if (!rawFields) {
       return [];
     }
 
-    return rawFields.map(field => ({
-      id: field.id,
-      pagerdutyCustomFieldId: field.pagerdutyCustomFieldId,
-      pagerdutyCustomFieldDisplayName: field.pagerdutyCustomFieldDisplayName,
-      pagerdutyCustomFieldEnabled: field.pagerdutyCustomFieldEnabled,
-      backstageEntityMappingPath: field.backstageEntityMappingPath,
-      pagerdutySubdomain: field.pagerdutySubdomain,
-      description: field.description,
-      createdAt: field.createdAt,
-      updatedAt: field.updatedAt,
-    }));
+    return rawFields.map(field => this.toBackstageCustomField(field));
   }
 
   async deleteCustomField(id: number): Promise<void> {
