@@ -151,7 +151,7 @@ export class CustomFieldsController {
       }
 
       try {
-        await setServiceCustomFieldValues({
+        const result = await setServiceCustomFieldValues({
           serviceId,
           request: { custom_fields: values },
           account: subdomain,
@@ -159,7 +159,7 @@ export class CustomFieldsController {
         this.logger.info(
           `Synced ${values.length} custom field value(s) to PagerDuty service ${serviceId}`,
         );
-        response.status(204).end();
+        response.status(200).json(result);
       } catch (error) {
         if (error instanceof HttpError) this.handlePagerDutyError(error);
         throw error;

@@ -3989,6 +3989,7 @@ describe('createRouter', () => {
     it('filters out disabled fields when enabled=true', async () => {
       const filtered = await request(app).get('/custom-fields?enabled=true');
       expect(filtered.status).toEqual(200);
+      expect(filtered.body.customFields.length).toBeGreaterThan(0);
       filtered.body.customFields.forEach((f: { pagerdutyCustomFieldEnabled: boolean }) => {
         expect(f.pagerdutyCustomFieldEnabled).toBe(true);
       });
@@ -3996,6 +3997,12 @@ describe('createRouter', () => {
   });
 
   describe('POST /custom-fields/sync', () => {
+    const syncResponseBody = { custom_fields: [{ id: 'PD123', value: 'team-a' }] };
+
+    beforeEach(() => {
+      mocked(fetch).mockReturnValue(mockedResponse(200, syncResponseBody));
+    });
+
     it('returns 204 with no values', async () => {
       const response = await request(app)
         .post('/custom-fields/sync')
@@ -4014,13 +4021,7 @@ describe('createRouter', () => {
       expect(response.status).toEqual(400);
     });
 
-    it('forwards values to PagerDuty and returns 204', async () => {
-      mocked(fetch).mockReturnValue(
-        mockedResponse(200, {
-          custom_fields: [{ id: 'PD123', value: 'team-a' }],
-        }),
-      );
-
+    it('forwards values to PagerDuty and returns 200 with body', async () => {
       const response = await request(app)
         .post('/custom-fields/sync')
         .send({
@@ -4028,7 +4029,8 @@ describe('createRouter', () => {
           values: [{ id: 'PD123', value: 'team-a' }],
         });
 
-      expect(response.status).toEqual(204);
+      expect(response.status).toEqual(200);
+      expect(response.body).toEqual(syncResponseBody);
       expect(fetch).toHaveBeenCalledWith(
         expect.stringContaining('/services/PSERV1/custom_fields/values'),
         expect.objectContaining({ method: 'PUT' }),

@@ -664,7 +664,7 @@ export class PagerDutyClient {
         case 400:
           throw new Error(await response.text());
         case 404:
-          return [];
+          throw new Error(`Custom fields endpoint not found. Ensure the PagerDuty backend plugin is running.`);
         default: {
           const body: BackstageCustomFieldsResponse = await response.json();
           return body.customFields ?? [];
@@ -689,7 +689,7 @@ export class PagerDutyClient {
 
     const params = new URLSearchParams();
     if (account) params.set('account', account);
-    const query = params.toString() ? `?${params.toString()}` : '';
+    const query = params.toString() ? `?${params}` : '';
 
     const options: RequestInit = {
       method: 'POST',
