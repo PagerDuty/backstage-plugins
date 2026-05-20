@@ -30,6 +30,8 @@ import {
   PagerDutyCustomFieldResponse,
   PagerDutyCustomFieldsResponse,
   PagerDutyCustomFieldUpdateRequest,
+  PagerDutyServiceCustomFieldValuesRequest,
+  PagerDutyServiceCustomFieldValuesResponse,
 } from '@pagerduty/backstage-plugin-common';
 
 import { DateTime } from 'luxon';
@@ -1784,3 +1786,81 @@ export async function getCustomFields({
   }
 }
 
+export type SetServiceCustomFieldValuesProps = {
+  serviceId: string;
+  request: PagerDutyServiceCustomFieldValuesRequest;
+  account?: string;
+};
+
+export async function setServiceCustomFieldValues({
+  serviceId,
+  request,
+  account,
+}: SetServiceCustomFieldValuesProps): Promise<PagerDutyServiceCustomFieldValuesResponse> {
+  const apiBaseUrl = getApiBaseUrl(account);
+  const baseUrl = `${apiBaseUrl}/services/${serviceId}/custom_fields/values`;
+  const token = await getAuthToken(account);
+
+  const options: RequestInit = {
+    method: 'PUT',
+    body: JSON.stringify(request),
+    headers: {
+      Authorization: token,
+      Accept: 'application/vnd.pagerduty+json;version=2',
+      'Content-Type': 'application/json',
+    },
+  };
+
+  let response: Response;
+  try {
+    response = await fetchWithRetries(baseUrl, options);
+  } catch (error) {
+    throw new Error(`Failed to set service custom field values: ${error}`);
+  }
+
+  if (response.status >= 500) {
+    throw new HttpError(
+      `Failed to set service custom field values. PagerDuty API returned a server error.`,
+      response.status,
+    );
+  }
+
+  switch (response.status) {
+    case 400: {
+      const errorData = await response.json().catch(() => ({}));
+      throw new HttpError(
+        `Failed to set service custom field values. Invalid arguments: ${JSON.stringify(errorData)}`,
+        400,
+      );
+    }
+    case 401:
+      throw new HttpError(
+        `Failed to set service custom field values. Invalid credentials provided.`,
+        401,
+      );
+    case 403:
+      throw new HttpError(
+        `Failed to set service custom field values. Not authorized to perform this action.`,
+        403,
+      );
+    case 404:
+      throw new HttpError(
+        `Failed to set service custom field values. Service or custom field not found.`,
+        404,
+      );
+    case 429:
+      throw new HttpError(`Rate limit exceeded.`, 429);
+    default: // 200
+      break;
+  }
+
+  try {
+    const result =
+      (await response.json()) as PagerDutyServiceCustomFieldValuesResponse;
+    return result;
+  } catch (error) {
+    throw new Error(
+      `Failed to parse set service custom field values response: ${error}`,
+    );
+  }
+}
