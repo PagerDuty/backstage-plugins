@@ -199,6 +199,9 @@ export class PagerDutyEntityProcessor implements CatalogProcessor {
           entity.metadata.annotations?.['pagerduty.com/service-id'];
 
         if (serviceId) {
+          const account =
+            entity.metadata.annotations?.['pagerduty.com/account'];
+
           const strategySetting =
             await client.getServiceDependencyStrategySetting();
 
@@ -218,8 +221,6 @@ export class PagerDutyEntityProcessor implements CatalogProcessor {
               await buildExistingDependencies(dependencyAnnotations);
 
             // Get dependencies from PagerDuty for the service
-            const account =
-              entity.metadata.annotations?.['pagerduty.com/account'];
             const dependencies = await client.getServiceDependencies(
               serviceId,
               account,
@@ -328,6 +329,7 @@ export class PagerDutyEntityProcessor implements CatalogProcessor {
 
     return entity;
   }
+
 }
 
 export function refreshServiceDependencyAnnotations(

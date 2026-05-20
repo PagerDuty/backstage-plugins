@@ -550,6 +550,11 @@ export async function createRouter(
     await customFieldsController.updateCustomField(request, response);
   });
 
+  // POST /custom-fields/sync
+  router.post('/custom-fields/sync', async (request, response) => {
+    await customFieldsController.syncCustomFieldValues(request, response);
+  });
+
   // POST /mapping/entity
   router.post('/mapping/entity', async (request, response) => {
     try {
