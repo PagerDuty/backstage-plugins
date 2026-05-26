@@ -6,6 +6,7 @@ import {
   BackstageCustomFieldCreateRequest,
   BackstageCustomFieldUpdateRequest,
   BackstageCustomFieldsResponse,
+  CustomFieldSyncLogCreateRequest,
   HttpError,
   PagerDutyCustomFieldCreateRequest,
   PagerDutyCustomFieldUpdateRequest,
@@ -362,6 +363,78 @@ export class CustomFieldsController {
       response.status(500).json({
         errors: [`An unexpected error occurred while ${context}`],
       });
+    }
+  }
+
+  async createSyncLog(request: Request, response: Response): Promise<void> {
+    try {
+      const log = request.body as CustomFieldSyncLogCreateRequest;
+      const subdomain = this.getSubdomainFromRequest(request);
+
+      if (
+        !log.errorCode ||
+        !log.customFieldId ||
+        !log.customFieldName ||
+        !log.entityPath ||
+        !log.serviceId ||
+        !log.serviceName ||
+        !log.errorMessage
+      ) {
+        throw new HttpError('Missing required fields in sync log', 400);
+      }
+
+      await this.store.insertSyncLog({
+        errorCode: log.errorCode,
+        customFieldId: log.customFieldId,
+        customFieldName: log.customFieldName,
+        entityPath: log.entityPath,
+        serviceId: log.serviceId,
+        serviceName: log.serviceName,
+        errorMessage: log.errorMessage,
+        subdomain,
+      });
+
+      response.status(201).end();
+    } catch (error) {
+      this.handleUnexpectedError(error, 'creating sync log', response);
+    }
+  }
+
+  async getSyncLogs(
+    request: Request,
+    response: Response,
+  ): Promise<void> {
+    try {
+      const subdomain = this.getSubdomainFromRequest(request);
+      const limit = request.query.limit
+        ? parseInt(request.query.limit as string, 10)
+        : undefined;
+      const offset = request.query.offset
+        ? parseInt(request.query.offset as string, 10)
+        : undefined;
+      const severityParam = (request.query.severity as string) || undefined;
+      const severity =
+        severityParam === 'error' || severityParam === 'warning'
+          ? severityParam
+          : undefined;
+      const search = (request.query.search as string) || undefined;
+      const customFieldName =
+        (request.query.customFieldName as string) || undefined;
+      const entityPath = (request.query.entityPath as string) || undefined;
+      const serviceName = (request.query.serviceName as string) || undefined;
+
+      const result = await this.store.getSyncLogs(subdomain, {
+        limit,
+        offset,
+        severity,
+        search,
+        customFieldName,
+        entityPath,
+        serviceName,
+      });
+      response.status(200).json(result);
+    } catch (error) {
+      this.handleUnexpectedError(error, 'fetching sync logs', response);
     }
   }
 }

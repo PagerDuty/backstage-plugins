@@ -488,3 +488,67 @@ export type PagerDutyCustomFieldUpdateRequest = {
 export type BackstageCustomFieldsResponse = {
   customFields: BackstageCustomField[];
 };
+
+/** @public */
+export type PagerDutyServiceCustomFieldValue = {
+  id: string;
+  value: string | null;
+};
+
+/** @public */
+export type PagerDutyServiceCustomFieldValuesRequest = {
+  custom_fields: PagerDutyServiceCustomFieldValue[];
+};
+
+// The PagerDuty API echoes back the same shape it receives, so these two types
+// are structurally identical but kept separate to distinguish call-site intent.
+/** @public */
+export type PagerDutyServiceCustomFieldValuesResponse = {
+  custom_fields: PagerDutyServiceCustomFieldValue[];
+};
+
+/** @public */
+export type CustomFieldSyncLog = {
+  id: number;
+  timestamp: Date;
+  errorCode: string;
+  customFieldId: string;
+  customFieldName: string;
+  entityPath: string;
+  serviceId: string;
+  serviceName: string;
+  errorMessage: string;
+  subdomain: string;
+};
+
+/** @public */
+export type CustomFieldSyncLogCreateRequest = {
+  errorCode: string;
+  customFieldId: string;
+  customFieldName: string;
+  entityPath: string;
+  serviceId: string;
+  serviceName: string;
+  errorMessage: string;
+};
+
+/** @public */
+export type CustomFieldSyncLogSeverity = 'warning' | 'error';
+
+/** @public */
+export type CustomFieldSyncLogFilters = {
+  search?: string;
+  severity?: CustomFieldSyncLogSeverity;
+  customFieldName?: string;
+  entityPath?: string;
+  serviceName?: string;
+};
+
+/** @public */
+export type CustomFieldSyncLogsResponse = {
+  logs: CustomFieldSyncLog[];
+  total: number;
+  customFieldNames: string[];
+  entityPaths: string[];
+  serviceNames: string[];
+};
