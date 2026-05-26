@@ -540,4 +540,12 @@ export const mockPagerDutyApi: PagerDutyApi = {
     },
     error: null,
   }),
+
+  getSyncLogs: async () => ({
+    logs: [],
+    total: 0,
+    customFieldNames: [],
+    entityPaths: [],
+    serviceNames: [],
+  }),
 };

@@ -39,6 +39,8 @@ import {
   BackstageCustomFieldUpdateRequest,
   BackstageCustomField,
   BackstageCustomFieldsResponse,
+  CustomFieldSyncLogsResponse,
+  CustomFieldSyncLogFilters,
 } from '@pagerduty/backstage-plugin-common';
 import { createApiRef, ConfigApi } from '@backstage/core-plugin-api';
 import { NotFoundError } from '@backstage/errors';
@@ -556,6 +558,28 @@ export class PagerDutyClient implements PagerDutyApi {
     }
 
     return await this.findByUrl<BackstageCustomFieldsResponse>(url);
+  }
+
+  async getSyncLogs(
+    account?: string,
+    options?: { limit?: number; offset?: number } & CustomFieldSyncLogFilters,
+  ): Promise<CustomFieldSyncLogsResponse> {
+    const params = new URLSearchParams();
+    if (account) params.set('account', account);
+    if (options?.limit) params.set('limit', String(options.limit));
+    if (options?.offset !== undefined) params.set('offset', String(options.offset));
+    if (options?.search) params.set('search', options.search);
+    if (options?.severity) params.set('severity', options.severity);
+    if (options?.customFieldName) params.set('customFieldName', options.customFieldName);
+    if (options?.entityPath) params.set('entityPath', options.entityPath);
+    if (options?.serviceName) params.set('serviceName', options.serviceName);
+
+    const query = params.toString() ? `?${params.toString()}` : '';
+    const url = `${await this.config.discoveryApi.getBaseUrl(
+      'pagerduty',
+    )}/custom-fields/sync-logs${query}`;
+
+    return await this.findByUrl<CustomFieldSyncLogsResponse>(url);
   }
 
   async updateCustomField(
