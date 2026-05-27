@@ -5,6 +5,7 @@ import { AuthService, DiscoveryService, LoggerService } from '@backstage/backend
 import {
   BackstageCustomField,
   BackstageCustomFieldsResponse,
+  CustomFieldSyncLogCreateRequest,
   PagerDutyEntityMapping,
   PagerDutyEntityMappingResponse,
   PagerDutyServiceResponse,
@@ -705,22 +706,58 @@ export class PagerDutyClient {
       'pagerduty',
     )}/custom-fields/sync${query}`;
 
+    const response = await fetchWithRetries(url, options);
+
+    if (response.status >= 500) {
+      const body = await response.text().catch(() => '');
+      throw new Error(
+        `Failed to push custom field values for service ${serviceId}. API returned ${response.status}: ${body}`,
+      );
+    }
+
+    if (!response.ok && response.status !== 204) {
+      const body = await response.text();
+      throw new Error(`status=${response.status}: ${body}`);
+    }
+  }
+
+  async createSyncLog(
+    log: CustomFieldSyncLogCreateRequest,
+    account?: string,
+  ): Promise<void> {
+    if (this.baseUrl === '') {
+      this.baseUrl = await this.discovery.getBaseUrl('pagerduty');
+    }
+
+    const params = new URLSearchParams();
+    if (account) params.set('account', account);
+    const query = params.toString() ? `?${params}` : '';
+
+    const options: RequestInit = {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json; charset=UTF-8',
+        Accept: 'application/json, text/plain, */*',
+        Authorization: await this.generatePluginToPluginToken(),
+      },
+      body: JSON.stringify(log),
+    };
+
+    const url = `${await this.discovery.getBaseUrl(
+      'pagerduty',
+    )}/custom-fields/sync-logs${query}`;
+
     try {
       const response = await fetchWithRetries(url, options);
 
-      if (response.status >= 500) {
-        throw new Error(
-          `Failed to push custom field values for service ${serviceId}. API returned a server error.`,
+      if (!response.ok) {
+        const text = await response.text().catch(() => '');
+        this.logger.warn(
+          `Failed to write custom field sync log (status ${response.status}): ${text}`,
         );
       }
-
-      if (!response.ok && response.status !== 204) {
-        throw new Error(await response.text());
-      }
     } catch (error) {
-      this.logger.error(
-        `Failed to push custom field values for service ${serviceId}: ${error}`,
-      );
+      this.logger.warn(`Failed to write custom field sync log: ${error}`);
     }
   }
 
