@@ -4,7 +4,10 @@ import { CatalogProcessor, CatalogProcessorEmit } from '@backstage/plugin-catalo
 import { LocationSpec } from '@backstage/plugin-catalog-common';
 import { PagerDutyClient } from '../apis/client';
 import { extractValueAtPath } from './extractEntityValue';
-import { PagerDutyServiceCustomFieldValue } from '@pagerduty/backstage-plugin-common';
+import {
+  BackstageCustomField,
+  PagerDutyServiceCustomFieldValue,
+} from '@pagerduty/backstage-plugin-common';
 
 export interface PagerDutyCustomFieldsProcessorOptions {
   logger: LoggerService;
@@ -36,32 +39,75 @@ export class PagerDutyCustomFieldsProcessor implements CatalogProcessor {
     if (!serviceId) return entity;
 
     const account = entity.metadata.annotations?.['pagerduty.com/account'];
+    const serviceName = entity.metadata.name;
 
     try {
       const fields = await this.client.getEnabledCustomFields(account);
       if (fields.length === 0) return entity;
 
       const values: PagerDutyServiceCustomFieldValue[] = [];
+      const pushedFields: BackstageCustomField[] = [];
       for (const field of fields) {
         const result = extractValueAtPath(entity, field.backstageEntityMappingPath);
         if (!result.ok) {
           this.logger.warn(
-            `Skipping custom field "${field.pagerdutyCustomFieldDisplayName}" for entity ${entity.metadata.name} (service ${serviceId}): ${result.reason}`,
+            `Skipping custom field "${field.pagerdutyCustomFieldDisplayName}" (path="${field.backstageEntityMappingPath}") for entity ${entity.metadata.name} (service ${serviceId}): ${result.reason}`,
           );
+          void this.client
+            .createSyncLog(
+              {
+                errorCode: 'INVALID_PATH',
+                customFieldId: field.pagerdutyCustomFieldId,
+                customFieldName: field.pagerdutyCustomFieldDisplayName,
+                entityPath: field.backstageEntityMappingPath,
+                serviceId,
+                serviceName,
+                errorMessage: result.reason,
+              },
+              account,
+            )
+            .catch(error =>
+              this.logger.warn(
+                `Sync log write failed (best-effort): ${error}`,
+              ),
+            );
           continue;
         }
         values.push({ id: field.pagerdutyCustomFieldId, value: result.value });
+        pushedFields.push(field);
       }
 
       if (values.length > 0) {
-        await this.client.pushCustomFieldValues(serviceId, values, account);
-        this.logger.debug(
-          `Pushed ${values.length} custom field value(s) for service ${serviceId}`,
-        );
+        try {
+          await this.client.pushCustomFieldValues(serviceId, values, account);
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          this.logger.error(
+            `Failed to push custom field values for entity ${entity.metadata.name} (service ${serviceId}, account=${account ?? 'default'}): ${errorMessage}`,
+          );
+          for (const field of pushedFields) {
+            void this.client
+              .createSyncLog(
+                {
+                  errorCode: 'PD_API_ERROR',
+                  customFieldId: field.pagerdutyCustomFieldId,
+                  customFieldName: field.pagerdutyCustomFieldDisplayName,
+                  entityPath: field.backstageEntityMappingPath,
+                  serviceId,
+                  serviceName,
+                  errorMessage,
+                },
+                account,
+              )
+              .catch(err =>
+                this.logger.warn(`Sync log write failed (best-effort): ${err}`),
+              );
+          }
+        }
       }
     } catch (error) {
       this.logger.error(
-        `Failed to push custom field values for entity ${entity.metadata.name} (service ${serviceId}): ${error}`,
+        `Failed to process custom field values for entity ${entity.metadata.name} (service ${serviceId}): ${error}`,
       );
     }
 
