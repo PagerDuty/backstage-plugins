@@ -18,22 +18,12 @@ import {
 import { useApi } from '@backstage/core-plugin-api';
 import { makeStyles } from '@material-ui/core';
 import { pagerDutyApiRef } from '../../api';
-import { ButtonTabs, ButtonTabItem } from './ButtonTabs';
-import { CustomFieldsTabPanel } from './CustomFieldsTabPanel';
-import { SyncLogsTab } from './SyncLogsTab';
+import { ButtonTabs, ButtonTabItem } from './CustomFields/ButtonTabs';
+import { CustomFieldsTabPanel } from './CustomFields/CustomFieldsTabPanel';
+import { SyncLogsTab } from './CustomFields/SyncLogsTab';
 import { AccountProvider, useAccountContext } from './AccountContext';
 import { CustomFieldModal, FieldErrors } from './CustomFieldModal';
-
-const toFieldErrors = (message: string): FieldErrors => {
-  const lower = message.toLowerCase();
-  if (lower.includes('name') && lower.includes('already exists')) {
-    return { name: 'Entered Name matches one already in use. Please make changes to continue.' };
-  }
-  if (lower.includes('entity path') && lower.includes('already')) {
-    return { entityPath: 'Entered Entity Path matches one already in use. Please make changes to continue.' };
-  }
-  return { general: message };
-};
+import { toFieldErrors } from './CustomFields/customFieldErrors';
 
 const queryClient = new QueryClient();
 
@@ -181,7 +171,7 @@ const CustomFieldsTabContent = () => {
 };
 
 /** @public */
-export const CustomFieldsTab = () => (
+export const CustomFields = () => (
   <QueryClientProvider client={queryClient}>
     <AccountProvider>
       <CustomFieldsTabContent />

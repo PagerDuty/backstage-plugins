@@ -10,13 +10,13 @@ import {
 } from '@backstage/ui';
 import { Typography, makeStyles } from '@material-ui/core';
 import { useApi } from '@backstage/core-plugin-api';
-import { pagerDutyApiRef } from '../../api';
+import { pagerDutyApiRef } from '../../../api';
 import {
   CustomFieldSyncLog,
   CustomFieldSyncLogFilters,
 } from '@pagerduty/backstage-plugin-common';
-import { TableSkeleton } from './MappingsTable/TableSkeleton';
-import { useAccountContext } from './AccountContext';
+import { TableSkeleton } from '../MappingsTable/TableSkeleton';
+import { useAccountContext } from '../AccountContext';
 import {
   SyncLogsFilters,
   SyncLogsFilterValues,

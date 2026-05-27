@@ -12,22 +12,12 @@ import {
 } from '@backstage/ui';
 import { Edit, MoreVert } from '@mui/icons-material';
 import { useApi } from '@backstage/core-plugin-api';
-import { pagerDutyApiRef } from '../../api';
+import { pagerDutyApiRef } from '../../../api';
 import { BackstageCustomField } from '@pagerduty/backstage-plugin-common';
-import { CustomFieldModal, FieldErrors } from './CustomFieldModal';
-import { TableSkeleton } from './MappingsTable/TableSkeleton';
-import { useAccountContext } from './AccountContext';
-
-const toFieldErrors = (message: string): FieldErrors => {
-  const lower = message.toLowerCase();
-  if (lower.includes('name') && lower.includes('already exists')) {
-    return { name: 'Entered Name matches one already in use. Please make changes to continue.' };
-  }
-  if (lower.includes('entity path') && lower.includes('already')) {
-    return { entityPath: 'Entered Entity Path matches one already in use. Please make changes to continue.' };
-  }
-  return { general: message };
-};
+import { CustomFieldModal, FieldErrors } from '../CustomFieldModal';
+import { TableSkeleton } from '../MappingsTable/TableSkeleton';
+import { useAccountContext } from '../AccountContext';
+import { toFieldErrors } from './customFieldErrors';
 
 export const CustomFieldsTabPanel = () => {
   const pagerDutyApi = useApi(pagerDutyApiRef);
