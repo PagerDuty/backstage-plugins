@@ -560,8 +560,6 @@ export async function createRouter(
     await customFieldsController.getSyncLogs(request, response);
   });
 
-
-
   // POST /mapping/entity
   router.post('/mapping/entity', async (request, response) => {
     try {

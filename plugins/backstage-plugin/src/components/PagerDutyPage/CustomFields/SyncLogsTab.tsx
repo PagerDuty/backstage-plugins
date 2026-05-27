@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   CellText,
@@ -60,7 +60,10 @@ const getSeverity = (errorCode: string): Severity => {
 
 const formatTimestamp = (timestamp: Date) => {
   const d = new Date(timestamp);
-  return d.toLocaleTimeString([], {
+  return d.toLocaleString([], {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
@@ -138,8 +141,6 @@ export const SyncLogsTab = () => {
   const [filters, setFilters] = useState<SyncLogsFilterValues>(EMPTY_SYNC_LOG_FILTERS);
 
   const apiFilters = useMemo(() => filtersToApi(filters), [filters]);
-  const apiFiltersRef = useRef(apiFilters);
-  apiFiltersRef.current = apiFilters;
 
   const { data: optionsData } = useQuery({
     queryKey: ['pagerduty', 'syncLogs', 'filterOptions', account ?? ''],
@@ -168,13 +169,14 @@ export const SyncLogsTab = () => {
     [optionsData],
   );
 
-  const { tableProps } = useTable<CustomFieldSyncLog>({
+  const { tableProps } = useTable<CustomFieldSyncLog, CustomFieldSyncLogFilters>({
     mode: 'offset',
-    getData: async ({ offset, pageSize }) => {
+    filter: apiFilters,
+    getData: async ({ offset, pageSize, filter }) => {
       const result = await pagerDutyApi.getSyncLogs(account, {
         limit: pageSize,
         offset,
-        ...apiFiltersRef.current,
+        ...filter,
       });
       return {
         data: result.logs,
@@ -191,6 +193,7 @@ export const SyncLogsTab = () => {
         label: 'Timestamp',
         isRowHeader: true,
         isSortable: false,
+        minWidth: 200,
         cell: item => <CellText title={formatTimestamp(item.timestamp)} />,
       },
       {
