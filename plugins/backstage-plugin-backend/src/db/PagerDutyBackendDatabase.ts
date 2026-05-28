@@ -96,7 +96,7 @@ export type SyncLogQueryOptions = CustomFieldSyncLogFilters & {
   offset?: number;
 };
 
-const ERROR_SEVERITY_CODES = ['PD_API_ERROR', 'INVALID_PATH'] as const;
+const ERROR_SEVERITY_CODES = ['PD_API_ERROR'] as const;
 
 type Options = {
   skipMigrations?: boolean;

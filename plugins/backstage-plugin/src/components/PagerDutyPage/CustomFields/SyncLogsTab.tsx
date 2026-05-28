@@ -48,7 +48,6 @@ type Severity = 'warning' | 'error';
 
 const ERROR_CODES_ERROR: ReadonlySet<string> = new Set([
   'PD_API_ERROR',
-  'INVALID_PATH',
 ]);
 
 const getSeverity = (errorCode: string): Severity => {
