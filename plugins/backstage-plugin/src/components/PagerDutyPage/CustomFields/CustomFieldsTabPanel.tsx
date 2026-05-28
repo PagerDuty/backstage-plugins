@@ -7,7 +7,6 @@ import {
   MenuItem,
   MenuTrigger,
   Table,
-  Text,
   type ColumnConfig,
 } from '@backstage/ui';
 import { Edit, MoreVert } from '@mui/icons-material';
@@ -18,6 +17,7 @@ import { CustomFieldModal, FieldErrors } from '../CustomFieldModal';
 import { TableSkeleton } from '../MappingsTable/TableSkeleton';
 import { useAccountContext } from '../AccountContext';
 import { toFieldErrors } from './customFieldErrors';
+import { CustomFieldsEmptyState } from './CustomFieldsEmptyState';
 
 export const CustomFieldsTabPanel = () => {
   const pagerDutyApi = useApi(pagerDutyApiRef);
@@ -91,7 +91,9 @@ export const CustomFieldsTabPanel = () => {
           columnConfig={columnConfig}
           data={customFields}
           pagination={{ type: 'none' }}
-          emptyState={<Text>No custom fields have been added</Text>}
+          emptyState={
+            <CustomFieldsEmptyState message='No custom fields have been added' />
+          }
         />
       )}
 

@@ -23,7 +23,12 @@ import {
   EMPTY_SYNC_LOG_FILTERS,
 } from './SyncLogsFilters';
 
-const useStyles = makeStyles(() => ({
+const useStyles = makeStyles(theme => ({
+  emptyState: {
+    padding: theme.spacing(6),
+    width: '100%',
+    textAlign: 'center' as const,
+  },
   severityBadge: {
     display: 'inline-block',
     padding: '2px 8px',
@@ -133,6 +138,7 @@ const toOption = (v: string) => ({ value: v, label: v });
 
 /** @public */
 export const SyncLogsTab = () => {
+  const classes = useStyles();
   const pagerDutyApi = useApi(pagerDutyApiRef);
   const { selectedAccount } = useAccountContext();
   const account = selectedAccount || undefined;
@@ -277,7 +283,14 @@ export const SyncLogsTab = () => {
         columnConfig={columnConfig}
         {...tableProps}
         emptyState={
-          <Text color="secondary">No sync log entries found</Text>
+          <Flex
+            direction="column"
+            align="center"
+            justify="center"
+            className={classes.emptyState}
+          >
+            <Text color="secondary">No sync log entries found</Text>
+          </Flex>
         }
       />
     </Flex>
