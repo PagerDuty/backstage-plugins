@@ -13,7 +13,7 @@ import {
   TabbedLayout,
 } from '@backstage/core-components';
 import { ServiceMappingComponent } from './ServiceMappingComponent';
-import { CustomFieldsTab } from './CustomFieldsTab';
+import { CustomFields } from './CustomFields';
 import { useApi } from '@backstage/core-plugin-api';
 import { pagerDutyApiRef } from '../../api';
 import { NotFoundError } from '@backstage/errors';
@@ -124,7 +124,7 @@ export const PagerDutyPage = () => {
             </>
           </TabbedLayout.Route>
           <TabbedLayout.Route path="/custom-fields" title="Custom Fields">
-            <CustomFieldsTab />
+            <CustomFields />
           </TabbedLayout.Route>
           <TabbedLayout.Route path="/settings" title="Configuration">
             <>

@@ -1675,6 +1675,4 @@ describe('PagerDuty API', () => {
       },
     );
   });
-
 });
-

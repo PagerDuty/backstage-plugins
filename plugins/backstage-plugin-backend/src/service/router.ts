@@ -555,6 +555,16 @@ export async function createRouter(
     await customFieldsController.syncCustomFieldValues(request, response);
   });
 
+  // POST /custom-fields/sync-logs
+  router.post('/custom-fields/sync-logs', async (request, response) => {
+    await customFieldsController.createSyncLog(request, response);
+  });
+
+  // GET /custom-fields/sync-logs
+  router.get('/custom-fields/sync-logs', async (request, response) => {
+    await customFieldsController.getSyncLogs(request, response);
+  });
+
   // POST /mapping/entity
   router.post('/mapping/entity', async (request, response) => {
     try {

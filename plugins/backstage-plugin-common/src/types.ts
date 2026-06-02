@@ -529,3 +529,49 @@ export type PagerDutyServiceCustomFieldValuesRequest = {
 export type PagerDutyServiceCustomFieldValuesResponse = {
   custom_fields: PagerDutyServiceCustomFieldValue[];
 };
+
+/** @public */
+export type CustomFieldSyncLog = {
+  id: number;
+  timestamp: Date;
+  errorCode: string;
+  customFieldId: string;
+  customFieldName: string;
+  entityPath: string;
+  serviceId: string;
+  serviceName: string;
+  errorMessage: string;
+  subdomain: string;
+};
+
+/** @public */
+export type CustomFieldSyncLogCreateRequest = {
+  errorCode: string;
+  customFieldId: string;
+  customFieldName: string;
+  entityPath: string;
+  serviceId: string;
+  serviceName: string;
+  errorMessage: string;
+};
+
+/** @public */
+export type CustomFieldSyncLogSeverity = 'warning' | 'error';
+
+/** @public */
+export type CustomFieldSyncLogFilters = {
+  search?: string;
+  severity?: CustomFieldSyncLogSeverity;
+  customFieldName?: string;
+  entityPath?: string;
+  serviceName?: string;
+};
+
+/** @public */
+export type CustomFieldSyncLogsResponse = {
+  logs: CustomFieldSyncLog[];
+  total: number;
+  customFieldNames: string[];
+  entityPaths: string[];
+  serviceNames: string[];
+};

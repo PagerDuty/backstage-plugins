@@ -329,7 +329,6 @@ export class PagerDutyEntityProcessor implements CatalogProcessor {
 
     return entity;
   }
-
 }
 
 export function refreshServiceDependencyAnnotations(

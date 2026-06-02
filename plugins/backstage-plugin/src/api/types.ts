@@ -34,6 +34,8 @@ import {
   BackstageCustomFieldCreateRequest,
   BackstageCustomFieldUpdateRequest,
   BackstageCustomFieldsResponse,
+  CustomFieldSyncLogsResponse,
+  CustomFieldSyncLogFilters,
 } from '@pagerduty/backstage-plugin-common';
 import { DiscoveryApi, FetchApi } from '@backstage/core-plugin-api';
 import { Entity } from '@backstage/catalog-model';
@@ -273,6 +275,15 @@ export interface PagerDutyApi {
     request: BackstageCustomFieldUpdateRequest,
     account?: string,
   ): Promise<Result<BackstageCustomField>>;
+
+  /**
+   * Fetches sync logs (paginated, filtered) along with the distinct
+   * filter values for the given account.
+   */
+  getSyncLogs(
+    account?: string,
+    options?: { limit?: number; offset?: number } & CustomFieldSyncLogFilters,
+  ): Promise<CustomFieldSyncLogsResponse>;
 }
 
 /** @public */
