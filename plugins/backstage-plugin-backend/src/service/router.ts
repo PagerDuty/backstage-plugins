@@ -550,6 +550,11 @@ export async function createRouter(
     await customFieldsController.updateCustomField(request, response);
   });
 
+  // PATCH /custom-fields/:id/enabled
+  router.patch('/custom-fields/:id/enabled', async (request, response) => {
+    await customFieldsController.toggleCustomFieldEnabled(request, response);
+  });
+
   // POST /custom-fields/sync
   router.post('/custom-fields/sync', async (request, response) => {
     await customFieldsController.syncCustomFieldValues(request, response);

@@ -276,6 +276,16 @@ export interface PagerDutyApi {
   ): Promise<Result<BackstageCustomField>>;
 
   /**
+   * Enables or disables a custom field. Disabled fields are not synced to
+   * PagerDuty and do not count against the PagerDuty custom field hard limit.
+   */
+  setCustomFieldEnabled(
+    id: number,
+    enabled: boolean,
+    account?: string,
+  ): Promise<Result<BackstageCustomField>>;
+
+  /**
    * Fetches sync logs (paginated, filtered) along with the distinct
    * filter values for the given account.
    */

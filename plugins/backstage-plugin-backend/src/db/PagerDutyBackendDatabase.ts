@@ -73,6 +73,7 @@ export interface PagerDutyBackendStore {
       description?: string;
     },
   ): Promise<BackstageCustomField>;
+  setCustomFieldEnabled(id: number, enabled: boolean): Promise<BackstageCustomField>;
   deleteCustomField(id: number): Promise<void>;
   updateCustomFieldPagerDutyId(id: number, pagerdutyCustomFieldId: string): Promise<void>;
   insertSyncLog(
@@ -299,6 +300,32 @@ export class PagerDutyBackendDatabase implements PagerDutyBackendStore {
         pagerdutyCustomFieldDisplayName: updates.pagerdutyCustomFieldDisplayName,
         backstageEntityMappingPath: updates.backstageEntityMappingPath,
         description: updates.description,
+        updatedAt: new Date(),
+      });
+
+    if (rowsAffected === 0) {
+      throw new Error(`Custom field with id ${id} does not exist`);
+    }
+
+    const result = await this.db<RawDbCustomFieldRow>('pagerduty_custom_fields')
+      .where('id', id)
+      .first();
+
+    if (!result) {
+      throw new Error(`Failed to retrieve custom field after update for id: ${id}`);
+    }
+
+    return this.toBackstageCustomField(result);
+  }
+
+  async setCustomFieldEnabled(
+    id: number,
+    enabled: boolean,
+  ): Promise<BackstageCustomField> {
+    const rowsAffected = await this.db<RawDbCustomFieldRow>('pagerduty_custom_fields')
+      .where('id', id)
+      .update({
+        pagerdutyCustomFieldEnabled: enabled,
         updatedAt: new Date(),
       });
 

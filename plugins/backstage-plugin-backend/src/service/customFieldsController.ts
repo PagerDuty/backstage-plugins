@@ -8,6 +8,7 @@ import {
 } from '../apis/pagerduty';
 import {
   BackstageCustomFieldCreateRequest,
+  BackstageCustomFieldToggleEnabledRequest,
   BackstageCustomFieldUpdateRequest,
   BackstageCustomFieldsResponse,
   CustomFieldSyncLogCreateRequest,
@@ -254,6 +255,90 @@ export class CustomFieldsController {
       response.status(200).json({ customField });
     } catch (error) {
       this.handleUnexpectedError(error, 'updating the custom field', response);
+    }
+  }
+
+  async toggleCustomFieldEnabled(
+    request: Request,
+    response: Response,
+  ): Promise<void> {
+    try {
+      const id = parseInt(request.params.id, 10);
+      if (isNaN(id)) throw new HttpError('Invalid id parameter', 400);
+
+      const { enabled } = request.body as BackstageCustomFieldToggleEnabledRequest;
+      if (typeof enabled !== 'boolean') {
+        throw new HttpError('Invalid enabled value', 400);
+      }
+
+      const existing = await this.store.findCustomFieldById(id);
+      if (!existing) throw new HttpError('Custom field not found', 404);
+
+      // No-op if already in the requested state
+      if (existing.pagerdutyCustomFieldEnabled === enabled) {
+        response.status(200).json({ customField: existing });
+        return;
+      }
+
+      const previousEnabled = existing.pagerdutyCustomFieldEnabled;
+
+      // Step 1: Update Backstage DB first
+      try {
+        await this.store.setCustomFieldEnabled(id, enabled);
+        this.logger.info(
+          `Updated Backstage record for custom field id=${id} (enabled=${enabled})`,
+        );
+      } catch (error) {
+        this.handleDbError(error);
+      }
+
+      // Step 2: Update PagerDuty. display_name is required by the update request,
+      // so we send the existing name unchanged alongside the enabled flag.
+      const pagerDutyRequest: PagerDutyCustomFieldUpdateRequest = {
+        field: {
+          display_name: existing.pagerdutyCustomFieldDisplayName,
+          enabled,
+        },
+      };
+
+      try {
+        await updateCustomField({
+          fieldId: existing.pagerdutyCustomFieldId,
+          request: pagerDutyRequest,
+          account: existing.pagerdutySubdomain,
+        });
+        this.logger.info(
+          `Updated PagerDuty custom field enabled=${enabled}: ${existing.pagerdutyCustomFieldDisplayName} (${existing.pagerdutyCustomFieldId})`,
+        );
+      } catch (error) {
+        // Rollback: revert Backstage DB to its previous enabled state
+        try {
+          await this.store.setCustomFieldEnabled(id, previousEnabled);
+          this.logger.info(
+            `Rolled back Backstage record (id=${id}) to enabled=${previousEnabled} due to PagerDuty update failure`,
+          );
+        } catch (rollbackError) {
+          this.logger.error(
+            `CRITICAL: Failed to rollback Backstage record (id=${id}) after PagerDuty failure. Manual intervention required.`,
+            rollbackError as Error,
+          );
+        }
+
+        if (error instanceof HttpError) this.handlePagerDutyError(error);
+        throw error;
+      }
+
+      const customField = await this.store.findCustomFieldById(id);
+      this.logger.info(
+        `Successfully toggled custom field id=${id} to enabled=${enabled}`,
+      );
+      response.status(200).json({ customField });
+    } catch (error) {
+      this.handleUnexpectedError(
+        error,
+        'toggling the custom field enabled state',
+        response,
+      );
     }
   }
 

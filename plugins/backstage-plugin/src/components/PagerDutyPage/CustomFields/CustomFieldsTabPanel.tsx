@@ -9,7 +9,9 @@ import {
   Table,
   type ColumnConfig,
 } from '@backstage/ui';
-import { Edit, MoreVert } from '@mui/icons-material';
+import { Edit, MoreVert, ToggleOff, ToggleOn } from '@mui/icons-material';
+import Snackbar from '@mui/material/Snackbar';
+import { Alert } from '@material-ui/lab';
 import { useApi } from '@backstage/core-plugin-api';
 import { pagerDutyApiRef } from '../../../api';
 import { BackstageCustomField } from '@pagerduty/backstage-plugin-common';
@@ -28,6 +30,7 @@ export const CustomFieldsTabPanel = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState<FieldErrors | null>(null);
+  const [toggleError, setToggleError] = useState<string | null>(null);
 
   const { data: customFieldsData, isLoading } = useQuery({
     queryKey: ['pagerduty', 'customFields', account ?? ''],
@@ -63,6 +66,16 @@ export const CustomFieldsTabPanel = () => {
     setEditSaving(false);
   };
 
+  const handleToggleEnabled = useCallback(async (field: BackstageCustomField) => {
+    const nextEnabled = !field.pagerdutyCustomFieldEnabled;
+    const result = await pagerDutyApi.setCustomFieldEnabled(field.id, nextEnabled, account);
+    if (result.status === 'ok') {
+      queryClient.invalidateQueries({ queryKey: ['pagerduty', 'customFields', account ?? ''] });
+    } else {
+      setToggleError(result.error);
+    }
+  }, [pagerDutyApi, account, queryClient]);
+
   const columnConfig: ColumnConfig<BackstageCustomField>[] = useMemo(() => [
     { id: 'name', label: 'Custom Field', isRowHeader: true, isSortable: false, cell: item => <CellText title={item.pagerdutyCustomFieldDisplayName} /> },
     { id: 'entityPath', label: 'Entity Path', isRowHeader: false, isSortable: false, cell: item => <CellText title={item.backstageEntityMappingPath} /> },
@@ -75,12 +88,24 @@ export const CustomFieldsTabPanel = () => {
             <ButtonIcon icon={<MoreVert fontSize="small" />} aria-label="actions" variant="tertiary" size="small" />
             <Menu>
               <MenuItem iconStart={<Edit fontSize="small" />} onAction={() => handleOpenEditModal(item)}>Edit</MenuItem>
+              <MenuItem
+                iconStart={
+                  item.pagerdutyCustomFieldEnabled ? (
+                    <ToggleOn fontSize="small" />
+                  ) : (
+                    <ToggleOff fontSize="small" />
+                  )
+                }
+                onAction={() => handleToggleEnabled(item)}
+              >
+                {item.pagerdutyCustomFieldEnabled ? 'Disable' : 'Enable'}
+              </MenuItem>
             </Menu>
           </MenuTrigger>
         } />
       ),
     },
-  ], [handleOpenEditModal]);
+  ], [handleOpenEditModal, handleToggleEnabled]);
 
   return (
     <>
@@ -91,6 +116,9 @@ export const CustomFieldsTabPanel = () => {
           columnConfig={columnConfig}
           data={customFields}
           pagination={{ type: 'none' }}
+          rowConfig={{
+            getIsDisabled: item => !item.pagerdutyCustomFieldEnabled,
+          }}
           emptyState={
             <CustomFieldsEmptyState message='No custom fields have been added' />
           }
@@ -110,6 +138,17 @@ export const CustomFieldsTabPanel = () => {
           description: selectedCustomField.description ?? '',
         } : undefined}
       />
+
+      <Snackbar
+        open={toggleError !== null}
+        autoHideDuration={5000}
+        onClose={() => setToggleError(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert severity="error" onClose={() => setToggleError(null)}>
+          {toggleError}
+        </Alert>
+      </Snackbar>
     </>
   );
 };

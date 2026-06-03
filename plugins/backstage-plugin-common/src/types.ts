@@ -499,6 +499,11 @@ export type BackstageCustomFieldUpdateRequest = {
 };
 
 /** @public */
+export type BackstageCustomFieldToggleEnabledRequest = {
+  enabled: boolean;
+};
+
+/** @public */
 export type PagerDutyCustomFieldUpdateRequest = {
   field: {
     display_name: string;

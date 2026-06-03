@@ -3998,6 +3998,97 @@ describe('createRouter', () => {
     });
   });
 
+  describe('PATCH /custom-fields/:id/enabled', () => {
+    const createField = async (testId: string) => {
+      const createData = {
+        name: `Toggle Field ${testId}`,
+        entityPath: `spec.toggle_${testId}`,
+        description: 'Toggle test field',
+      };
+      mocked(fetch).mockReturnValueOnce(
+        mockedResponse(201, {
+          field: {
+            id: `PTOGGLE_${testId}`,
+            display_name: createData.name,
+            name: createData.name.toLowerCase().replace(/ /g, '_'),
+            data_type: 'string',
+            field_type: 'single_value',
+            description: createData.description,
+            enabled: true,
+          },
+        }),
+      );
+      const createResponse = await request(app)
+        .post('/custom-fields')
+        .send(createData);
+      expect(createResponse.status).toEqual(201);
+      return createResponse.body.customField.id as number;
+    };
+
+    it('disables a custom field and persists enabled=false', async () => {
+      const testId = `disable${Date.now()}`;
+      const fieldId = await createField(testId);
+
+      mocked(fetch).mockReturnValueOnce(mockedResponse(200, {}));
+      const response = await request(app)
+        .patch(`/custom-fields/${fieldId}/enabled`)
+        .send({ enabled: false });
+
+      expect(response.status).toEqual(200);
+      expect(response.body.customField.pagerdutyCustomFieldEnabled).toBe(false);
+
+      // Disabled fields should be filtered out of the enabled view
+      const enabledOnly = await request(app).get('/custom-fields?enabled=true');
+      expect(
+        enabledOnly.body.customFields.find(
+          (f: { id: number }) => f.id === fieldId,
+        ),
+      ).toBeUndefined();
+    });
+
+    it('returns 400 when enabled is not a boolean', async () => {
+      const response = await request(app)
+        .patch('/custom-fields/1/enabled')
+        .send({ enabled: 'yes' });
+      expect(response.status).toEqual(400);
+    });
+
+    it('returns 404 when the custom field does not exist', async () => {
+      const response = await request(app)
+        .patch('/custom-fields/999999/enabled')
+        .send({ enabled: false });
+      expect(response.status).toEqual(404);
+    });
+
+    it('rolls back enabled state when PagerDuty rejects re-enable over the limit', async () => {
+      const testId = `overlimit${Date.now()}`;
+      const fieldId = await createField(testId);
+
+      // First disable it successfully
+      mocked(fetch).mockReturnValueOnce(mockedResponse(200, {}));
+      const disable = await request(app)
+        .patch(`/custom-fields/${fieldId}/enabled`)
+        .send({ enabled: false });
+      expect(disable.status).toEqual(200);
+
+      // Re-enable fails because the PagerDuty hard limit is reached
+      mocked(fetch).mockReturnValueOnce(
+        mockedResponse(400, { error: { message: 'Product limit reached' } }),
+      );
+      const reEnable = await request(app)
+        .patch(`/custom-fields/${fieldId}/enabled`)
+        .send({ enabled: true });
+      expect(reEnable.status).toEqual(400);
+
+      // DB should have been rolled back to disabled
+      const all = await request(app).get('/custom-fields');
+      const field = all.body.customFields.find(
+        (f: { id: number }) => f.id === fieldId,
+      );
+      expect(field.pagerdutyCustomFieldEnabled).toBe(false);
+    });
+  });
+
   describe('GET /custom-fields', () => {
     it.each(testInputs)(
       'returns 200 with customFields array',
