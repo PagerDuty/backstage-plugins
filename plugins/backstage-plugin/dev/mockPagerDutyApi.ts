@@ -24,7 +24,6 @@ import {
   PagerDutyUser,
   FormattedBackstageEntity,
   PagerDutyEnhancedEntityMappingsResponse,
-  AutoMatchEntityMappingsResponse,
   BackstageCustomFieldCreateRequest,
   BackstageCustomFieldUpdateRequest,
 } from '@pagerduty/backstage-plugin-common';

@@ -29,7 +29,6 @@ import {
   PagerDutyEnhancedEntityMappingsResponse,
   AutoMatchStartResponse,
   AutoMatchStatusResponse,
-  AutoMatchEntityMappingsResponse,
   BackstageCustomField,
   BackstageCustomFieldCreateRequest,
   BackstageCustomFieldUpdateRequest,
