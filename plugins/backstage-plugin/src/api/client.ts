@@ -624,6 +624,40 @@ export class PagerDutyClient implements PagerDutyApi {
     }
   }
 
+  async setCustomFieldEnabled(
+    id: number,
+    enabled: boolean,
+    account?: string,
+  ): Promise<Result<BackstageCustomField>> {
+    const options = {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json; charset=UTF-8',
+        Accept: 'application/json, text/plain, */*',
+      },
+      body: JSON.stringify({ enabled }),
+    };
+
+    let url = `${await this.config.discoveryApi.getBaseUrl(
+      'pagerduty',
+    )}/custom-fields/${id}/enabled`;
+
+    if (account) {
+      url = url.concat(`?account=${account}`);
+    }
+
+    try {
+      const response = await this.request(url, options);
+      const result = await response.json();
+      return { status: 'ok', data: result.customField, error: null };
+    } catch (error) {
+      return parseCustomFieldError(
+        error,
+        `Failed to ${enabled ? 'enable' : 'disable'} custom field`,
+      );
+    }
+  }
+
   private async findByUrl<T>(url: string): Promise<T> {
     const options = {
       method: 'GET',

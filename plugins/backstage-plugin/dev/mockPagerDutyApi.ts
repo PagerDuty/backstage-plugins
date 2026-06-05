@@ -549,6 +549,22 @@ export const mockPagerDutyApi: PagerDutyApi = {
     error: null,
   }),
 
+  setCustomFieldEnabled: async (id: number, enabled: boolean) => ({
+    status: 'ok' as const,
+    data: {
+      id,
+      pagerdutyCustomFieldId: 'PD123',
+      pagerdutyCustomFieldDisplayName: 'Custom Field',
+      pagerdutyCustomFieldEnabled: enabled,
+      backstageEntityMappingPath: '',
+      pagerdutySubdomain: 'default',
+      description: '',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+    error: null,
+  }),
+
   getSyncLogs: async () => ({
     logs: [],
     total: 0,
