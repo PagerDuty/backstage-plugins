@@ -42,6 +42,11 @@ export class PagerDutyCustomFieldsProcessor implements CatalogProcessor {
     const serviceName = entity.metadata.name;
 
     try {
+      // Customers must explicitly opt in to the data sync before any data is
+      // pushed to PagerDuty. The toggle is stored org-wide in the settings table.
+      const dataSyncEnabled = await this.client.isDataSyncEnabled();
+      if (!dataSyncEnabled) return entity;
+
       const fields = await this.client.getEnabledCustomFields(account);
       if (fields.length === 0) return entity;
 

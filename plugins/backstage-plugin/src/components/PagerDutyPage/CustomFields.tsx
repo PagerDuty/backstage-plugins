@@ -2,6 +2,8 @@ import { useState } from 'react';
 import {
   QueryClient,
   QueryClientProvider,
+  useMutation,
+  useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
 import {
@@ -16,8 +18,10 @@ import {
   Text,
 } from '@backstage/ui';
 import { useApi } from '@backstage/core-plugin-api';
+import { NotFoundError } from '@backstage/errors';
 import { makeStyles } from '@material-ui/core';
 import { pagerDutyApiRef } from '../../api';
+import type { PagerDutySetting } from '@pagerduty/backstage-plugin-common';
 import { ButtonTabs, ButtonTabItem } from './CustomFields/ButtonTabs';
 import { CustomFieldsTabPanel } from './CustomFields/CustomFieldsTabPanel';
 import { SyncLogsTab } from './CustomFields/SyncLogsTab';
@@ -26,6 +30,12 @@ import { CustomFieldModal, FieldErrors } from './CustomFieldModal';
 import { toFieldErrors } from './CustomFields/customFieldErrors';
 
 const queryClient = new QueryClient();
+
+const DATA_SYNC_SETTING_ID = 'settings::data-sync';
+
+// The data-sync toggle reuses the generic settings store but with its own
+// enabled/disabled value, distinct from the dependency-strategy PagerDutySetting.
+type DataSyncSetting = { id: string; value: 'enabled' | 'disabled' };
 
 const useStyles = makeStyles(() => ({
   syncCardWrapper: {
@@ -51,7 +61,6 @@ const CustomFieldsTabContent = () => {
   const reactQueryClient = useQueryClient();
   const classes = useStyles();
   const [activeTab, setActiveTab] = useState<TabKey>('fields');
-  const [orgWideSyncOn, setOrgWideSyncOn] = useState(true);
   const { selectedAccount, setSelectedAccount, accounts } = useAccountContext();
   const account = selectedAccount || undefined;
 
@@ -60,6 +69,48 @@ const CustomFieldsTabContent = () => {
   const [addError, setAddError] = useState<FieldErrors | null>(null);
 
   const showAccountSelector = accounts.length > 1;
+
+  const { data: orgWideSyncOn = false } = useQuery({
+    queryKey: ['pagerduty', 'settings', DATA_SYNC_SETTING_ID],
+    queryFn: async () => {
+      try {
+        const result = (await pagerDutyApi.getSetting(
+          DATA_SYNC_SETTING_ID,
+        )) as DataSyncSetting;
+        return result?.value === 'enabled';
+      } catch (error) {
+        if (error instanceof NotFoundError) {
+          // The setting has never been saved — treat the sync as disabled.
+          return false;
+        }
+        throw error;
+      }
+    },
+  });
+
+  const { mutate: toggleSync } = useMutation({
+    mutationFn: (enabled: boolean) => {
+      const setting: DataSyncSetting = {
+        id: DATA_SYNC_SETTING_ID,
+        value: enabled ? 'enabled' : 'disabled',
+      };
+      return pagerDutyApi.storeSettings([setting as PagerDutySetting]);
+    },
+    onMutate: (enabled: boolean) => {
+      // Optimistically reflect the toggle while the request is in flight.
+      reactQueryClient.setQueryData(
+        ['pagerduty', 'settings', DATA_SYNC_SETTING_ID],
+        enabled,
+      );
+    },
+    onError: (_error, enabled: boolean) => {
+      // Roll back to the previous value on failure.
+      reactQueryClient.setQueryData(
+        ['pagerduty', 'settings', DATA_SYNC_SETTING_ID],
+        !enabled,
+      );
+    },
+  });
 
   const handleOpenAdd = () => {
     setAddError(null);
@@ -109,7 +160,7 @@ const CustomFieldsTabContent = () => {
                   </Text>
                   <Switch
                     isSelected={orgWideSyncOn}
-                    onChange={setOrgWideSyncOn}
+                    onChange={toggleSync}
                     aria-label="Toggle org-wide data sync"
                   />
                 </Flex>

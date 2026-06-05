@@ -4233,4 +4233,55 @@ describe('createRouter', () => {
       expect(final.body.completedAt).toBeDefined();
     });
   });
+
+  describe('settings: data sync toggle', () => {
+    const DATA_SYNC_SETTING_ID = 'settings::data-sync';
+
+    it('POST /settings persists an enabled data-sync setting and GET reads it back', async () => {
+      const postResponse = await request(app)
+        .post('/settings')
+        .send([{ id: DATA_SYNC_SETTING_ID, value: 'enabled' }]);
+      expect(postResponse.status).toEqual(200);
+
+      const getResponse = await request(app).get(
+        `/settings/${DATA_SYNC_SETTING_ID}`,
+      );
+      expect(getResponse.status).toEqual(200);
+      expect(getResponse.body).toMatchObject({
+        id: DATA_SYNC_SETTING_ID,
+        value: 'enabled',
+      });
+    });
+
+    it('POST /settings allows disabling the data-sync setting', async () => {
+      const response = await request(app)
+        .post('/settings')
+        .send([{ id: DATA_SYNC_SETTING_ID, value: 'disabled' }]);
+      expect(response.status).toEqual(200);
+    });
+
+    it('POST /settings rejects an invalid value for the data-sync setting', async () => {
+      const response = await request(app)
+        .post('/settings')
+        .send([{ id: DATA_SYNC_SETTING_ID, value: 'both' }]);
+      expect(response.status).toEqual(400);
+    });
+
+    it('POST /settings rejects "enabled" for the dependency-strategy setting', async () => {
+      const response = await request(app)
+        .post('/settings')
+        .send([
+          {
+            id: 'settings::service-dependency-sync-strategy',
+            value: 'enabled',
+          },
+        ]);
+      expect(response.status).toEqual(400);
+    });
+
+    it('GET /settings/:settingId returns 404 when the setting is unset', async () => {
+      const response = await request(app).get('/settings/settings::not-a-real-setting');
+      expect(response.status).toEqual(404);
+    });
+  });
 });
