@@ -629,6 +629,55 @@ export class PagerDutyClient {
     }
   }
 
+  async isDataSyncEnabled(): Promise<boolean> {
+    const DATA_SYNC_SETTING_ID = 'settings::data-sync';
+
+    let response: Response;
+
+    if (this.baseUrl === '') {
+      this.baseUrl = await this.discovery.getBaseUrl('pagerduty');
+    }
+
+    const options: RequestInit = {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json; charset=UTF-8',
+        Accept: 'application/json, text/plain, */*',
+        Authorization: await this.generatePluginToPluginToken(),
+      },
+    };
+
+    const url = `${await this.discovery.getBaseUrl(
+      'pagerduty',
+    )}/settings/${DATA_SYNC_SETTING_ID}`;
+
+    try {
+      response = await fetchWithRetries(url, options);
+
+      if (response.status >= 500) {
+        throw new Error(
+          `Failed to get data sync setting. API returned a server error. Retrying with the same arguments will not work.`,
+        );
+      }
+
+      switch (response.status) {
+        case 400:
+          throw new Error(await response.text());
+        case 404:
+          return false; // if setting does not exist, default to disabled (opt-in)
+        default: {
+          // 200 — the data-sync setting stores its own 'enabled'/'disabled'
+          // value, distinct from the dependency-strategy PagerDutySetting union.
+          const setting: { id: string; value: string } = await response.json();
+          return setting.value === 'enabled';
+        }
+      }
+    } catch (error) {
+      this.logger.error(`Error getting value for setting: ${error}`);
+      throw new Error(`Error getting value for setting: ${error}`);
+    }
+  }
+
   async getEnabledCustomFields(account?: string): Promise<BackstageCustomField[]> {
     let response: Response;
 

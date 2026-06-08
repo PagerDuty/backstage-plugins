@@ -54,6 +54,12 @@ import * as MappingsController from '../controllers/mappings-controller';
 import * as CatalogEntityUtils from '../utils/catalog-entity';
 import { MiddlewareFactory } from '@backstage/backend-defaults/rootHttpRouter';
 
+/**
+ * Setting key for the org-wide custom field data sync toggle.
+ * Stored in the `pagerduty_settings` table with value 'enabled' or 'disabled'.
+ */
+const DATA_SYNC_SETTING_ID = 'settings::data-sync';
+
 export interface RouterOptions {
   logger: LoggerService;
   config: RootConfigService;
@@ -472,12 +478,10 @@ export async function createRouter(
             return;
           }
 
-          if (!isValidSetting(setting.value)) {
+          if (!isValidSettingValue(setting.id, setting.value)) {
             response
               .status(400)
-              .json(
-                "Bad Request: 'value' is invalid. Valid options are 'backstage', 'pagerduty', 'both' or 'disabled'",
-              );
+              .json(`Bad Request: '${setting.value}' is not a valid value for setting '${setting.id}'`);
             return;
           }
 
@@ -522,17 +526,17 @@ export async function createRouter(
     }
   });
 
-  function isValidSetting(value: string): boolean {
-    if (
+  function isValidSettingValue(id: string, value: string): boolean {
+    if (id === DATA_SYNC_SETTING_ID) {
+      return value === 'enabled' || value === 'disabled';
+    }
+
+    return (
       value === 'backstage' ||
       value === 'pagerduty' ||
       value === 'both' ||
       value === 'disabled'
-    ) {
-      return true;
-    }
-
-    return false;
+    );
   }
 
   // POST /custom-fields
