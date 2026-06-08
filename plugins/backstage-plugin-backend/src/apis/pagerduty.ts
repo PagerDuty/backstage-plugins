@@ -321,7 +321,7 @@ export async function getServiceRelationshipsById(
   };
 
   const apiBaseUrl = getApiBaseUrl(account);
-  const baseUrl = `${apiBaseUrl}/service_dependencies/technical_services/${serviceId}`;
+  const baseUrl = `${apiBaseUrl}/service_dependencies/technical_services/${encodeURIComponent(serviceId)}`;
 
   try {
     response = await fetchWithRetries(baseUrl, options);
@@ -754,7 +754,7 @@ export async function getServiceById(
 
   try {
     response = await fetchWithRetries(
-      `${baseUrl}/${serviceId}?${params}`,
+      `${baseUrl}/${encodeURIComponent(serviceId)}?${params}`,
       options,
     );
   } catch (error) {
@@ -822,11 +822,11 @@ export async function getSerivcesByIdsAndAccount(
   const apiBaseUrl = getApiBaseUrl(account);
   const baseUrl = `${apiBaseUrl}/services`;
 
+  const params = new URLSearchParams();
+  serviceIds.forEach(id => params.append('id[]', id));
+
   try {
-    response = await fetchWithRetries(
-      `${baseUrl}?id[]=${serviceIds.join('&id[]=')}`,
-      options,
-    );
+    response = await fetchWithRetries(`${baseUrl}?${params}`, options);
   } catch (error) {
     throw new Error(`Failed to retrieve service: ${error}`);
   }
@@ -1212,7 +1212,7 @@ export async function getChangeEvents(
 
   try {
     response = await fetchWithRetries(
-      `${baseUrl}/${serviceId}/change_events?${params}`,
+      `${baseUrl}/${encodeURIComponent(serviceId)}/change_events?${params}`,
       options,
     );
   } catch (error) {
@@ -1269,7 +1269,7 @@ export async function getIncidents(
   account?: string,
 ): Promise<PagerDutyIncident[]> {
   let response: Response;
-  const params = `time_zone=UTC&sort_by=created_at&statuses[]=triggered&statuses[]=acknowledged&service_ids[]=${serviceId}`;
+  const params = `time_zone=UTC&sort_by=created_at&statuses[]=triggered&statuses[]=acknowledged&service_ids[]=${encodeURIComponent(serviceId)}`;
 
   const options: RequestInit = {
     method: 'GET',
@@ -1344,7 +1344,7 @@ export async function getServiceStandards(
   };
 
   const apiBaseUrl = getApiBaseUrl(account);
-  const baseUrl = `${apiBaseUrl}/standards/scores/technical_services/${serviceId}`;
+  const baseUrl = `${apiBaseUrl}/standards/scores/technical_services/${encodeURIComponent(serviceId)}`;
 
   try {
     response = await fetchWithRetries(baseUrl, options);
@@ -1493,7 +1493,7 @@ export async function createServiceIntegration({
 
   try {
     response = await fetchWithRetries(
-      `${baseUrl}/${serviceId}/integrations`,
+      `${baseUrl}/${encodeURIComponent(serviceId)}/integrations`,
       options,
     );
   } catch (error) {
@@ -1537,10 +1537,50 @@ export async function createServiceIntegration({
   }
 }
 
+function getAllowedApiOrigins(): Set<string> {
+  const origins = new Set<string>();
+
+  const addOrigin = (apiBaseUrl?: string) => {
+    if (!apiBaseUrl) {
+      return;
+    }
+    try {
+      origins.add(new URL(apiBaseUrl).origin);
+    } catch {
+      // ignore malformed configured URLs
+    }
+  };
+
+  Object.values(EndpointConfig).forEach(cfg => addOrigin(cfg.apiBaseUrl));
+  addOrigin(fallbackEndpointConfig?.apiBaseUrl);
+
+  // Always allow the public PagerDuty API host (default for every config path,
+  // and used directly by isEventNoiseReductionEnabled).
+  origins.add('https://api.pagerduty.com');
+
+  return origins;
+}
+
 export async function fetchWithRetries(
   url: string,
   options: RequestInit,
 ): Promise<Response> {
+  // Guard against SSRF: only allow requests to configured PagerDuty API origins.
+  // The host is server-controlled, but path segments may be user-provided, so we
+  // validate the resolved origin against an allow-list before fetching.
+  let requestOrigin: string;
+  try {
+    requestOrigin = new URL(url).origin;
+  } catch {
+    throw new Error('Refusing to fetch invalid URL.');
+  }
+
+  if (!getAllowedApiOrigins().has(requestOrigin)) {
+    throw new Error(
+      `Refusing to fetch URL with disallowed origin: ${requestOrigin}`,
+    );
+  }
+
   let response: Response;
   let error: Error = new Error();
 
@@ -1656,7 +1696,7 @@ export async function updateCustomField({
   account,
 }: UpdateCustomFieldProps): Promise<PagerDutyCustomFieldResponse> {
   const apiBaseUrl = getApiBaseUrl(account);
-  const baseUrl = `${apiBaseUrl}/services/custom_fields/${fieldId}`;
+  const baseUrl = `${apiBaseUrl}/services/custom_fields/${encodeURIComponent(fieldId)}`;
   const token = await getAuthToken(account);
 
   const options: RequestInit = {
@@ -1798,7 +1838,7 @@ export async function setServiceCustomFieldValues({
   account,
 }: SetServiceCustomFieldValuesProps): Promise<PagerDutyServiceCustomFieldValuesResponse> {
   const apiBaseUrl = getApiBaseUrl(account);
-  const baseUrl = `${apiBaseUrl}/services/${serviceId}/custom_fields/values`;
+  const baseUrl = `${apiBaseUrl}/services/${encodeURIComponent(serviceId)}/custom_fields/values`;
   const token = await getAuthToken(account);
 
   const options: RequestInit = {
