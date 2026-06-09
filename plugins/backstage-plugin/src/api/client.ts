@@ -658,6 +658,34 @@ export class PagerDutyClient implements PagerDutyApi {
     }
   }
 
+  async deleteCustomField(
+    id: number,
+    account?: string,
+  ): Promise<Result<void>> {
+    const options = {
+      method: 'DELETE',
+      headers: {
+        Accept: 'application/json, text/plain, */*',
+      },
+    };
+
+    let url = `${await this.config.discoveryApi.getBaseUrl(
+      'pagerduty',
+    )}/custom-fields/${id}`;
+
+    if (account) {
+      url = url.concat(`?account=${account}`);
+    }
+
+    try {
+      await this.request(url, options);
+      return { status: 'ok', data: undefined, error: null };
+    } catch (error) {
+      const result = parseCustomFieldError(error, 'Failed to delete custom field');
+      return { status: 'error', data: null, error: result.error! };
+    }
+  }
+
   private async findByUrl<T>(url: string): Promise<T> {
     const options = {
       method: 'GET',

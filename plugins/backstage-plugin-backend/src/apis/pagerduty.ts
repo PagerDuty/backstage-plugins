@@ -1826,6 +1826,61 @@ export async function getCustomFields({
   }
 }
 
+export type DeleteCustomFieldProps = {
+  fieldId: string;
+  account?: string;
+};
+
+export async function deleteCustomField({
+  fieldId,
+  account,
+}: DeleteCustomFieldProps): Promise<void> {
+  const apiBaseUrl = getApiBaseUrl(account);
+  const baseUrl = `${apiBaseUrl}/services/custom_fields/${encodeURIComponent(fieldId)}`;
+  const token = await getAuthToken(account);
+
+  const options: RequestInit = {
+    method: 'DELETE',
+    headers: {
+      Authorization: token,
+      Accept: 'application/vnd.pagerduty+json;version=2',
+    },
+  };
+
+  let response: Response;
+  try {
+    response = await fetchWithRetries(baseUrl, options);
+  } catch (error) {
+    throw new Error(`Failed to delete custom field: ${error}`);
+  }
+
+  if (response.status >= 500) {
+    throw new HttpError(
+      `Failed to delete custom field. PagerDuty API returned a server error.`,
+      response.status,
+    );
+  }
+
+  switch (response.status) {
+    case 401:
+      throw new HttpError(
+        `Failed to delete custom field. Invalid credentials provided.`,
+        401,
+      );
+    case 403:
+      throw new HttpError(
+        `Failed to delete custom field. Caller is not authorized to delete this custom field.`,
+        403,
+      );
+    case 404:
+      throw new HttpError(`Custom field not found.`, 404);
+    case 429:
+      throw new HttpError(`Rate limit exceeded.`, 429);
+    default: // 204
+      break;
+  }
+}
+
 export type SetServiceCustomFieldValuesProps = {
   serviceId: string;
   request: PagerDutyServiceCustomFieldValuesRequest;

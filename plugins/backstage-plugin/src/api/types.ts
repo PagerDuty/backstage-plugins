@@ -286,6 +286,14 @@ export interface PagerDutyApi {
   ): Promise<Result<BackstageCustomField>>;
 
   /**
+   * Deletes a custom field from both Backstage and PagerDuty, reclaiming the slot.
+   */
+  deleteCustomField(
+    id: number,
+    account?: string,
+  ): Promise<Result<void>>;
+
+  /**
    * Fetches sync logs (paginated, filtered) along with the distinct
    * filter values for the given account.
    */

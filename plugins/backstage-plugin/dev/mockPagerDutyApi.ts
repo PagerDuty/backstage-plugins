@@ -565,6 +565,12 @@ export const mockPagerDutyApi: PagerDutyApi = {
     error: null,
   }),
 
+  deleteCustomField: async (_id: number) => ({
+    status: 'ok' as const,
+    data: undefined,
+    error: null,
+  }),
+
   getSyncLogs: async () => ({
     logs: [],
     total: 0,
