@@ -9,7 +9,7 @@ import {
   Table,
   type ColumnConfig,
 } from '@backstage/ui';
-import { Edit, MoreVert, ToggleOff, ToggleOn } from '@mui/icons-material';
+import { Delete, Edit, MoreVert, ToggleOff, ToggleOn } from '@mui/icons-material';
 import Snackbar from '@mui/material/Snackbar';
 import { Alert } from '@material-ui/lab';
 import { useApi } from '@backstage/core-plugin-api';
@@ -20,6 +20,7 @@ import { TableSkeleton } from '../MappingsTable/TableSkeleton';
 import { useAccountContext } from '../AccountContext';
 import { toFieldErrors } from './customFieldErrors';
 import { CustomFieldsEmptyState } from './CustomFieldsEmptyState';
+import { DeleteCustomFieldDialog } from './DeleteCustomFieldDialog';
 
 export const CustomFieldsTabPanel = () => {
   const pagerDutyApi = useApi(pagerDutyApiRef);
@@ -31,6 +32,7 @@ export const CustomFieldsTabPanel = () => {
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState<FieldErrors | null>(null);
   const [toggleError, setToggleError] = useState<string | null>(null);
+  const [fieldToDelete, setFieldToDelete] = useState<BackstageCustomField | null>(null);
 
   const { data: customFieldsData, isLoading } = useQuery({
     queryKey: ['pagerduty', 'customFields', account ?? ''],
@@ -100,6 +102,7 @@ export const CustomFieldsTabPanel = () => {
               >
                 {item.pagerdutyCustomFieldEnabled ? 'Disable' : 'Enable'}
               </MenuItem>
+              <MenuItem iconStart={<Delete fontSize="small" />} onAction={() => setFieldToDelete(item)}>Delete</MenuItem>
             </Menu>
           </MenuTrigger>
         } />
@@ -137,6 +140,12 @@ export const CustomFieldsTabPanel = () => {
           entityPath: selectedCustomField.backstageEntityMappingPath,
           description: selectedCustomField.description ?? '',
         } : undefined}
+      />
+
+      <DeleteCustomFieldDialog
+        field={fieldToDelete}
+        onClose={() => setFieldToDelete(null)}
+        onSuccess={() => setFieldToDelete(null)}
       />
 
       <Snackbar

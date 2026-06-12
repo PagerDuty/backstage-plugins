@@ -3,6 +3,7 @@ import { Request, Response } from 'express';
 import { PagerDutyBackendStore } from '../db/PagerDutyBackendDatabase';
 import {
   createCustomField,
+  deleteCustomField,
   setServiceCustomFieldValues,
   updateCustomField,
 } from '../apis/pagerduty';
@@ -339,6 +340,40 @@ export class CustomFieldsController {
         'toggling the custom field enabled state',
         response,
       );
+    }
+  }
+
+  async deleteCustomField(request: Request, response: Response): Promise<void> {
+    try {
+      const id = parseInt(request.params.id, 10);
+      if (isNaN(id)) throw new HttpError('Invalid id parameter', 400);
+
+      const existing = await this.store.findCustomFieldById(id);
+      if (!existing) throw new HttpError('Custom field not found', 404);
+
+      // Step 1: Delete from PagerDuty first
+      try {
+        await deleteCustomField({
+          fieldId: existing.pagerdutyCustomFieldId,
+          account: existing.pagerdutySubdomain,
+        });
+        this.logger.info(
+          `Deleted PagerDuty custom field: ${existing.pagerdutyCustomFieldDisplayName} (${existing.pagerdutyCustomFieldId})`,
+        );
+      } catch (error) {
+        if (error instanceof HttpError) this.handlePagerDutyError(error);
+        throw error;
+      }
+
+      // Step 2: Delete from Backstage DB
+      await this.store.deleteCustomField(id);
+      this.logger.info(
+        `Deleted Backstage custom field record id=${id} (${existing.pagerdutyCustomFieldDisplayName})`,
+      );
+
+      response.status(204).end();
+    } catch (error) {
+      this.handleUnexpectedError(error, 'deleting the custom field', response);
     }
   }
 
