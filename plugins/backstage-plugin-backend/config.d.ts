@@ -50,5 +50,48 @@ export interface Config {
      * @deepVisibility secret
      */
     accounts?: PagerDutyAccountConfig[];
+    /**
+     * Optional retention and cleanup settings for custom field sync logs.
+     * @visibility backend
+     */
+    customFieldsSyncLogs?: {
+      /**
+       * Number of days to keep sync logs before they are deleted. Defaults to 30.
+       * @visibility backend
+       */
+      retentionDays?: number;
+      /**
+       * Maximum number of sync log rows to keep across all accounts; the
+       * oldest rows beyond this count are deleted. Defaults to 500000.
+       * @visibility backend
+       */
+      maxRows?: number;
+      /**
+       * Settings for the scheduled cleanup task.
+       * @visibility backend
+       */
+      cleanup?: {
+        /**
+         * Whether the scheduled cleanup task runs. Defaults to true.
+         * @visibility backend
+         */
+        enabled?: boolean;
+        /**
+         * How often the cleanup task runs, in minutes. Defaults to 15.
+         * @visibility backend
+         */
+        frequencyMinutes?: number;
+        /**
+         * Number of rows deleted per batch. Defaults to 10000.
+         * @visibility backend
+         */
+        batchSize?: number;
+        /**
+         * Maximum number of delete batches per run. Defaults to 500.
+         * @visibility backend
+         */
+        maxBatchesPerRun?: number;
+      };
+    };
   };
 }

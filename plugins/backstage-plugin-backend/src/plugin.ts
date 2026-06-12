@@ -6,6 +6,10 @@ import {
 } from '@backstage/backend-plugin-api';
 import { createRouter } from './service/router';
 import { PagerDutyBackendDatabase, PagerDutyBackendStore } from './db';
+import {
+  readSyncLogsCleanupConfig,
+  runSyncLogsCleanup,
+} from './services/syncLogsCleanup';
 import { CatalogClient } from '@backstage/catalog-client';
 
 class CatalogFetchApi {
@@ -43,6 +47,7 @@ export const pagerDutyPlugin = createBackendPlugin({
         discovery: coreServices.discovery,
         auth: coreServices.auth,
         cache: coreServices.cache,
+        scheduler: coreServices.scheduler,
       },
       async init({
         config,
@@ -52,11 +57,29 @@ export const pagerDutyPlugin = createBackendPlugin({
         discovery,
         auth,
         cache,
+        scheduler,
       }) {
         const pagerDutyBackendStore: PagerDutyBackendStore =
           await PagerDutyBackendDatabase.create(await database.getClient(), {
             skipMigrations: false,
           });
+
+        const cleanupConfig = readSyncLogsCleanupConfig(config);
+        if (cleanupConfig.enabled) {
+          await scheduler.scheduleTask({
+            id: 'pagerduty-custom-field-sync-logs-cleanup',
+            frequency: { minutes: cleanupConfig.frequencyMinutes },
+            timeout: { minutes: 10 },
+            initialDelay: { minutes: 1 },
+            scope: 'global',
+            fn: () =>
+              runSyncLogsCleanup({
+                store: pagerDutyBackendStore,
+                logger,
+                cleanupConfig,
+              }),
+          });
+        }
 
         httpRouter.use(
           await createRouter({

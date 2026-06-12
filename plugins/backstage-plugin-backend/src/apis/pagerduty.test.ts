@@ -1653,7 +1653,7 @@ describe('PagerDuty API', () => {
     );
   });
 
-  describe('updateCustomField', () => {
+  describe('updateCustomField error handling', () => {
     it.each(testInputs)(
       'throws HttpError with status 404 when field not found',
       async () => {

@@ -174,7 +174,7 @@ export const SyncLogsTab = () => {
     [optionsData],
   );
 
-  const { tableProps } = useTable<CustomFieldSyncLog, CustomFieldSyncLogFilters>({
+  const { tableProps, reload } = useTable<CustomFieldSyncLog, CustomFieldSyncLogFilters>({
     mode: 'offset',
     filter: apiFilters,
     getData: async ({ offset, pageSize, filter }) => {
@@ -277,6 +277,7 @@ export const SyncLogsTab = () => {
         serviceOptions={serviceOptions}
         onExport={handleExport}
         exportDisabled={exporting || tableProps.data?.length === 0}
+        onRefresh={reload}
       />
 
       <Table
