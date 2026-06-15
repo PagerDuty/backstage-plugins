@@ -24,6 +24,11 @@ const DEFAULTS: SyncLogsCleanupConfig = {
 
 const CONFIG_ROOT = 'pagerDuty.customFieldsSyncLogs';
 
+export const SYNC_LOGS_CLEANUP_TASK_ID =
+  'pagerduty-custom-field-sync-logs-cleanup';
+export const SYNC_LOGS_CLEANUP_TIMEOUT_MINUTES = 10;
+export const SYNC_LOGS_CLEANUP_INITIAL_DELAY_MINUTES = 1;
+
 export function readSyncLogsCleanupConfig(
   config: RootConfigService,
 ): SyncLogsCleanupConfig {
@@ -85,7 +90,9 @@ export async function runSyncLogsCleanup(options: {
 
     if (result.batchesUsed >= cleanupConfig.maxBatchesPerRun) {
       logger.warn(
-        `Sync log cleanup exhausted its batch budget (${cleanupConfig.maxBatchesPerRun} batches of ${cleanupConfig.batchSize}); a backlog remains and will be processed on the next run`,
+        `Sync log cleanup exhausted its batch budget (${cleanupConfig.maxBatchesPerRun} batches of ${cleanupConfig.batchSize}); ` +
+          `a backlog remains. To catch up faster, increase pagerDuty.customFieldsSyncLogs.cleanup.maxBatchesPerRun ` +
+          `or decrease pagerDuty.customFieldsSyncLogs.cleanup.frequencyMinutes.`,
       );
     }
   } catch (error) {

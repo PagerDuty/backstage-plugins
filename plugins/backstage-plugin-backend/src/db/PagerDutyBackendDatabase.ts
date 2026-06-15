@@ -471,7 +471,7 @@ export class PagerDutyBackendDatabase implements PagerDutyBackendStore {
     const [logs, countResult, customFields, entityPaths, services] =
       await Promise.all([
         baseQuery().orderBy('timestamp', 'desc').limit(limit).offset(offset),
-        baseQuery().count('* as count').first(),
+        baseQuery().count<{ count: string | number }>('* as count').first(),
         this.db<RawDbSyncLogRow>('pagerduty_custom_field_sync_logs')
           .where('subdomain', subdomain)
           .whereNotNull('customFieldName')
@@ -489,9 +489,7 @@ export class PagerDutyBackendDatabase implements PagerDutyBackendStore {
           .orderBy('serviceName', 'asc'),
       ]);
 
-    const total = countResult
-      ? Number(countResult)
-      : 0;
+    const total = countResult ? Number(countResult.count) : 0;
 
     return {
       logs: logs || [],
@@ -521,6 +519,7 @@ export class PagerDutyBackendDatabase implements PagerDutyBackendStore {
       return result;
     }
 
+    const BATCH_SLEEP_MS = 50;
     const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 
     // Rows are stamped by the DB clock (CURRENT_TIMESTAMP, UTC on SQLite), so
@@ -552,7 +551,7 @@ export class PagerDutyBackendDatabase implements PagerDutyBackendStore {
       if (deleted < batchSize) {
         break;
       }
-      await sleep(50);
+      await sleep(BATCH_SLEEP_MS);
     }
 
     // Hard cap: keep only the newest maxRows rows. The cap is global across
@@ -575,7 +574,7 @@ export class PagerDutyBackendDatabase implements PagerDutyBackendStore {
         if (deleted < batchSize) {
           break;
         }
-        await sleep(50);
+        await sleep(BATCH_SLEEP_MS);
       }
     }
 

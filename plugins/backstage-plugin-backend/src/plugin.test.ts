@@ -1,5 +1,6 @@
 import { mockServices, startTestBackend } from '@backstage/backend-test-utils';
 import { pagerDutyPlugin } from './plugin';
+import { SYNC_LOGS_CLEANUP_TASK_ID } from './services/syncLogsCleanup';
 
 describe('pagerDutyPlugin', () => {
   it('schedules the sync log cleanup task with global scope', async () => {
@@ -11,7 +12,7 @@ describe('pagerDutyPlugin', () => {
 
     expect(scheduler.scheduleTask).toHaveBeenCalledWith(
       expect.objectContaining({
-        id: 'pagerduty-custom-field-sync-logs-cleanup',
+        id: SYNC_LOGS_CLEANUP_TASK_ID,
         frequency: { minutes: 15 },
         scope: 'global',
       }),

@@ -9,6 +9,9 @@ import { PagerDutyBackendDatabase, PagerDutyBackendStore } from './db';
 import {
   readSyncLogsCleanupConfig,
   runSyncLogsCleanup,
+  SYNC_LOGS_CLEANUP_INITIAL_DELAY_MINUTES,
+  SYNC_LOGS_CLEANUP_TASK_ID,
+  SYNC_LOGS_CLEANUP_TIMEOUT_MINUTES,
 } from './services/syncLogsCleanup';
 import { CatalogClient } from '@backstage/catalog-client';
 
@@ -67,10 +70,10 @@ export const pagerDutyPlugin = createBackendPlugin({
         const cleanupConfig = readSyncLogsCleanupConfig(config);
         if (cleanupConfig.enabled) {
           await scheduler.scheduleTask({
-            id: 'pagerduty-custom-field-sync-logs-cleanup',
+            id: SYNC_LOGS_CLEANUP_TASK_ID,
             frequency: { minutes: cleanupConfig.frequencyMinutes },
-            timeout: { minutes: 10 },
-            initialDelay: { minutes: 1 },
+            timeout: { minutes: SYNC_LOGS_CLEANUP_TIMEOUT_MINUTES },
+            initialDelay: { minutes: SYNC_LOGS_CLEANUP_INITIAL_DELAY_MINUTES },
             scope: 'global',
             fn: () =>
               runSyncLogsCleanup({

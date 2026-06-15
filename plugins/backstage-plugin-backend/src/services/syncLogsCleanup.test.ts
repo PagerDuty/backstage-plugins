@@ -117,6 +117,26 @@ describe('runSyncLogsCleanup', () => {
     expect(logger.warn).not.toHaveBeenCalled();
   });
 
+  it('logs correctly when age phase empties the table (no cap deletions)', async () => {
+    const cleanupSyncLogs = jest.fn().mockResolvedValue({
+      deletedByAge: 50,
+      deletedByCap: 0,
+      batchesUsed: 1,
+    });
+    const logger = mockServices.logger.mock();
+
+    await runSyncLogsCleanup({
+      store: createStore(cleanupSyncLogs),
+      logger,
+      cleanupConfig,
+    });
+
+    expect(logger.info).toHaveBeenCalledWith(
+      expect.stringContaining('deleted 50 expired and 0 over-cap row(s)'),
+    );
+    expect(logger.warn).not.toHaveBeenCalled();
+  });
+
   it('warns when the batch budget was exhausted', async () => {
     const cleanupSyncLogs = jest.fn().mockResolvedValue({
       deletedByAge: 5_000_000,
