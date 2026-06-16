@@ -33,6 +33,7 @@ describe('SyncLogsFilters', () => {
         entityPathOptions={[{ value: '', label: 'All' }]}
         serviceOptions={[{ value: '', label: 'All' }]}
         onExport={onExport}
+        onRefresh={() => {}}
       />,
     );
 
@@ -41,6 +42,27 @@ describe('SyncLogsFilters', () => {
 
     fireEvent.click(exportButton);
     expect(onExport).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders the refresh button and triggers onRefresh when clicked', async () => {
+    const onRefresh = jest.fn();
+    await renderInTestApp(
+      <SyncLogsFilters
+        values={EMPTY_SYNC_LOG_FILTERS}
+        onChange={() => {}}
+        customFieldOptions={[{ value: '', label: 'All' }]}
+        entityPathOptions={[{ value: '', label: 'All' }]}
+        serviceOptions={[{ value: '', label: 'All' }]}
+        onExport={() => {}}
+        onRefresh={onRefresh}
+      />,
+    );
+
+    const refreshButton = screen.getByRole('button', { name: /Refresh/i });
+    expect(refreshButton).toBeInTheDocument();
+
+    fireEvent.click(refreshButton);
+    expect(onRefresh).toHaveBeenCalledTimes(1);
   });
 
   it('disables the export button when exportDisabled is true', async () => {
@@ -52,6 +74,7 @@ describe('SyncLogsFilters', () => {
         entityPathOptions={[{ value: '', label: 'All' }]}
         serviceOptions={[{ value: '', label: 'All' }]}
         onExport={() => {}}
+        onRefresh={() => {}}
         exportDisabled
       />,
     );

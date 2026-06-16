@@ -504,7 +504,7 @@ export class CustomFieldsController {
       );
     }
     if (error.status === 404) {
-      throw new HttpError('Custom field not found in PagerDuty', 404);
+      throw new HttpError('Custom field or service not found in PagerDuty', 404);
     }
     if (error.status === 409) {
       throw new HttpError(

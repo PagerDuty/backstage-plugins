@@ -1,6 +1,6 @@
 import { Box, Button, Flex, SearchField, Select, type Option } from '@backstage/ui';
 import { makeStyles } from '@material-ui/core';
-import { FileDownload } from '@mui/icons-material';
+import { FileDownload, Refresh } from '@mui/icons-material';
 
 const useStyles = makeStyles(() => ({
   wrap: {
@@ -34,6 +34,7 @@ interface SyncLogsFiltersProps {
   serviceOptions: Option[];
   onExport: () => void;
   exportDisabled?: boolean;
+  onRefresh: () => void;
 }
 
 const SEVERITY_OPTIONS: Option[] = [
@@ -51,6 +52,7 @@ export const SyncLogsFilters = ({
   serviceOptions,
   onExport,
   exportDisabled,
+  onRefresh,
 }: SyncLogsFiltersProps) => {
   const classes = useStyles();
   const update = <K extends keyof SyncLogsFilterValues>(
@@ -117,15 +119,25 @@ export const SyncLogsFilters = ({
           />
         </Box>
       </Flex>
-      <Button
-        variant="secondary"
-        size="small"
-        iconStart={<FileDownload fontSize="small" />}
-        onClick={onExport}
-        isDisabled={exportDisabled}
-      >
-        Export CSV
-      </Button>
+      <Flex align="end" gap="3">
+        <Button
+          variant="secondary"
+          size="small"
+          iconStart={<Refresh fontSize="small" />}
+          onClick={onRefresh}
+        >
+          Refresh
+        </Button>
+        <Button
+          variant="secondary"
+          size="small"
+          iconStart={<FileDownload fontSize="small" />}
+          onClick={onExport}
+          isDisabled={exportDisabled}
+        >
+          Export CSV
+        </Button>
+      </Flex>
     </Flex>
   );
 };
