@@ -50,7 +50,7 @@
     "@backstage/plugin-catalog-react": "backstage:^",
     "@backstage/plugin-home-react": "backstage:^",
     "@backstage/theme": "backstage:^",
-    "@backstage/ui": "^0.14.3",
+    "@backstage/ui": "backstage:^",
     "@emotion/react": "^11.11.4",
     "@emotion/styled": "^11.11.5",
     "@material-ui/core": "^4.12.2",
