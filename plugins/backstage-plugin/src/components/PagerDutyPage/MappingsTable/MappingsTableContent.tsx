@@ -262,7 +262,7 @@ export default function MappingsTableContent({
   }, [hasMatches, onRemoveMatch, onEditEntity]);
 
   const isInitialLoad =
-    tableProps.loading && (!tableProps.data || tableProps.data.length === 0);
+    tableProps.isPending && (!tableProps.data || tableProps.data.length === 0);
 
   const hasActiveFilters =
     showFilters &&
@@ -278,8 +278,16 @@ export default function MappingsTableContent({
       )}
 
       {isInitialLoad ? (
-        <TableSkeleton />
-      ) : (
+        <TableSkeleton
+          columns={[
+            { label: 'Name', width: '20%' },
+            { label: 'Team', width: '20%' },
+            { label: 'PagerDuty service', width: '20%' },
+            { label: 'Status', width: '20%' },
+            { label: 'Actions', width: '20%' },
+          ]}
+        />
+        ) : (
         <Table
           columnConfig={columnConfig}
           {...tableProps}

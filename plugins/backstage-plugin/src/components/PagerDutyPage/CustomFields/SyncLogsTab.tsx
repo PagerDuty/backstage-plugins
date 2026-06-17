@@ -47,6 +47,9 @@ const useStyles = makeStyles(theme => ({
     borderColor: '#d92626',
     color: '#a01b1b',
   },
+  tableWidth: {
+    width: '100%'
+  }
 }));
 
 type Severity = 'warning' | 'error';
@@ -263,7 +266,7 @@ export const SyncLogsTab = () => {
     }
   };
 
-  if (tableProps.loading && !tableProps.data) {
+  if (tableProps.isPending && !tableProps.data) {
     return <TableSkeleton />;
   }
 
@@ -293,6 +296,7 @@ export const SyncLogsTab = () => {
             <Text color="secondary">No sync log entries found</Text>
           </Flex>
         }
+        className={classes.tableWidth}
       />
     </Flex>
   );

@@ -113,7 +113,14 @@ export const CustomFieldsTabPanel = () => {
   return (
     <>
       {isLoading ? (
-        <TableSkeleton />
+        <TableSkeleton
+          columns={[
+            { label: 'Custom Field', width: '30%' },
+            { label: 'Entity Path', width: '25%' },
+            { label: 'Description', width: '35%' },
+            { label: '', width: '10%' },
+          ]}
+        />
       ) : (
         <Table
           columnConfig={columnConfig}

@@ -17,7 +17,12 @@
 import { createFrontendPlugin } from "@backstage/frontend-plugin-api";
 import { pagerDutyEntityCard, pagerDutyEntitySmallCard } from "../alpha/entity-cards";
 import { pagerDutyApi } from "../alpha/api";
-import { pagerDutyPage } from "../alpha/pages";
+import {
+  pagerDutyPage,
+  pagerDutyServiceMappingSubPage,
+  pagerDutyCustomFieldsSubPage,
+  pagerDutyConfigurationSubPage,
+} from "../alpha/pages";
 import { convertLegacyRouteRefs } from "@backstage/core-compat-api";
 import { rootRouteRef } from "../routes";
 
@@ -30,6 +35,9 @@ export const pagerDutyPlugin = createFrontendPlugin({
     pagerDutyEntitySmallCard,
     pagerDutyApi,
     pagerDutyPage,
+    pagerDutyServiceMappingSubPage,
+    pagerDutyCustomFieldsSubPage,
+    pagerDutyConfigurationSubPage,
   ],
   routes: convertLegacyRouteRefs({
     root: rootRouteRef

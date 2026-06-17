@@ -136,88 +136,87 @@ const CustomFieldsTabContent = () => {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <Flex align="start" justify="between" gap="3">
-          <Flex direction="column" gap="1">
-            <Text variant="title-medium" weight="bold">
-              Custom Fields
-            </Text>
-            <Text variant="body-small" color="secondary">
-              Manage your custom fields and review their sync activity.
-            </Text>
+    <Box pl="20px" pr="20px">
+      <Card>
+        <CardHeader>
+          <Flex align="start" justify="between" gap="3">
+            <Flex direction="column" gap="1">
+              <Text variant="body-medium" weight="bold">
+                Manage your custom fields and review their sync activity.
+              </Text>
+            </Flex>
+            <Box className={classes.syncCardWrapper}>
+              <Card>
+                <CardBody className={classes.syncCardBody}>
+                  <Flex align="center" justify="between" gap="2">
+                    <Text
+                      variant="body-small"
+                      weight="bold"
+                      color={orgWideSyncOn ? 'success' : 'secondary'}
+                    >
+                      Org-Wide Data Sync: {orgWideSyncOn ? 'On' : 'Off'}
+                    </Text>
+                    <Switch
+                      isSelected={orgWideSyncOn}
+                      onChange={toggleSync}
+                      aria-label="Toggle org-wide data sync"
+                    />
+                  </Flex>
+                </CardBody>
+              </Card>
+            </Box>
           </Flex>
-          <Box className={classes.syncCardWrapper}>
-            <Card>
-              <CardBody className={classes.syncCardBody}>
-                <Flex align="center" justify="between" gap="2">
-                  <Text
-                    variant="body-small"
-                    weight="bold"
-                    color={orgWideSyncOn ? 'success' : 'secondary'}
-                  >
-                    Org-Wide Data Sync: {orgWideSyncOn ? 'On' : 'Off'}
-                  </Text>
-                  <Switch
-                    isSelected={orgWideSyncOn}
-                    onChange={toggleSync}
-                    aria-label="Toggle org-wide data sync"
+        </CardHeader>
+
+        <CardBody>
+          <Flex align="end" justify="between" gap="3" mb="4">
+            <Flex align="end" gap="3">
+              {showAccountSelector && (
+                <Box className={classes.accountSelector}>
+                  <Select
+                    label="Select Account"
+                    isRequired
+                    selectionMode="single"
+                    size="small"
+                    value={selectedAccount}
+                    onChange={value => setSelectedAccount(value?.toString() ?? '')}
+                    placeholder="Select account"
+                    options={accounts}
                   />
-                </Flex>
-              </CardBody>
-            </Card>
-          </Box>
-        </Flex>
-      </CardHeader>
-
-      <CardBody>
-        <Flex align="end" justify="between" gap="3" mb="4">
-          <Flex align="end" gap="3">
-            {showAccountSelector && (
-              <Box className={classes.accountSelector}>
-                <Select
-                  label="Select Account"
-                  isRequired
-                  selectionMode="single"
-                  size="small"
-                  value={selectedAccount}
-                  onChange={value => setSelectedAccount(value?.toString() ?? '')}
-                  placeholder="Select account"
-                  options={accounts}
-                />
-              </Box>
-            )}
-            <ButtonTabs<TabKey>
-              items={TABS}
-              value={activeTab}
-              onChange={setActiveTab}
-            />
+                </Box>
+              )}
+              <ButtonTabs<TabKey>
+                items={TABS}
+                value={activeTab}
+                onChange={setActiveTab}
+              />
+            </Flex>
+            <Button
+              variant="secondary"
+              size="small"
+              onClick={handleOpenAdd}
+            >
+              + Add New
+            </Button>
           </Flex>
-          <Button
-            variant="secondary"
-            size="small"
-            onClick={handleOpenAdd}
-          >
-            + Add New
-          </Button>
-        </Flex>
 
-        {activeTab === 'fields' ? (
-          <CustomFieldsTabPanel key={selectedAccount} />
-        ) : (
-          <SyncLogsTab key={selectedAccount} />
-        )}
-      </CardBody>
+          {activeTab === 'fields' ? (
+            <CustomFieldsTabPanel key={selectedAccount} />
+          ) : (
+            <SyncLogsTab key={selectedAccount} />
+          )}
+        </CardBody>
 
-      <CustomFieldModal
-        open={isAddModalOpen}
-        saving={addSaving}
-        error={addError}
-        onClose={handleCloseAdd}
-        onSave={handleSaveAdd}
-        mode="add"
-      />
-    </Card>
+        <CustomFieldModal
+          open={isAddModalOpen}
+          saving={addSaving}
+          error={addError}
+          onClose={handleCloseAdd}
+          onSave={handleSaveAdd}
+          mode="add"
+        />
+      </Card>
+    </Box>
   );
 };
 
