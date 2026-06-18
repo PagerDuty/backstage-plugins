@@ -228,6 +228,10 @@ describe('createRouter', () => {
 
   beforeEach(() => {
     jest.resetAllMocks();
+    // The cache is shared across the suite (created in beforeAll), so a service
+    // cached by one test would otherwise leak into the next and mask the
+    // mocked fetch responses (e.g. returning a cached 200 instead of 401/404).
+    cacheStore.clear();
   });
 
   describe('GET /health', () => {
@@ -2314,7 +2318,7 @@ describe('createRouter', () => {
 
         const response = await request(app)
           .post('/mapping/entities')
-          .send({ offset: 20, limit: 5 });
+          .send({ offset: 0, limit: 5 });
 
         expect(response.body.entities[0]).toEqual({
           account: '',

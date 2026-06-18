@@ -36,6 +36,7 @@ import {
 
 import { DateTime } from 'luxon';
 import {
+  CacheService,
   LoggerService,
   RootConfigService,
 } from '@backstage/backend-plugin-api';
@@ -173,6 +174,44 @@ async function getDefaultHeaders(account?: string): Promise<Record<string, strin
     'Content-Type': 'application/json',
     'X-PagerDuty-Client': clientHeader,
   };
+}
+
+// Caching for PagerDuty services. A full fetch is cached as a list, and each
+// service is also indexed by id so single-service lookups can be served from
+// the cache without hitting the API again.
+const SERVICES_CACHE_TTL_MS = 20 * 60 * 1000;
+const ALL_SERVICES_CACHE_KEY = 'pagerduty:services:all';
+
+// Normalize the account segment so callers that pass an empty string (e.g. the
+// frontend bulk-mapping payload) hit the same key as the full-fetch indexer,
+// which stores services under the EndpointConfig key ('default' for single
+// account setups).
+const serviceCacheKey = (serviceId: string, account?: string) =>
+  `pagerduty:service:${account || 'default'}:${serviceId}`;
+
+async function readCache<T>(
+  cache: CacheService | undefined,
+  key: string,
+): Promise<T | undefined> {
+  if (!cache) {
+    return undefined;
+  }
+  return (await cache.get(key)) as T | undefined;
+}
+
+async function writeCache(
+  cache: CacheService | undefined,
+  key: string,
+  value: unknown,
+): Promise<void> {
+  if (!cache) {
+    return;
+  }
+  await cache.set(
+    key,
+    value as Parameters<CacheService['set']>[1],
+    { ttl: SERVICES_CACHE_TTL_MS },
+  );
 }
 
 // Supporting router
@@ -740,7 +779,22 @@ export async function getOncallUsers(
 export async function getServiceById(
   serviceId: string,
   account?: string,
+  cache?: CacheService,
+  logger?: LoggerService,
 ): Promise<PagerDutyService> {
+  // Serve from cache first if this specific service is already cached.
+  const cacheKey = serviceCacheKey(serviceId, account);
+  const cached = await readCache<PagerDutyService>(cache, cacheKey);
+  if (cached) {
+    logger?.debug(`getServiceById: cache HIT for ${cacheKey}`);
+    return cached;
+  }
+  if (cache) {
+    logger?.debug(
+      `getServiceById: cache MISS for ${cacheKey}, fetching from PagerDuty API`,
+    );
+  }
+
   let response: Response;
   const params = `time_zone=UTC&include[]=integrations&include[]=escalation_policies`;
 
@@ -797,13 +851,21 @@ export async function getServiceById(
   try {
     result = (await response.json()) as PagerDutyServiceResponse;
 
+    await writeCache(cache, serviceCacheKey(serviceId, account), result.service);
+
     return result.service;
   } catch (error) {
     throw new HttpError(`Failed to parse service information: ${error}`, 500);
   }
 }
 
-export async function getSerivcesByIdsAndAccount(
+// PagerDuty's `id[]` filter accepts at most 100 ids per request, and packing
+// too many into the query string produces a URL long enough for the API
+// gateway to reject with an HTML error page. Keep batches well under both
+// limits.
+const SERVICE_IDS_BATCH_SIZE = 50;
+
+async function getServicesByIdsBatch(
   serviceIds: string[],
   account?: string,
 ): Promise<PagerDutyService[]> {
@@ -871,6 +933,26 @@ export async function getSerivcesByIdsAndAccount(
   } catch (error) {
     throw new HttpError(`Failed to parse service information: ${error}`, 500);
   }
+}
+
+export async function getSerivcesByIdsAndAccount(
+  serviceIds: string[],
+  account?: string,
+): Promise<PagerDutyService[]> {
+  if (serviceIds.length === 0) {
+    return [];
+  }
+
+  const batches: string[][] = [];
+  for (let i = 0; i < serviceIds.length; i += SERVICE_IDS_BATCH_SIZE) {
+    batches.push(serviceIds.slice(i, i + SERVICE_IDS_BATCH_SIZE));
+  }
+
+  const results = await Promise.all(
+    batches.map(batch => getServicesByIdsBatch(batch, account)),
+  );
+
+  return results.flat();
 }
 
 export async function getServiceByIntegrationKey(
@@ -955,7 +1037,19 @@ export async function getServicesByIds(
   return services;
 }
 
-export async function getAllServices(): Promise<PagerDutyService[]> {
+export async function getAllServices(
+  cache?: CacheService,
+): Promise<PagerDutyService[]> {
+  // Return the cached service list if we already have one; only hit the API
+  // again when there are no cached services.
+  const cached = await readCache<PagerDutyService[]>(
+    cache,
+    ALL_SERVICES_CACHE_KEY,
+  );
+  if (cached && cached.length > 0) {
+    return cached;
+  }
+
   const allServices: PagerDutyService[] = [];
 
   await Promise.all(
@@ -1022,6 +1116,15 @@ export async function getAllServices(): Promise<PagerDutyService[]> {
         throw error;
       }
     }),
+  );
+
+  // Cache the full list, and index each service by id so single-service
+  // lookups can be served from the cache too.
+  await writeCache(cache, ALL_SERVICES_CACHE_KEY, allServices);
+  await Promise.all(
+    allServices.map(service =>
+      writeCache(cache, serviceCacheKey(service.id, service.account), service),
+    ),
   );
 
   return allServices;

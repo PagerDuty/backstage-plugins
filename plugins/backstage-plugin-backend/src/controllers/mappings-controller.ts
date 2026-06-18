@@ -169,7 +169,20 @@ export function getMappingEntities(store: PagerDutyBackendStore, catalogApi: Cat
         });
       });
 
-      const currentPagePagerDutyServiceIds = currentPageMappings.map(mapping => mapping.serviceId).filter(Boolean);
+      // Collect the PagerDuty service ids we need to resolve for this page from
+      // both the stored mappings and the service-id annotations on the
+      // current-page entities (an entity can carry an annotation without a DB
+      // mapping yet). De-duplicate so each id is fetched at most once.
+      const currentPagePagerDutyServiceIds = Array.from(
+        new Set(
+          [
+            ...currentPageMappings.map(mapping => mapping.serviceId),
+            ...componentEntities.items.map(entity =>
+              CatalogEntityUtils.getPagerDutyServiceId(entity),
+            ),
+          ].filter(Boolean) as string[],
+        ),
+      );
 
       const currentPagePagerDutyServices = await getServicesByIds(currentPagePagerDutyServiceIds);
 
