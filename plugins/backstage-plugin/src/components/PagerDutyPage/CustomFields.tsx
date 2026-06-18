@@ -7,6 +7,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query';
 import {
+  Alert,
   Box,
   Button,
   Card,
@@ -137,6 +138,13 @@ const CustomFieldsTabContent = () => {
 
   return (
     <Box pl="20px" pr="20px">
+      <Alert
+        status="info"
+        icon
+        title="Enrich your PagerDuty services with data from your Backstage catalog."
+        description="Create custom field mappings to surface the right context — runbook links, team ownership, and more — directly in PagerDuty."
+        style={{marginBottom: '8px'}}
+      />
       <Card>
         <CardHeader>
           <Flex align="start" justify="between" gap="3">

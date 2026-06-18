@@ -201,7 +201,6 @@ export const SyncLogsTab = () => {
         label: 'Timestamp',
         isRowHeader: true,
         isSortable: false,
-        minWidth: 200,
         cell: item => <CellText title={formatTimestamp(item.timestamp)} />,
       },
       {
