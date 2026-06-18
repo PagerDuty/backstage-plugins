@@ -16,15 +16,15 @@ interface ButtonTabsProps<TKey extends string = string> {
 
 const useStyles = makeStyles(() => ({
   buttonFirst: {
-    borderTopRightRadius: 0,
-    borderBottomRightRadius: 0,
+    borderTopRightRadius: '0px !important',
+    borderBottomRightRadius: '0px !important',
   },
   buttonMiddle: {
-    borderRadius: 0,
+    borderRadius: '0px !important',
   },
   buttonLast: {
-    borderTopLeftRadius: 0,
-    borderBottomLeftRadius: 0,
+    borderTopLeftRadius: '0px !important',
+    borderBottomLeftRadius: '0px !important',
   },
 }));
 
