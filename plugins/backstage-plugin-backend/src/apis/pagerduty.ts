@@ -75,6 +75,14 @@ export function insertAccountConfig(account: PagerDutyAccountConfig) {
   }
 }
 
+// Remove a previously inserted account from the in-memory endpoint config.
+// Primarily used by tests to tear down accounts they register so the shared
+// EndpointConfig does not leak between cases.
+export function removeAccountConfig(accountId: string) {
+  delete EndpointConfig[accountId];
+  delete SubdomainConfig[accountId];
+}
+
 export function loadPagerDutyEndpointsFromConfig(
   config: RootConfigService,
   logger: LoggerService,
@@ -865,6 +873,20 @@ export async function getServiceById(
 // limits.
 const SERVICE_IDS_BATCH_SIZE = 50;
 
+// PagerDuty resource ids are uppercase alphanumeric, conventionally 7 chars
+// (e.g. "PXXXXXX"). The `id[]` list filter rejects the ENTIRE request with a
+// 400 if any single value is malformed, so drop clearly-invalid ids before
+// calling the API. Permissive on length (>= 6) to avoid rejecting valid ids,
+// while still catching pasted URLs, whitespace, lowercase, and typos.
+const SERVICE_ID_PATTERN = /^[A-Z0-9]{6,}$/;
+
+export function isValidServiceId(id: string | undefined | null): boolean {
+  if (typeof id !== 'string') {
+    return false;
+  }
+  return SERVICE_ID_PATTERN.test(id.trim());
+}
+
 async function getServicesByIdsBatch(
   serviceIds: string[],
   account?: string,
@@ -902,10 +924,12 @@ async function getServicesByIdsBatch(
 
   switch (response.status) {
     case 400:
-      throw new HttpError(
-        'Failed to get service. Caller provided invalid arguments.',
-        400,
-      );
+      // The `id[]` list filter returns 400 if any single id is malformed. We
+      // already sanitize ids before calling this, but treat a 400 from the
+      // *list* endpoint as "no matching services" rather than failing the whole
+      // page — a list query that matches nothing should degrade gracefully.
+      // (Single-service fetches such as getServiceById still throw on 400.)
+      return [];
     case 401:
       throw new HttpError(
         'Failed to get service. Caller did not supply credentials or did not provide the correct credentials.',
@@ -939,13 +963,26 @@ export async function getSerivcesByIdsAndAccount(
   serviceIds: string[],
   account?: string,
 ): Promise<PagerDutyService[]> {
-  if (serviceIds.length === 0) {
+  // Service ids originate from user-authored entity annotations and stored
+  // mappings, so trim and drop any malformed values. PagerDuty rejects the
+  // entire `id[]` request with a 400 if even one value is malformed, which
+  // would otherwise fail the whole page. Re-dedupe after trimming since that
+  // can newly collide e.g. "PXXXXXX " with "PXXXXXX".
+  const sanitizedServiceIds = Array.from(
+    new Set(
+      serviceIds
+        .map(id => (typeof id === 'string' ? id.trim() : ''))
+        .filter(id => isValidServiceId(id)),
+    ),
+  );
+
+  if (sanitizedServiceIds.length === 0) {
     return [];
   }
 
   const batches: string[][] = [];
-  for (let i = 0; i < serviceIds.length; i += SERVICE_IDS_BATCH_SIZE) {
-    batches.push(serviceIds.slice(i, i + SERVICE_IDS_BATCH_SIZE));
+  for (let i = 0; i < sanitizedServiceIds.length; i += SERVICE_IDS_BATCH_SIZE) {
+    batches.push(sanitizedServiceIds.slice(i, i + SERVICE_IDS_BATCH_SIZE));
   }
 
   const results = await Promise.all(
@@ -1028,13 +1065,12 @@ export async function getServiceByIntegrationKey(
 export async function getServicesByIds(
   ids: string[],
 ): Promise<PagerDutyService[]> {
-  let services: PagerDutyService[] = [];
-  await Promise.all(
-    Object.entries(EndpointConfig).map(async ([account, _]) => {
-      services = await getSerivcesByIdsAndAccount(ids, account);
-    }),
+  const servicesPerAccount = await Promise.all(
+    Object.keys(EndpointConfig).map(account =>
+      getSerivcesByIdsAndAccount(ids, account),
+    ),
   );
-  return services;
+  return servicesPerAccount.flat();
 }
 
 export async function getAllServices(

@@ -850,7 +850,7 @@ export async function createRouter(
     }
   });
 
-  router.post('/mapping/entities', MappingsController.getMappingEntities(store, catalogApi));
+  router.post('/mapping/entities', MappingsController.getMappingEntities(store, catalogApi, logger));
 
   // GET /mapping/entity
   router.get(

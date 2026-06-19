@@ -1,10 +1,11 @@
 import { Request, Response } from 'express';
+import { LoggerService } from '@backstage/backend-plugin-api';
 import * as Pagerduty from '../services/pagerduty';
 import * as CatalogEntityUtils from '../utils/catalog-entity';
 import { PagerDutyBackendStore } from '../db';
 import { CatalogApi, GetEntitiesResponse, QueryEntitiesResponse } from '@backstage/catalog-client';
 import { HttpError, PagerDutyEntityMappingsResponse, PagerDutyService, FormattedBackstageEntity } from '@pagerduty/backstage-plugin-common';
-import { getServiceByIntegrationKey, getServicesByIds } from '../apis/pagerduty';
+import { getServiceByIntegrationKey, getServicesByIds, isValidServiceId } from '../apis/pagerduty';
 import { RawDbEntityResultRow } from '../db/PagerDutyBackendDatabase';
 
 // Status order for sorting (from least to most complete)
@@ -55,7 +56,11 @@ function compareEntities(
   return direction === 'ascending' ? comparison : -comparison;
 }
 
-export function getMappingEntities(store: PagerDutyBackendStore, catalogApi: CatalogApi) {
+export function getMappingEntities(
+  store: PagerDutyBackendStore,
+  catalogApi: CatalogApi,
+  logger?: LoggerService,
+) {
   return async function getMappingEntitiesFunction(request: Request, response: Response) {
     try {
       const { offset = 0, limit = 10, filters = {}, sort, account } = request.body;
@@ -172,17 +177,32 @@ export function getMappingEntities(store: PagerDutyBackendStore, catalogApi: Cat
       // Collect the PagerDuty service ids we need to resolve for this page from
       // both the stored mappings and the service-id annotations on the
       // current-page entities (an entity can carry an annotation without a DB
-      // mapping yet). De-duplicate so each id is fetched at most once.
-      const currentPagePagerDutyServiceIds = Array.from(
-        new Set(
-          [
-            ...currentPageMappings.map(mapping => mapping.serviceId),
-            ...componentEntities.items.map(entity =>
-              CatalogEntityUtils.getPagerDutyServiceId(entity),
-            ),
-          ].filter(Boolean) as string[],
+      // mapping yet).
+      const rawPagerDutyServiceIds = [
+        ...currentPageMappings.map(mapping => mapping.serviceId),
+        ...componentEntities.items.map(entity =>
+          CatalogEntityUtils.getPagerDutyServiceId(entity),
         ),
+      ].filter(Boolean) as string[];
+
+      // Service ids come from user-authored annotations / stored mappings, so a
+      // malformed value (pasted URL, whitespace, typo) can appear. getServicesByIds
+      // sanitizes again before calling PagerDuty, but surface a warning here so the
+      // operator can fix the offending entity annotation. De-duplicate first so each
+      // id is fetched and warned about at most once.
+      const uniqueTrimmedServiceIds = Array.from(
+        new Set(rawPagerDutyServiceIds.map(id => id.trim())),
       );
+
+      const currentPagePagerDutyServiceIds = uniqueTrimmedServiceIds.filter(id => {
+        if (isValidServiceId(id)) {
+          return true;
+        }
+        logger?.warn(
+          `Ignoring malformed PagerDuty service id "${id}" while building entity mappings`,
+        );
+        return false;
+      });
 
       const currentPagePagerDutyServices = await getServicesByIds(currentPagePagerDutyServiceIds);
 

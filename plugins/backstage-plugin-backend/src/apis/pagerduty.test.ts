@@ -17,7 +17,11 @@ import {
   getServiceByIntegrationKey,
   getServiceMetrics,
   getServiceStandards,
+  getServicesByIds,
+  getSerivcesByIdsAndAccount,
   insertAccountConfig,
+  isValidServiceId,
+  removeAccountConfig,
   setFallbackAccountConfig,
   updateCustomField,
   fetchWithRetries,
@@ -1001,6 +1005,130 @@ describe('PagerDuty API', () => {
           }
         },
       );
+    });
+
+    describe('isValidServiceId', () => {
+      it.each([
+        ['PXXXXXX', true],
+        ['P1A2B3C', true],
+        ['ABCDEFG', true],
+        ['S3RV1CE1D', true],
+        ['  PXXXXXX  ', true],
+        ['', false],
+        ['   ', false],
+        ['pxxxxxx', false],
+        ['https://acme.pagerduty.com/service-directory/PXXXXXX', false],
+        ['PXX', false],
+        ['PXX XXXX', false],
+      ])('returns expected validity for %p', (input, expected) => {
+        expect(isValidServiceId(input as string)).toBe(expected);
+      });
+
+      it('returns false for undefined and null', () => {
+        expect(isValidServiceId(undefined)).toBe(false);
+        expect(isValidServiceId(null)).toBe(false);
+      });
+    });
+
+    describe('getServicesByIds (batch)', () => {
+      const buildService = (id: string): PagerDutyService =>
+        ({
+          id,
+          name: `Service ${id}`,
+          html_url: `https://testaccount.pagerduty.com/services/${id}`,
+          escalation_policy: {
+            id: 'P0L1CY1D',
+            name: 'Test Escalation Policy',
+            html_url:
+              'https://testaccount.pagerduty.com/escalation_policies/P0L1CY1D',
+            type: 'escalation_policy_reference',
+          },
+          status: 'active',
+        } as PagerDutyService);
+
+      it('filters out malformed ids and still returns the valid services', async () => {
+        mocked(fetch).mockReturnValue(
+          mockedResponse(200, {
+            services: [buildService('PVALID1'), buildService('PVALID2')],
+          }),
+        );
+
+        const result = await getSerivcesByIdsAndAccount(
+          ['PVALID1', 'not a url/PBAD', '  PVALID2  '],
+          'testaccount',
+        );
+
+        expect(result.map(s => s.id).sort()).toEqual(['PVALID1', 'PVALID2']);
+        expect(fetch).toHaveBeenCalledTimes(1);
+
+        const calledUrl = String(mocked(fetch).mock.calls[0][0]);
+        expect(calledUrl).toContain('id%5B%5D=PVALID1');
+        expect(calledUrl).toContain('id%5B%5D=PVALID2');
+        expect(calledUrl).not.toContain('PBAD');
+        expect(calledUrl).not.toContain('%20');
+      });
+
+      it('makes no API call when every id is malformed', async () => {
+        const result = await getSerivcesByIdsAndAccount(
+          ['bad/url', '   ', 'pxx'],
+          'testaccount',
+        );
+
+        expect(result).toEqual([]);
+        expect(fetch).not.toHaveBeenCalled();
+      });
+
+      it('treats a 400 from the list endpoint as no matching services', async () => {
+        mocked(fetch).mockReturnValue(mockedResponse(400, {}));
+
+        await expect(
+          getSerivcesByIdsAndAccount(['PXXXXXX'], 'testaccount'),
+        ).resolves.toEqual([]);
+      });
+
+      it('splits ids into batches of 50', async () => {
+        mocked(fetch).mockReturnValue(mockedResponse(200, { services: [] }));
+
+        const ids = Array.from(
+          { length: 51 },
+          (_, i) => `P${String(i).padStart(6, '0')}`,
+        );
+
+        await getSerivcesByIdsAndAccount(ids, 'testaccount');
+
+        expect(fetch).toHaveBeenCalledTimes(2);
+      });
+
+      describe('multi-account', () => {
+        beforeAll(() => {
+          insertAccountConfig({
+            id: 'secondaccount',
+            apiBaseUrl: 'https://mock2.api.pagerduty.com',
+            eventsBaseUrl: 'https://mock2.events.pagerduty.com',
+            oauth: {
+              clientId: 'mock-client-id-2',
+              clientSecret: 'mock-client-secret-2',
+              subDomain: 'secondaccount',
+            },
+          });
+        });
+
+        afterAll(() => {
+          removeAccountConfig('secondaccount');
+        });
+
+        it('accumulates services from all accounts', async () => {
+          (fetch as unknown as jest.Mock).mockImplementation((url: unknown) =>
+            String(url).includes('mock2')
+              ? mockedResponse(200, { services: [buildService('PFROM2ND')] })
+              : mockedResponse(200, { services: [buildService('PFROM1ST')] }),
+          );
+
+          const result = await getServicesByIds(['PXXXXXX']);
+
+          expect(result.map(s => s.id).sort()).toEqual(['PFROM1ST', 'PFROM2ND']);
+        });
+      });
     });
 
     describe('getChangeEvents', () => {
