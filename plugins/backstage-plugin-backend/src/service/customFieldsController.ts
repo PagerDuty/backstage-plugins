@@ -361,8 +361,17 @@ export class CustomFieldsController {
           `Deleted PagerDuty custom field: ${existing.pagerdutyCustomFieldDisplayName} (${existing.pagerdutyCustomFieldId})`,
         );
       } catch (error) {
-        if (error instanceof HttpError) this.handlePagerDutyError(error);
-        throw error;
+        // A 404 means the field no longer exists in PagerDuty. Treat the
+        // delete as already done and fall through to remove the Backstage
+        // record so the two sides don't drift out of sync.
+        if (error instanceof HttpError && error.status === 404) {
+          this.logger.info(
+            `PagerDuty custom field ${existing.pagerdutyCustomFieldId} already absent (404); proceeding to delete Backstage record id=${id}`,
+          );
+        } else {
+          if (error instanceof HttpError) this.handlePagerDutyError(error);
+          throw error;
+        }
       }
 
       // Step 2: Delete from Backstage DB
