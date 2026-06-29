@@ -624,6 +624,7 @@ export async function createRouter(
             serviceId: entity.serviceId,
             vendorId: backstageVendorId,
             account: entity.account,
+            cache,
           });
 
           entity.integrationKey = integrationKey;
@@ -727,6 +728,7 @@ export async function createRouter(
                 serviceId: entity.serviceId,
                 vendorId: backstageVendorId,
                 account: entity.account,
+                cache,
               });
 
               entity.integrationKey = integrationKey;

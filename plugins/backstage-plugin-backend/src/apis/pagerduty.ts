@@ -222,6 +222,16 @@ async function writeCache(
   );
 }
 
+async function deleteCache(
+  cache: CacheService | undefined,
+  key: string,
+): Promise<void> {
+  if (!cache) {
+    return;
+  }
+  await cache.delete(key);
+}
+
 // Supporting router
 export async function addServiceRelationsToService(
   serviceRelations: PagerDutyServiceDependency[],
@@ -1600,12 +1610,14 @@ export type CreateServiceIntegrationProps = {
   serviceId: string;
   vendorId: string;
   account?: string;
+  cache?: CacheService;
 };
 
 export async function createServiceIntegration({
   serviceId,
   vendorId,
   account,
+  cache,
 }: CreateServiceIntegrationProps): Promise<string> {
   let response: Response;
 
@@ -1669,6 +1681,14 @@ export async function createServiceIntegration({
   let result: PagerDutyIntegrationResponse;
   try {
     result = (await response.json()) as PagerDutyIntegrationResponse;
+
+    // We just added an integration to this service, so any cached copy now has
+    // a stale `integrations` array. Evict the per-id entry and the full list
+    // (which embeds the same stale service) so the next read re-fetches and
+    // sees the new integration — otherwise a subsequent confirm/bulk mapping
+    // would create a duplicate Backstage integration within the cache TTL.
+    await deleteCache(cache, serviceCacheKey(serviceId, account));
+    await deleteCache(cache, ALL_SERVICES_CACHE_KEY);
 
     return result.integration.integration_key ?? '';
   } catch (error) {
