@@ -8,6 +8,7 @@ import {  useMemo } from 'react';
 import { useApi } from '@backstage/core-plugin-api';
 import StatusCell from './StatusCell';
 import { ServiceCell } from './ServiceCell';
+import { NameCell } from './NameCell';
 import { Edit, Delete } from '@mui/icons-material';
 import { FilterRow } from './FilterRow';
 import { TableSkeleton } from './TableSkeleton';
@@ -183,7 +184,7 @@ export default function MappingsTableContent({
         label: 'Name',
         isRowHeader: true,
         isSortable: true,
-        cell: entity => <CellText title={entity.name} />,
+        cell: entity => <NameCell entity={entity} />,
       },
       {
         id: 'team',
