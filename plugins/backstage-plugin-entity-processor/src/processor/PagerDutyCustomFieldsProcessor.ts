@@ -85,6 +85,26 @@ export class PagerDutyCustomFieldsProcessor implements CatalogProcessor {
       if (values.length > 0) {
         try {
           await this.client.pushCustomFieldValues(serviceId, values, account);
+          // Record a per-field success so operators can see positive sync
+          // signal, not just failures. Best-effort, same as the failure path.
+          for (const field of pushedFields) {
+            void this.client
+              .createSyncLog(
+                {
+                  errorCode: 'SYNC_SUCCESS',
+                  customFieldId: field.pagerdutyCustomFieldId,
+                  customFieldName: field.pagerdutyCustomFieldDisplayName,
+                  entityPath: field.backstageEntityMappingPath,
+                  serviceId,
+                  serviceName,
+                  errorMessage: 'Synced successfully',
+                },
+                account,
+              )
+              .catch(err =>
+                this.logger.warn(`Sync log write failed (best-effort): ${err}`),
+              );
+          }
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : String(error);
           this.logger.error(

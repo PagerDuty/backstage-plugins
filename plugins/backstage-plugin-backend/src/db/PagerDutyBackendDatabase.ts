@@ -116,6 +116,7 @@ export type SyncLogQueryOptions = CustomFieldSyncLogFilters & {
 };
 
 const ERROR_SEVERITY_CODES = ['PD_API_ERROR'] as const;
+const INFO_SEVERITY_CODES = ['SYNC_SUCCESS'] as const;
 
 type Options = {
   skipMigrations?: boolean;
@@ -451,9 +452,14 @@ export class PagerDutyBackendDatabase implements PagerDutyBackendStore {
             .whereIn('errorCode', [...ERROR_SEVERITY_CODES])
             .orWhereRaw('LOWER(??) LIKE ?', ['errorCode', '%error%']),
         );
+      } else if (options?.severity === 'info') {
+        q = q.whereIn('errorCode', [...INFO_SEVERITY_CODES]);
       } else if (options?.severity === 'warning') {
+        // Warning is the complement of both error and info: anything that is
+        // neither a known error/info code nor an error-by-name.
         q = q
           .whereNotIn('errorCode', [...ERROR_SEVERITY_CODES])
+          .whereNotIn('errorCode', [...INFO_SEVERITY_CODES])
           .whereRaw('LOWER(??) NOT LIKE ?', ['errorCode', '%error%']);
       }
 

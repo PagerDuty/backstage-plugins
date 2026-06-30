@@ -593,7 +593,9 @@ export class CustomFieldsController {
         : undefined;
       const severityParam = (request.query.severity as string) || undefined;
       const severity =
-        severityParam === 'error' || severityParam === 'warning'
+        severityParam === 'error' ||
+        severityParam === 'warning' ||
+        severityParam === 'info'
           ? severityParam
           : undefined;
       const search = (request.query.search as string) || undefined;

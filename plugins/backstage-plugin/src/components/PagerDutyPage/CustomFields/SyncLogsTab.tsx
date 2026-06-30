@@ -47,18 +47,32 @@ const useStyles = makeStyles(theme => ({
     borderColor: '#d92626',
     color: '#a01b1b',
   },
+  severityInfo: {
+    backgroundColor: '#e8f0fe',
+    borderColor: '#3b82f6',
+    color: '#1e63c7',
+  },
   tableWidth: {
     width: '100%'
   }
 }));
 
-type Severity = 'warning' | 'error';
+type Severity = 'info' | 'warning' | 'error';
 
 const ERROR_CODES_ERROR: ReadonlySet<string> = new Set([
   'PD_API_ERROR',
 ]);
 
+const INFO_CODES: ReadonlySet<string> = new Set([
+  'SYNC_SUCCESS',
+]);
+
 const getSeverity = (errorCode: string): Severity => {
+  // Info is checked first so a success code can never be mistaken for an
+  // error/warning, mirroring the backend's three-way derivation.
+  if (INFO_CODES.has(errorCode)) {
+    return 'info';
+  }
   if (ERROR_CODES_ERROR.has(errorCode) || errorCode.toLowerCase().includes('error')) {
     return 'error';
   }
@@ -111,12 +125,17 @@ const downloadCsv = (logs: CustomFieldSyncLog[]) => {
 
 const SeverityBadge = ({ severity }: { severity: Severity }) => {
   const classes = useStyles();
-  const label = severity === 'error' ? 'Error' : 'Warning';
-  const className = `${classes.severityBadge} ${
-    severity === 'error' ? classes.severityError : classes.severityWarning
-  }`;
+  const config: Record<Severity, { label: string; className: string }> = {
+    info: { label: 'Info', className: classes.severityInfo },
+    warning: { label: 'Warning', className: classes.severityWarning },
+    error: { label: 'Error', className: classes.severityError },
+  };
+  const { label, className } = config[severity];
   return (
-    <Typography component="span" className={className}>
+    <Typography
+      component="span"
+      className={`${classes.severityBadge} ${className}`}
+    >
       {label}
     </Typography>
   );
@@ -128,7 +147,11 @@ const EXPORT_LIMIT = 10000;
 const filtersToApi = (values: SyncLogsFilterValues): CustomFieldSyncLogFilters => {
   const result: CustomFieldSyncLogFilters = {};
   if (values.search.trim()) result.search = values.search.trim();
-  if (values.severity === 'error' || values.severity === 'warning') {
+  if (
+    values.severity === 'error' ||
+    values.severity === 'warning' ||
+    values.severity === 'info'
+  ) {
     result.severity = values.severity;
   }
   if (values.customField) result.customFieldName = values.customField;
