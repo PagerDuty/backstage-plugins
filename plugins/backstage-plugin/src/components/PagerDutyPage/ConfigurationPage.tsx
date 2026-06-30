@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { createStyles, makeStyles, Typography } from '@material-ui/core';
 import { Card, RadioGroup, Radio, Box, Alert } from '@backstage/ui';
-import { useApi } from '@backstage/core-plugin-api';
+import { useApi, alertApiRef } from '@backstage/core-plugin-api';
 import { NotFoundError } from '@backstage/errors';
 import { pagerDutyApiRef } from '../../api';
 
@@ -35,6 +35,7 @@ const useStyles = makeStyles(() =>
 export const ConfigurationPage = () => {
   const { cardStyles, textContainerStyles, linkStyles } = useStyles();
   const pagerDutyApi = useApi(pagerDutyApiRef);
+  const alertApi = useApi(alertApiRef);
   const [
     selectedServiceDependencyStrategy,
     setSelectedServiceDependencyStrategy,
@@ -60,14 +61,29 @@ export const ConfigurationPage = () => {
     fetchSetting();
   }, [pagerDutyApi]);
 
-  const handleChange = (value: StoreSettings) => {
+  const handleChange = async (value: StoreSettings) => {
+    // Optimistically reflect the selection, remembering the previous value so we
+    // can roll back if the save fails — otherwise the radio would show a setting
+    // that was never persisted and silently revert on the next page load.
+    const previousValue = selectedServiceDependencyStrategy;
     setSelectedServiceDependencyStrategy(value);
-    pagerDutyApi.storeSettings([
-      {
-        id: SERVICE_DEPENDENCY_SYNC_STRATEGY,
-        value,
-      },
-    ]);
+
+    try {
+      await pagerDutyApi.storeSettings([
+        {
+          id: SERVICE_DEPENDENCY_SYNC_STRATEGY,
+          value,
+        },
+      ]);
+    } catch (error) {
+      setSelectedServiceDependencyStrategy(previousValue);
+      alertApi.post({
+        message: `Failed to save service dependency synchronization strategy. ${
+          error instanceof Error ? error.message : error
+        }`,
+        severity: 'error',
+      });
+    }
   };
 
   return (
@@ -102,7 +118,7 @@ export const ConfigurationPage = () => {
         <RadioGroup
           label="Select the main source of truth for your service dependencies"
           value={selectedServiceDependencyStrategy}
-          onChange={value => handleChange(value as StoreSettings)}
+          onChange={value => void handleChange(value as StoreSettings)}
         >
           <Radio value={StoreSettings.backstage}>Backstage</Radio>
           <Radio value={StoreSettings.pagerduty}>PagerDuty</Radio>

@@ -918,6 +918,11 @@ async function getServicesByIdsBatch(
 
   const params = new URLSearchParams();
   serviceIds.forEach(id => params.append('id[]', id));
+  // Without an explicit limit the `/services` list endpoint defaults to a page
+  // size of 25, which would silently drop ids 26+ of a full batch. Set the
+  // limit to the batch size (kept under PagerDuty's 100-id ceiling) so the
+  // whole batch always fits in this single, non-paginated request.
+  params.append('limit', String(SERVICE_IDS_BATCH_SIZE));
 
   try {
     response = await fetchWithRetries(`${baseUrl}?${params}`, options);
@@ -1086,13 +1091,15 @@ export async function getServicesByIds(
 export async function getAllServices(
   cache?: CacheService,
 ): Promise<PagerDutyService[]> {
-  // Return the cached service list if we already have one; only hit the API
-  // again when there are no cached services.
+  // Return the cached service list if we already have one. An empty array is a
+  // valid cached result (an account with zero services), so check for presence
+  // rather than length — otherwise `[]` would be treated as a miss and trigger
+  // a fresh full fetch on every call.
   const cached = await readCache<PagerDutyService[]>(
     cache,
     ALL_SERVICES_CACHE_KEY,
   );
-  if (cached && cached.length > 0) {
+  if (cached != null) {
     return cached;
   }
 

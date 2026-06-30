@@ -1184,6 +1184,7 @@ export async function createRouter(
           serviceId,
           vendorId,
           account,
+          cache,
         });
 
         response.json(integrationKey);
