@@ -95,7 +95,7 @@ export default function MappingsTable() {
     setToastOpen(true);
     setToastSeverity('info');
     setToastMessage(
-      `Mapping ${isUnmapping ? 'removed' : 'created'} successfully. The catalog sync runs approximately every 30 seconds. Please wait a bit and refresh the page to see the updated status.`
+      `Mapping ${isUnmapping ? 'removed' : 'created'}. The status updates automatically once Backstage re-processes the entity — this can take a few minutes. Refresh the page to check.`
     );
     setToastTotalMatches(0);
     setToastMappingCounts({});
