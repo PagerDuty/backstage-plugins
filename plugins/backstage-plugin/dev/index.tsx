@@ -15,6 +15,7 @@
  */
 
 import { catalogApiRef } from '@backstage/plugin-catalog-react';
+import { AnyApiFactory, ExtensionBlueprintDefineParams } from '@backstage/frontend-plugin-api';
 import { pagerDutyApiRef } from '../src/api';
 import { mockPagerDutyApi } from './mockPagerDutyApi';
 /*  eslint-disable-next-line @backstage/no-ui-css-imports-in-non-frontend */
@@ -29,7 +30,7 @@ import { mockCatalogApi } from './mockCatalogApi';
 const catalogPluginOverrides = catalogPlugin.withOverrides({
   extensions: [
     catalogPlugin.getExtension('api:catalog').override({
-      params: defineParams =>
+      params: (defineParams: ExtensionBlueprintDefineParams<AnyApiFactory>) =>
         defineParams({
           api: catalogApiRef,
           deps: {},
@@ -42,7 +43,7 @@ const catalogPluginOverrides = catalogPlugin.withOverrides({
 const pagerDutyPluginOverrides = pagerDutyPlugin.withOverrides({
   extensions: [
     pagerDutyPlugin.getExtension('api:pagerduty').override({
-      params: defineParams => 
+      params: (defineParams: ExtensionBlueprintDefineParams<AnyApiFactory>) =>
         defineParams({
           api: pagerDutyApiRef,
           deps: {},

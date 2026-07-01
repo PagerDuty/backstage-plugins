@@ -228,6 +228,10 @@ describe('createRouter', () => {
 
   beforeEach(() => {
     jest.resetAllMocks();
+    // The cache is shared across the suite (created in beforeAll), so a service
+    // cached by one test would otherwise leak into the next and mask the
+    // mocked fetch responses (e.g. returning a cached 200 instead of 401/404).
+    cacheStore.clear();
   });
 
   describe('GET /health', () => {
@@ -2314,7 +2318,7 @@ describe('createRouter', () => {
 
         const response = await request(app)
           .post('/mapping/entities')
-          .send({ offset: 20, limit: 5 });
+          .send({ offset: 0, limit: 5 });
 
         expect(response.body.entities[0]).toEqual({
           account: '',
@@ -4086,6 +4090,85 @@ describe('createRouter', () => {
         (f: { id: number }) => f.id === fieldId,
       );
       expect(field.pagerdutyCustomFieldEnabled).toBe(false);
+    });
+  });
+
+  describe('DELETE /custom-fields/:id', () => {
+    const createField = async (testId: string) => {
+      const createData = {
+        name: `Delete Field ${testId}`,
+        entityPath: `spec.delete_${testId}`,
+        description: 'Delete test field',
+      };
+      mocked(fetch).mockReturnValueOnce(
+        mockedResponse(201, {
+          field: {
+            id: `PDELETE_${testId}`,
+            display_name: createData.name,
+            name: createData.name.toLowerCase().replace(/ /g, '_'),
+            data_type: 'string',
+            field_type: 'single_value',
+            description: createData.description,
+            enabled: true,
+          },
+        }),
+      );
+      const createResponse = await request(app)
+        .post('/custom-fields')
+        .send(createData);
+      expect(createResponse.status).toEqual(201);
+      return createResponse.body.customField.id as number;
+    };
+
+    const fieldExists = async (fieldId: number) => {
+      const all = await request(app).get('/custom-fields');
+      return all.body.customFields.some(
+        (f: { id: number }) => f.id === fieldId,
+      );
+    };
+
+    it('deletes from PagerDuty and removes the Backstage record', async () => {
+      const testId = `ok${Date.now()}`;
+      const fieldId = await createField(testId);
+
+      mocked(fetch).mockReturnValueOnce(mockedResponse(204, {}));
+      const response = await request(app).delete(`/custom-fields/${fieldId}`);
+
+      expect(response.status).toEqual(204);
+      expect(await fieldExists(fieldId)).toBe(false);
+    });
+
+    it('returns 404 when the custom field does not exist in Backstage', async () => {
+      const response = await request(app).delete('/custom-fields/999999');
+      expect(response.status).toEqual(404);
+    });
+
+    it('removes the Backstage record when PagerDuty returns 404', async () => {
+      // The field is already gone from PagerDuty, so the delete should still
+      // succeed and drop the Backstage record rather than leaving it orphaned.
+      const testId = `pd404${Date.now()}`;
+      const fieldId = await createField(testId);
+
+      mocked(fetch).mockReturnValueOnce(
+        mockedResponse(404, { error: { message: 'Not Found' } }),
+      );
+      const response = await request(app).delete(`/custom-fields/${fieldId}`);
+
+      expect(response.status).toEqual(204);
+      expect(await fieldExists(fieldId)).toBe(false);
+    });
+
+    it('keeps the Backstage record when PagerDuty fails with a non-404 error', async () => {
+      const testId = `pd500${Date.now()}`;
+      const fieldId = await createField(testId);
+
+      mocked(fetch).mockReturnValueOnce(
+        mockedResponse(500, { error: { message: 'PagerDuty internal error' } }),
+      );
+      const response = await request(app).delete(`/custom-fields/${fieldId}`);
+
+      expect(response.status).toEqual(500);
+      expect(await fieldExists(fieldId)).toBe(true);
     });
   });
 

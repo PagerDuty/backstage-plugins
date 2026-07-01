@@ -269,7 +269,7 @@ export async function createRouter(
   const router = Router();
   router.use(express.json());
 
-  const runAutoMatch = createAutoMatchRunner(catalogApi);
+  const runAutoMatch = createAutoMatchRunner(catalogApi, cache);
   const autoMatchJobs = new AutoMatchJobRegistry(cache, runAutoMatch);
 
   // Initialize controllers
@@ -608,7 +608,11 @@ export async function createRouter(
       ) {
         const backstageVendorId = 'PRO19CT';
         // check for existing integration key on service
-        const service = await getServiceById(entity.serviceId, entity.account);
+        const service = await getServiceById(
+          entity.serviceId,
+          entity.account,
+          cache,
+        );
         const backstageIntegration = service.integrations?.find(
           integration => integration.vendor?.id === backstageVendorId,
         );
@@ -620,6 +624,7 @@ export async function createRouter(
             serviceId: entity.serviceId,
             vendorId: backstageVendorId,
             account: entity.account,
+            cache,
           });
 
           entity.integrationKey = integrationKey;
@@ -712,6 +717,7 @@ export async function createRouter(
             const service = await getServiceById(
               entity.serviceId,
               entity.account,
+              cache,
             );
             const backstageIntegration = service.integrations?.find(
               integration => integration.vendor?.id === backstageVendorId,
@@ -722,6 +728,7 @@ export async function createRouter(
                 serviceId: entity.serviceId,
                 vendorId: backstageVendorId,
                 account: entity.account,
+                cache,
               });
 
               entity.integrationKey = integrationKey;
@@ -824,7 +831,7 @@ export async function createRouter(
       > = await CatalogEntityUtils.createComponentEntitiesReferenceDict(componentEntities);
 
       // Get all services from PagerDuty
-      const pagerDutyServices = await getAllServices();
+      const pagerDutyServices = await getAllServices(cache);
 
       // Build the response object
       const result: PagerDutyEntityMappingsResponse =
@@ -845,7 +852,7 @@ export async function createRouter(
     }
   });
 
-  router.post('/mapping/entities', MappingsController.getMappingEntities(store, catalogApi));
+  router.post('/mapping/entities', MappingsController.getMappingEntities(store, catalogApi, logger));
 
   // GET /mapping/entity
   router.get(
@@ -1061,7 +1068,7 @@ export async function createRouter(
         return;
       }
 
-      const service = await getServiceById(serviceId, account);
+      const service = await getServiceById(serviceId, account, cache);
       const serviceResponse: PagerDutyServiceResponse = {
         service: service,
       };
@@ -1134,7 +1141,7 @@ export async function createRouter(
       }
 
       // Case 3: Fetch all services (default)
-      const services = await getAllServices();
+      const services = await getAllServices(cache);
       const servicesResponse: PagerDutyServicesResponse = {
         services: services,
       };
@@ -1177,6 +1184,7 @@ export async function createRouter(
           serviceId,
           vendorId,
           account,
+          cache,
         });
 
         response.json(integrationKey);

@@ -561,7 +561,7 @@ export type CustomFieldSyncLogCreateRequest = {
 };
 
 /** @public */
-export type CustomFieldSyncLogSeverity = 'warning' | 'error';
+export type CustomFieldSyncLogSeverity = 'info' | 'warning' | 'error';
 
 /** @public */
 export type CustomFieldSyncLogFilters = {

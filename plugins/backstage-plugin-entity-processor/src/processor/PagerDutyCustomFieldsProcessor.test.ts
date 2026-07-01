@@ -84,6 +84,7 @@ describe('PagerDutyCustomFieldsProcessor', () => {
       } as never,
     ]);
     mockClient.pushCustomFieldValues.mockResolvedValue(undefined as never);
+    mockClient.createSyncLog.mockResolvedValue(undefined as never);
 
     await processor.postProcessEntity(componentEntity, location, emit);
 
@@ -94,6 +95,68 @@ describe('PagerDutyCustomFieldsProcessor', () => {
       [{ id: 'CF1', value: 'my-service' }],
       undefined,
     );
+  });
+
+  it('writes a SYNC_SUCCESS log per pushed field on a successful push', async () => {
+    const processor = buildProcessor();
+    mockClient = MockedPagerDutyClient.mock
+      .instances[0] as jest.Mocked<PagerDutyClient>;
+    mockClient.isDataSyncEnabled.mockResolvedValue(true);
+    mockClient.getEnabledCustomFields.mockResolvedValue([
+      {
+        pagerdutyCustomFieldId: 'CF1',
+        pagerdutyCustomFieldDisplayName: 'Tier',
+        backstageEntityMappingPath: 'metadata.name',
+      } as never,
+      {
+        pagerdutyCustomFieldId: 'CF2',
+        pagerdutyCustomFieldDisplayName: 'Description',
+        backstageEntityMappingPath: 'spec.type',
+      } as never,
+    ]);
+    mockClient.pushCustomFieldValues.mockResolvedValue(undefined as never);
+    mockClient.createSyncLog.mockResolvedValue(undefined as never);
+
+    await processor.postProcessEntity(componentEntity, location, emit);
+
+    expect(mockClient.createSyncLog).toHaveBeenCalledTimes(2);
+    expect(mockClient.createSyncLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        errorCode: 'SYNC_SUCCESS',
+        customFieldId: 'CF1',
+        serviceId: 'PSERVICE',
+      }),
+      undefined,
+    );
+    expect(mockClient.createSyncLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        errorCode: 'SYNC_SUCCESS',
+        customFieldId: 'CF2',
+      }),
+      undefined,
+    );
+  });
+
+  it('writes PD_API_ERROR (not SYNC_SUCCESS) when the push fails', async () => {
+    const processor = buildProcessor();
+    mockClient = MockedPagerDutyClient.mock
+      .instances[0] as jest.Mocked<PagerDutyClient>;
+    mockClient.isDataSyncEnabled.mockResolvedValue(true);
+    mockClient.getEnabledCustomFields.mockResolvedValue([
+      {
+        pagerdutyCustomFieldId: 'CF1',
+        pagerdutyCustomFieldDisplayName: 'Tier',
+        backstageEntityMappingPath: 'metadata.name',
+      } as never,
+    ]);
+    mockClient.pushCustomFieldValues.mockRejectedValue(new Error('404'));
+    mockClient.createSyncLog.mockResolvedValue(undefined as never);
+
+    await processor.postProcessEntity(componentEntity, location, emit);
+
+    const codes = mockClient.createSyncLog.mock.calls.map(c => c[0].errorCode);
+    expect(codes).toContain('PD_API_ERROR');
+    expect(codes).not.toContain('SYNC_SUCCESS');
   });
 
   it('skips non-Component entities before checking the data sync', async () => {

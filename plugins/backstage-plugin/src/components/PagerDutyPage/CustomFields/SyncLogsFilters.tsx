@@ -39,6 +39,7 @@ interface SyncLogsFiltersProps {
 
 const SEVERITY_OPTIONS: Option[] = [
   { value: '', label: 'All' },
+  { value: 'info', label: 'Info' },
   { value: 'warning', label: 'Warning' },
   { value: 'error', label: 'Error' },
 ];

@@ -116,6 +116,7 @@ export type SyncLogQueryOptions = CustomFieldSyncLogFilters & {
 };
 
 const ERROR_SEVERITY_CODES = ['PD_API_ERROR'] as const;
+const INFO_SEVERITY_CODES = ['SYNC_SUCCESS'] as const;
 
 type Options = {
   skipMigrations?: boolean;
@@ -180,13 +181,26 @@ export class PagerDutyBackendDatabase implements PagerDutyBackendStore {
       account: entity.account,
     }));
 
-    const results = await this.db<RawDbEntityResultRow>(
-      'pagerduty_entity_mapping',
-    )
-      .insert(rows)
-      .returning('id');
+    // Insert in chunks inside a single transaction. A single multi-row insert
+    // is compiled by the SQLite driver into a `SELECT ... UNION ALL ...` with
+    // one term per row, which overflows SQLITE_MAX_COMPOUND_SELECT (default
+    // 500) for large batches and fails the whole insert with "too many terms
+    // in compound SELECT". Chunking keeps each statement under that limit while
+    // the transaction preserves the all-or-nothing behavior callers expect.
+    // The ids are generated here, so we return them directly (preserving input
+    // order) rather than relying on driver-specific RETURNING semantics.
+    const CHUNK_SIZE = 200;
 
-    return results.map(r => r.id);
+    await this.db.transaction(async trx => {
+      for (let i = 0; i < rows.length; i += CHUNK_SIZE) {
+        const chunk = rows.slice(i, i + CHUNK_SIZE);
+        await trx<RawDbEntityResultRow>('pagerduty_entity_mapping').insert(
+          chunk,
+        );
+      }
+    });
+
+    return rows.map(r => r.id);
   }
 
   async getAllEntityMappings(): Promise<RawDbEntityResultRow[]> {
@@ -438,9 +452,14 @@ export class PagerDutyBackendDatabase implements PagerDutyBackendStore {
             .whereIn('errorCode', [...ERROR_SEVERITY_CODES])
             .orWhereRaw('LOWER(??) LIKE ?', ['errorCode', '%error%']),
         );
+      } else if (options?.severity === 'info') {
+        q = q.whereIn('errorCode', [...INFO_SEVERITY_CODES]);
       } else if (options?.severity === 'warning') {
+        // Warning is the complement of both error and info: anything that is
+        // neither a known error/info code nor an error-by-name.
         q = q
           .whereNotIn('errorCode', [...ERROR_SEVERITY_CODES])
+          .whereNotIn('errorCode', [...INFO_SEVERITY_CODES])
           .whereRaw('LOWER(??) NOT LIKE ?', ['errorCode', '%error%']);
       }
 

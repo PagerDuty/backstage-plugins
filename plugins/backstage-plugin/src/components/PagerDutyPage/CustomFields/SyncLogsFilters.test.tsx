@@ -65,6 +65,25 @@ describe('SyncLogsFilters', () => {
     expect(onRefresh).toHaveBeenCalledTimes(1);
   });
 
+  it('offers an Info option in the severity filter', async () => {
+    const { container } = await renderInTestApp(
+      <SyncLogsFilters
+        values={EMPTY_SYNC_LOG_FILTERS}
+        onChange={() => {}}
+        customFieldOptions={[{ value: '', label: 'All' }]}
+        entityPathOptions={[{ value: '', label: 'All' }]}
+        serviceOptions={[{ value: '', label: 'All' }]}
+        onExport={() => {}}
+        onRefresh={() => {}}
+      />,
+    );
+
+    // The Select renders a hidden native <option> per choice; assert on it
+    // directly (stable regardless of popup state, and unambiguous).
+    const infoOption = container.querySelector('option[value="info"]');
+    expect(infoOption).toHaveTextContent('Info');
+  });
+
   it('disables the export button when exportDisabled is true', async () => {
     await renderInTestApp(
       <SyncLogsFilters
