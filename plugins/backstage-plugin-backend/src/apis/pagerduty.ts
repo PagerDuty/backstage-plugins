@@ -1099,7 +1099,7 @@ export async function getAllServices(
     cache,
     ALL_SERVICES_CACHE_KEY,
   );
-  if (cached != null) {
+  if (cached !== undefined) {
     return cached;
   }
 

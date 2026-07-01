@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { LoggerService } from '@backstage/backend-plugin-api';
 import { CatalogApi } from '@backstage/catalog-client';
 import { PagerDutyService } from '@pagerduty/backstage-plugin-common';
 import { PagerDutyBackendStore, RawDbEntityResultRow } from '../db/PagerDutyBackendDatabase';
@@ -62,7 +63,7 @@ function buildRequest(body: unknown): Request {
 
 describe('getMappingEntities', () => {
   const getServicesByIds = PagerdutyApi.getServicesByIds as jest.Mock;
-  const logger = { warn: jest.fn() } as any;
+  const logger = { warn: jest.fn() } as unknown as jest.Mocked<LoggerService>;
 
   let store: PagerDutyBackendStore;
   let catalogApi: CatalogApi;
