@@ -1,41 +1,65 @@
-import { Box, Flex, Skeleton } from '@backstage/ui';
+import { Box, Flex, Skeleton, Text } from '@backstage/ui';
 
-export function TableSkeleton() {
+interface SkeletonColumn {
+  /** Column header label, matching the real table's column. */
+  label: string;
+  /** Column width as a CSS width value. */
+  width: string;
+}
+
+interface TableSkeletonProps {
+  /**
+   * Columns to render. The labels match the real table's headers and are shown
+   * as-is; only the row cells are skeletons.
+   */
+  columns?: SkeletonColumn[];
+  /** Number of placeholder rows to render. */
+  rowCount?: number;
+}
+
+const DEFAULT_COLUMNS: SkeletonColumn[] = [
+  { label: 'Name', width: '25%' },
+  { label: 'Team', width: '20%' },
+  { label: 'PagerDuty service', width: '25%' },
+  { label: 'Status', width: '20%' },
+  { label: 'Actions', width: '10%' },
+];
+
+export function TableSkeleton({
+  columns = DEFAULT_COLUMNS,
+  rowCount = 10,
+}: TableSkeletonProps = {}) {
   return (
-    <Box data-testid="mappings-table-skeleton" style={{ width: '100%' }} mt="4">
+    <Box data-testid="mappings-table-skeleton" style={{ width: '100%' }}>
       <Flex
         gap="4"
-        style={{
-          padding: '1rem',
-          borderBottom: '1px solid var(--bui-border-neutral-default)',
-          backgroundColor: 'var(--bui-bg-surface-0)',
-        }}
+        mt="10px"
+        pl="10px"
       >
-        <Skeleton style={{ height: '20px', width: '15%' }} />
-        <Skeleton style={{ height: '20px', width: '15%' }} />
-        <Skeleton style={{ height: '20px', width: '20%' }} />
-        <Skeleton style={{ height: '20px', width: '12%' }} />
-        <Skeleton style={{ height: '20px', width: '12%' }} />
-        <Skeleton style={{ height: '20px', width: '12%' }} />
-        <Skeleton style={{ height: '20px', width: '10%' }} />
+        {columns.map(column => (
+          <Box key={column.label} style={{ width: column.width }}>
+            <Text weight="bold" variant="body-medium">
+              {column.label}
+            </Text>
+          </Box>
+        ))}
       </Flex>
 
-      {[...Array(10)].map((_, index) => (
+      {[...Array(rowCount)].map((_, rowIndex) => (
         <Flex
-          key={index}
+          key={rowIndex}
           gap="4"
           style={{
             padding: '1rem',
             borderBottom: '1px solid var(--bui-border-neutral-subtle)',
           }}
         >
-          <Skeleton style={{ height: '16px', width: '15%' }} />
-          <Skeleton style={{ height: '16px', width: '15%' }} />
-          <Skeleton style={{ height: '16px', width: '20%' }} />
-          <Skeleton style={{ height: '16px', width: '12%' }} />
-          <Skeleton style={{ height: '16px', width: '12%' }} />
-          <Skeleton style={{ height: '16px', width: '12%' }} />
-          <Skeleton style={{ height: '16px', width: '10%' }} />
+          {columns.map(column => (
+            <Skeleton
+              key={column.label}
+              style={{ height: '16px', width: column.width }}
+            />
+          ))}
         </Flex>
       ))}
     </Box>

@@ -1,10 +1,11 @@
 import { Request, Response } from 'express';
+import { LoggerService } from '@backstage/backend-plugin-api';
 import * as Pagerduty from '../services/pagerduty';
 import * as CatalogEntityUtils from '../utils/catalog-entity';
 import { PagerDutyBackendStore } from '../db';
 import { CatalogApi, GetEntitiesResponse, QueryEntitiesResponse } from '@backstage/catalog-client';
 import { HttpError, PagerDutyEntityMappingsResponse, PagerDutyService, FormattedBackstageEntity } from '@pagerduty/backstage-plugin-common';
-import { getServiceByIntegrationKey, getServicesByIds } from '../apis/pagerduty';
+import { getServiceByIntegrationKey, getServicesByIds, isValidServiceId } from '../apis/pagerduty';
 import { RawDbEntityResultRow } from '../db/PagerDutyBackendDatabase';
 
 // Status order for sorting (from least to most complete)
@@ -55,7 +56,11 @@ function compareEntities(
   return direction === 'ascending' ? comparison : -comparison;
 }
 
-export function getMappingEntities(store: PagerDutyBackendStore, catalogApi: CatalogApi) {
+export function getMappingEntities(
+  store: PagerDutyBackendStore,
+  catalogApi: CatalogApi,
+  logger?: LoggerService,
+) {
   return async function getMappingEntitiesFunction(request: Request, response: Response) {
     try {
       const { offset = 0, limit = 10, filters = {}, sort, account } = request.body;
@@ -169,7 +174,35 @@ export function getMappingEntities(store: PagerDutyBackendStore, catalogApi: Cat
         });
       });
 
-      const currentPagePagerDutyServiceIds = currentPageMappings.map(mapping => mapping.serviceId).filter(Boolean);
+      // Collect the PagerDuty service ids we need to resolve for this page from
+      // both the stored mappings and the service-id annotations on the
+      // current-page entities (an entity can carry an annotation without a DB
+      // mapping yet).
+      const rawPagerDutyServiceIds = [
+        ...currentPageMappings.map(mapping => mapping.serviceId),
+        ...componentEntities.items.map(entity =>
+          CatalogEntityUtils.getPagerDutyServiceId(entity),
+        ),
+      ].filter(Boolean) as string[];
+
+      // Service ids come from user-authored annotations / stored mappings, so a
+      // malformed value (pasted URL, whitespace, typo) can appear. getServicesByIds
+      // sanitizes again before calling PagerDuty, but surface a warning here so the
+      // operator can fix the offending entity annotation. De-duplicate first so each
+      // id is fetched and warned about at most once.
+      const uniqueTrimmedServiceIds = Array.from(
+        new Set(rawPagerDutyServiceIds.map(id => id.trim())),
+      );
+
+      const currentPagePagerDutyServiceIds = uniqueTrimmedServiceIds.filter(id => {
+        if (isValidServiceId(id)) {
+          return true;
+        }
+        logger?.warn(
+          `Ignoring malformed PagerDuty service id "${id}" while building entity mappings`,
+        );
+        return false;
+      });
 
       const currentPagePagerDutyServices = await getServicesByIds(currentPagePagerDutyServiceIds);
 
@@ -207,9 +240,21 @@ export function getMappingEntities(store: PagerDutyBackendStore, catalogApi: Cat
             account: '',
           };
 
+          const entityRef = CatalogEntityUtils.entityRef(entity).toLowerCase();
+
+          const entityMapping = maps.mappings.find(
+            mapping =>
+              mapping.entityRef === entityRef ||
+              (mapping.integrationKey && mapping.integrationKey ===  annotations['pagerduty.com/integration-key']) ||
+              (mapping.serviceId && mapping.serviceId === annotations['pagerduty.com/service-id']),
+          );
+
           // Try to find a service by service ID or integration key
           let service = null;
           let isServiceError = null;
+          // Tracks whether the service was resolved from a stored DB mapping
+          // rather than from the entity's own annotations.
+          let resolvedFromMapping = false;
 
           if (annotations['pagerduty.com/service-id']) {
             const serviceId = annotations['pagerduty.com/service-id'];
@@ -227,14 +272,24 @@ export function getMappingEntities(store: PagerDutyBackendStore, catalogApi: Cat
             }
           }
 
-          const entityRef = CatalogEntityUtils.entityRef(entity).toLowerCase();
-
-          const entityMapping = maps.mappings.find(
-            mapping =>
-              mapping.entityRef === entityRef ||
-              (mapping.integrationKey && mapping.integrationKey ===  annotations['pagerduty.com/integration-key']) ||
-              (mapping.serviceId && mapping.serviceId === annotations['pagerduty.com/service-id']),
-          );
+          // The entity's annotations are written back asynchronously by the
+          // entity processor after a mapping is created, so a freshly-created
+          // mapping has a DB row but no annotation yet. When we matched a stored
+          // mapping by entityRef but couldn't resolve the service from the
+          // (still-empty) annotations, fall back to the mapping's serviceId so
+          // the mapping shows up immediately rather than waiting for the next
+          // catalog processing cycle.
+          if (
+            !service &&
+            !isServiceError &&
+            entityMapping?.entityRef === entityRef &&
+            entityMapping?.serviceId
+          ) {
+            service = currentPagePagerDutyServices.find(
+              s => s.id === entityMapping.serviceId,
+            );
+            resolvedFromMapping = !!service;
+          }
 
           if (service) {
             formattedEntity.serviceName = service.name;
@@ -244,10 +299,17 @@ export function getMappingEntities(store: PagerDutyBackendStore, catalogApi: Cat
             formattedEntity.account = service.account || '';
 
             if (entityMapping) {
-              const expectedEntityRef = componentEntitiesDict[service.id]?.ref;
+              // When resolved from the stored mapping, the mapping's entityRef
+              // already equals this entity's ref (that's how it was matched), so
+              // trust the mapping's status directly. Otherwise validate against
+              // the annotation-derived ref to guard against a stale mapping that
+              // points the service at a different entity.
+              const expectedEntityRef = resolvedFromMapping
+                ? entityMapping.entityRef
+                : componentEntitiesDict[service.id]?.ref;
 
               if (expectedEntityRef && expectedEntityRef === entityMapping.entityRef) {
-                formattedEntity.status = 
+                formattedEntity.status =
                   (entityMapping.status || 'NotMapped') as NonNullable<FormattedBackstageEntity['status']>;
               } else {
                 formattedEntity.status = 'NotMapped' as NonNullable<FormattedBackstageEntity['status']>;

@@ -29,6 +29,12 @@ import {
   PagerDutyEnhancedEntityMappingsResponse,
   AutoMatchStartResponse,
   AutoMatchStatusResponse,
+  BackstageCustomField,
+  BackstageCustomFieldCreateRequest,
+  BackstageCustomFieldUpdateRequest,
+  BackstageCustomFieldsResponse,
+  CustomFieldSyncLogsResponse,
+  CustomFieldSyncLogFilters,
 } from '@pagerduty/backstage-plugin-common';
 import { DiscoveryApi, FetchApi } from '@backstage/core-plugin-api';
 import { Entity } from '@backstage/catalog-model';
@@ -246,6 +252,55 @@ export interface PagerDutyApi {
    * Fetches the list of configured PagerDuty accounts.
    */
   getAccounts(): Promise<Array<{ id: string; isDefault: boolean }>>;
+
+  /**
+   * Creates a custom field in PagerDuty and stores the mapping.
+   */
+  createCustomField(
+    request: BackstageCustomFieldCreateRequest,
+    account?: string,
+  ): Promise<Result<BackstageCustomField>>;
+
+  /**
+   * Fetches all custom fields.
+   */
+  getCustomFields(account?: string): Promise<BackstageCustomFieldsResponse>;
+
+  /**
+   * Updates an existing custom field mapping.
+   */
+  updateCustomField(
+    id: number,
+    request: BackstageCustomFieldUpdateRequest,
+    account?: string,
+  ): Promise<Result<BackstageCustomField>>;
+
+  /**
+   * Enables or disables a custom field. Disabled fields are not synced to
+   * PagerDuty and do not count against the PagerDuty custom field hard limit.
+   */
+  setCustomFieldEnabled(
+    id: number,
+    enabled: boolean,
+    account?: string,
+  ): Promise<Result<BackstageCustomField>>;
+
+  /**
+   * Deletes a custom field from both Backstage and PagerDuty, reclaiming the slot.
+   */
+  deleteCustomField(
+    id: number,
+    account?: string,
+  ): Promise<Result<void>>;
+
+  /**
+   * Fetches sync logs (paginated, filtered) along with the distinct
+   * filter values for the given account.
+   */
+  getSyncLogs(
+    account?: string,
+    options?: { limit?: number; offset?: number } & CustomFieldSyncLogFilters,
+  ): Promise<CustomFieldSyncLogsResponse>;
 }
 
 /** @public */
@@ -264,3 +319,8 @@ export type RequestOptions = {
   headers: HeadersInit;
   body?: BodyInit;
 };
+
+/** @public */
+export type Result<T> =
+  | { status: 'ok'; data: T; error: null }
+  | { status: 'error'; data: null; error: string };

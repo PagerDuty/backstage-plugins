@@ -436,3 +436,147 @@ export type AutoMatchStatusResponse = {
   result?: AutoMatchEntityMappingsResponse;
   error?: string;
 };
+
+/** @public */
+export type PagerDutyCustomField = {
+  id: string;
+  data_type: string;
+  description?: string;
+  display_name: string;
+  enabled: boolean;
+  field_type: string;
+  name: string;
+  backstageEntityMappingPath?: string;
+};
+
+/** @public */
+export type PagerDutyCustomFieldCreateRequest = {
+  field: {
+    data_type: 'string';
+    description?: string;
+    display_name: string;
+    enabled: boolean;
+    field_type: 'single_value';
+    name: string;
+  };
+};
+
+/** @public */
+export type PagerDutyCustomFieldResponse = {
+  field: PagerDutyCustomField;
+};
+
+/** @public */
+export type PagerDutyCustomFieldsResponse = {
+  fields: PagerDutyCustomField[];
+};
+
+/** @public */
+export type BackstageCustomField = {
+  id: number;
+  pagerdutyCustomFieldId: string;
+  pagerdutyCustomFieldDisplayName: string;
+  pagerdutyCustomFieldEnabled: boolean;
+  backstageEntityMappingPath: string;
+  pagerdutySubdomain: string;
+  description?: string;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+/** @public */
+export type BackstageCustomFieldCreateRequest = {
+  name: string;
+  entityPath: string;
+  description?: string;
+};
+
+/** @public */
+export type BackstageCustomFieldUpdateRequest = {
+  name: string;
+  entityPath: string;
+  description?: string;
+};
+
+/** @public */
+export type BackstageCustomFieldToggleEnabledRequest = {
+  enabled: boolean;
+};
+
+/** @public */
+export type PagerDutyCustomFieldUpdateRequest = {
+  field: {
+    display_name: string;
+    description?: string;
+    enabled?: boolean;
+  };
+};
+
+/** @public */
+export type BackstageCustomFieldsResponse = {
+  customFields: BackstageCustomField[];
+};
+
+/** @public */
+export type PagerDutyServiceCustomFieldValue = {
+  id: string;
+  value: string | null;
+};
+
+/** @public */
+export type PagerDutyServiceCustomFieldValuesRequest = {
+  custom_fields: PagerDutyServiceCustomFieldValue[];
+};
+
+// The PagerDuty API echoes back the same shape it receives, so these two types
+// are structurally identical but kept separate to distinguish call-site intent.
+/** @public */
+export type PagerDutyServiceCustomFieldValuesResponse = {
+  custom_fields: PagerDutyServiceCustomFieldValue[];
+};
+
+/** @public */
+export type CustomFieldSyncLog = {
+  id: number;
+  timestamp: Date;
+  errorCode: string;
+  customFieldId: string;
+  customFieldName: string;
+  entityPath: string;
+  serviceId: string;
+  serviceName: string;
+  errorMessage: string;
+  subdomain: string;
+};
+
+/** @public */
+export type CustomFieldSyncLogCreateRequest = {
+  errorCode: string;
+  customFieldId: string;
+  customFieldName: string;
+  entityPath: string;
+  serviceId: string;
+  serviceName: string;
+  errorMessage: string;
+};
+
+/** @public */
+export type CustomFieldSyncLogSeverity = 'info' | 'warning' | 'error';
+
+/** @public */
+export type CustomFieldSyncLogFilters = {
+  search?: string;
+  severity?: CustomFieldSyncLogSeverity;
+  customFieldName?: string;
+  entityPath?: string;
+  serviceName?: string;
+};
+
+/** @public */
+export type CustomFieldSyncLogsResponse = {
+  logs: CustomFieldSyncLog[];
+  total: number;
+  customFieldNames: string[];
+  entityPaths: string[];
+  serviceNames: string[];
+};

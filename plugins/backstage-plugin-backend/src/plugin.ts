@@ -6,6 +6,13 @@ import {
 } from '@backstage/backend-plugin-api';
 import { createRouter } from './service/router';
 import { PagerDutyBackendDatabase, PagerDutyBackendStore } from './db';
+import {
+  readSyncLogsCleanupConfig,
+  runSyncLogsCleanup,
+  SYNC_LOGS_CLEANUP_INITIAL_DELAY_MINUTES,
+  SYNC_LOGS_CLEANUP_TASK_ID,
+  SYNC_LOGS_CLEANUP_TIMEOUT_MINUTES,
+} from './services/syncLogsCleanup';
 import { CatalogClient } from '@backstage/catalog-client';
 
 class CatalogFetchApi {
@@ -43,6 +50,7 @@ export const pagerDutyPlugin = createBackendPlugin({
         discovery: coreServices.discovery,
         auth: coreServices.auth,
         cache: coreServices.cache,
+        scheduler: coreServices.scheduler,
       },
       async init({
         config,
@@ -52,11 +60,29 @@ export const pagerDutyPlugin = createBackendPlugin({
         discovery,
         auth,
         cache,
+        scheduler,
       }) {
         const pagerDutyBackendStore: PagerDutyBackendStore =
           await PagerDutyBackendDatabase.create(await database.getClient(), {
             skipMigrations: false,
           });
+
+        const cleanupConfig = readSyncLogsCleanupConfig(config);
+        if (cleanupConfig.enabled) {
+          await scheduler.scheduleTask({
+            id: SYNC_LOGS_CLEANUP_TASK_ID,
+            frequency: { minutes: cleanupConfig.frequencyMinutes },
+            timeout: { minutes: SYNC_LOGS_CLEANUP_TIMEOUT_MINUTES },
+            initialDelay: { minutes: SYNC_LOGS_CLEANUP_INITIAL_DELAY_MINUTES },
+            scope: 'global',
+            fn: () =>
+              runSyncLogsCleanup({
+                store: pagerDutyBackendStore,
+                logger,
+                cleanupConfig,
+              }),
+          });
+        }
 
         httpRouter.use(
           await createRouter({

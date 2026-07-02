@@ -26,10 +26,17 @@ import {
   PagerDutyServiceDependencyResponse,
   PagerDutyTeam,
   PagerDutyTeamsResponse,
+  PagerDutyCustomFieldCreateRequest,
+  PagerDutyCustomFieldResponse,
+  PagerDutyCustomFieldsResponse,
+  PagerDutyCustomFieldUpdateRequest,
+  PagerDutyServiceCustomFieldValuesRequest,
+  PagerDutyServiceCustomFieldValuesResponse,
 } from '@pagerduty/backstage-plugin-common';
 
 import { DateTime } from 'luxon';
 import {
+  CacheService,
   LoggerService,
   RootConfigService,
 } from '@backstage/backend-plugin-api';
@@ -66,6 +73,14 @@ export function insertAccountConfig(account: PagerDutyAccountConfig) {
   if (account.oauth?.subDomain) {
     SubdomainConfig[account.id] = account.oauth.subDomain;
   }
+}
+
+// Remove a previously inserted account from the in-memory endpoint config.
+// Primarily used by tests to tear down accounts they register so the shared
+// EndpointConfig does not leak between cases.
+export function removeAccountConfig(accountId: string) {
+  delete EndpointConfig[accountId];
+  delete SubdomainConfig[accountId];
 }
 
 export function loadPagerDutyEndpointsFromConfig(
@@ -167,6 +182,54 @@ async function getDefaultHeaders(account?: string): Promise<Record<string, strin
     'Content-Type': 'application/json',
     'X-PagerDuty-Client': clientHeader,
   };
+}
+
+// Caching for PagerDuty services. A full fetch is cached as a list, and each
+// service is also indexed by id so single-service lookups can be served from
+// the cache without hitting the API again.
+const SERVICES_CACHE_TTL_MS = 20 * 60 * 1000;
+const ALL_SERVICES_CACHE_KEY = 'pagerduty:services:all';
+
+// Normalize the account segment so callers that pass an empty string (e.g. the
+// frontend bulk-mapping payload) hit the same key as the full-fetch indexer,
+// which stores services under the EndpointConfig key ('default' for single
+// account setups).
+const serviceCacheKey = (serviceId: string, account?: string) =>
+  `pagerduty:service:${account || 'default'}:${serviceId}`;
+
+async function readCache<T>(
+  cache: CacheService | undefined,
+  key: string,
+): Promise<T | undefined> {
+  if (!cache) {
+    return undefined;
+  }
+  return (await cache.get(key)) as T | undefined;
+}
+
+async function writeCache(
+  cache: CacheService | undefined,
+  key: string,
+  value: unknown,
+): Promise<void> {
+  if (!cache) {
+    return;
+  }
+  await cache.set(
+    key,
+    value as Parameters<CacheService['set']>[1],
+    { ttl: SERVICES_CACHE_TTL_MS },
+  );
+}
+
+async function deleteCache(
+  cache: CacheService | undefined,
+  key: string,
+): Promise<void> {
+  if (!cache) {
+    return;
+  }
+  await cache.delete(key);
 }
 
 // Supporting router
@@ -315,7 +378,7 @@ export async function getServiceRelationshipsById(
   };
 
   const apiBaseUrl = getApiBaseUrl(account);
-  const baseUrl = `${apiBaseUrl}/service_dependencies/technical_services/${serviceId}`;
+  const baseUrl = `${apiBaseUrl}/service_dependencies/technical_services/${encodeURIComponent(serviceId)}`;
 
   try {
     response = await fetchWithRetries(baseUrl, options);
@@ -734,7 +797,22 @@ export async function getOncallUsers(
 export async function getServiceById(
   serviceId: string,
   account?: string,
+  cache?: CacheService,
+  logger?: LoggerService,
 ): Promise<PagerDutyService> {
+  // Serve from cache first if this specific service is already cached.
+  const cacheKey = serviceCacheKey(serviceId, account);
+  const cached = await readCache<PagerDutyService>(cache, cacheKey);
+  if (cached) {
+    logger?.debug(`getServiceById: cache HIT for ${cacheKey}`);
+    return cached;
+  }
+  if (cache) {
+    logger?.debug(
+      `getServiceById: cache MISS for ${cacheKey}, fetching from PagerDuty API`,
+    );
+  }
+
   let response: Response;
   const params = `time_zone=UTC&include[]=integrations&include[]=escalation_policies`;
 
@@ -748,7 +826,7 @@ export async function getServiceById(
 
   try {
     response = await fetchWithRetries(
-      `${baseUrl}/${serviceId}?${params}`,
+      `${baseUrl}/${encodeURIComponent(serviceId)}?${params}`,
       options,
     );
   } catch (error) {
@@ -791,13 +869,35 @@ export async function getServiceById(
   try {
     result = (await response.json()) as PagerDutyServiceResponse;
 
+    await writeCache(cache, serviceCacheKey(serviceId, account), result.service);
+
     return result.service;
   } catch (error) {
     throw new HttpError(`Failed to parse service information: ${error}`, 500);
   }
 }
 
-export async function getSerivcesByIdsAndAccount(
+// PagerDuty's `id[]` filter accepts at most 100 ids per request, and packing
+// too many into the query string produces a URL long enough for the API
+// gateway to reject with an HTML error page. Keep batches well under both
+// limits.
+const SERVICE_IDS_BATCH_SIZE = 50;
+
+// PagerDuty resource ids are uppercase alphanumeric, conventionally 7 chars
+// (e.g. "PXXXXXX"). The `id[]` list filter rejects the ENTIRE request with a
+// 400 if any single value is malformed, so drop clearly-invalid ids before
+// calling the API. Permissive on length (>= 6) to avoid rejecting valid ids,
+// while still catching pasted URLs, whitespace, lowercase, and typos.
+const SERVICE_ID_PATTERN = /^[A-Z0-9]{6,}$/;
+
+export function isValidServiceId(id: string | undefined | null): boolean {
+  if (typeof id !== 'string') {
+    return false;
+  }
+  return SERVICE_ID_PATTERN.test(id.trim());
+}
+
+async function getServicesByIdsBatch(
   serviceIds: string[],
   account?: string,
 ): Promise<PagerDutyService[]> {
@@ -816,11 +916,16 @@ export async function getSerivcesByIdsAndAccount(
   const apiBaseUrl = getApiBaseUrl(account);
   const baseUrl = `${apiBaseUrl}/services`;
 
+  const params = new URLSearchParams();
+  serviceIds.forEach(id => params.append('id[]', id));
+  // Without an explicit limit the `/services` list endpoint defaults to a page
+  // size of 25, which would silently drop ids 26+ of a full batch. Set the
+  // limit to the batch size (kept under PagerDuty's 100-id ceiling) so the
+  // whole batch always fits in this single, non-paginated request.
+  params.append('limit', String(SERVICE_IDS_BATCH_SIZE));
+
   try {
-    response = await fetchWithRetries(
-      `${baseUrl}?id[]=${serviceIds.join('&id[]=')}`,
-      options,
-    );
+    response = await fetchWithRetries(`${baseUrl}?${params}`, options);
   } catch (error) {
     throw new Error(`Failed to retrieve service: ${error}`);
   }
@@ -834,10 +939,12 @@ export async function getSerivcesByIdsAndAccount(
 
   switch (response.status) {
     case 400:
-      throw new HttpError(
-        'Failed to get service. Caller provided invalid arguments.',
-        400,
-      );
+      // The `id[]` list filter returns 400 if any single id is malformed. We
+      // already sanitize ids before calling this, but treat a 400 from the
+      // *list* endpoint as "no matching services" rather than failing the whole
+      // page — a list query that matches nothing should degrade gracefully.
+      // (Single-service fetches such as getServiceById still throw on 400.)
+      return [];
     case 401:
       throw new HttpError(
         'Failed to get service. Caller did not supply credentials or did not provide the correct credentials.',
@@ -865,6 +972,39 @@ export async function getSerivcesByIdsAndAccount(
   } catch (error) {
     throw new HttpError(`Failed to parse service information: ${error}`, 500);
   }
+}
+
+export async function getSerivcesByIdsAndAccount(
+  serviceIds: string[],
+  account?: string,
+): Promise<PagerDutyService[]> {
+  // Service ids originate from user-authored entity annotations and stored
+  // mappings, so trim and drop any malformed values. PagerDuty rejects the
+  // entire `id[]` request with a 400 if even one value is malformed, which
+  // would otherwise fail the whole page. Re-dedupe after trimming since that
+  // can newly collide e.g. "PXXXXXX " with "PXXXXXX".
+  const sanitizedServiceIds = Array.from(
+    new Set(
+      serviceIds
+        .map(id => (typeof id === 'string' ? id.trim() : ''))
+        .filter(id => isValidServiceId(id)),
+    ),
+  );
+
+  if (sanitizedServiceIds.length === 0) {
+    return [];
+  }
+
+  const batches: string[][] = [];
+  for (let i = 0; i < sanitizedServiceIds.length; i += SERVICE_IDS_BATCH_SIZE) {
+    batches.push(sanitizedServiceIds.slice(i, i + SERVICE_IDS_BATCH_SIZE));
+  }
+
+  const results = await Promise.all(
+    batches.map(batch => getServicesByIdsBatch(batch, account)),
+  );
+
+  return results.flat();
 }
 
 export async function getServiceByIntegrationKey(
@@ -940,16 +1080,29 @@ export async function getServiceByIntegrationKey(
 export async function getServicesByIds(
   ids: string[],
 ): Promise<PagerDutyService[]> {
-  let services: PagerDutyService[] = [];
-  await Promise.all(
-    Object.entries(EndpointConfig).map(async ([account, _]) => {
-      services = await getSerivcesByIdsAndAccount(ids, account);
-    }),
+  const servicesPerAccount = await Promise.all(
+    Object.keys(EndpointConfig).map(account =>
+      getSerivcesByIdsAndAccount(ids, account),
+    ),
   );
-  return services;
+  return servicesPerAccount.flat();
 }
 
-export async function getAllServices(): Promise<PagerDutyService[]> {
+export async function getAllServices(
+  cache?: CacheService,
+): Promise<PagerDutyService[]> {
+  // Return the cached service list if we already have one. An empty array is a
+  // valid cached result (an account with zero services), so check for presence
+  // rather than length — otherwise `[]` would be treated as a miss and trigger
+  // a fresh full fetch on every call.
+  const cached = await readCache<PagerDutyService[]>(
+    cache,
+    ALL_SERVICES_CACHE_KEY,
+  );
+  if (cached !== undefined) {
+    return cached;
+  }
+
   const allServices: PagerDutyService[] = [];
 
   await Promise.all(
@@ -1016,6 +1169,15 @@ export async function getAllServices(): Promise<PagerDutyService[]> {
         throw error;
       }
     }),
+  );
+
+  // Cache the full list, and index each service by id so single-service
+  // lookups can be served from the cache too.
+  await writeCache(cache, ALL_SERVICES_CACHE_KEY, allServices);
+  await Promise.all(
+    allServices.map(service =>
+      writeCache(cache, serviceCacheKey(service.id, service.account), service),
+    ),
   );
 
   return allServices;
@@ -1206,7 +1368,7 @@ export async function getChangeEvents(
 
   try {
     response = await fetchWithRetries(
-      `${baseUrl}/${serviceId}/change_events?${params}`,
+      `${baseUrl}/${encodeURIComponent(serviceId)}/change_events?${params}`,
       options,
     );
   } catch (error) {
@@ -1263,7 +1425,7 @@ export async function getIncidents(
   account?: string,
 ): Promise<PagerDutyIncident[]> {
   let response: Response;
-  const params = `time_zone=UTC&sort_by=created_at&statuses[]=triggered&statuses[]=acknowledged&service_ids[]=${serviceId}`;
+  const params = `time_zone=UTC&sort_by=created_at&statuses[]=triggered&statuses[]=acknowledged&service_ids[]=${encodeURIComponent(serviceId)}`;
 
   const options: RequestInit = {
     method: 'GET',
@@ -1338,7 +1500,7 @@ export async function getServiceStandards(
   };
 
   const apiBaseUrl = getApiBaseUrl(account);
-  const baseUrl = `${apiBaseUrl}/standards/scores/technical_services/${serviceId}`;
+  const baseUrl = `${apiBaseUrl}/standards/scores/technical_services/${encodeURIComponent(serviceId)}`;
 
   try {
     response = await fetchWithRetries(baseUrl, options);
@@ -1455,12 +1617,14 @@ export type CreateServiceIntegrationProps = {
   serviceId: string;
   vendorId: string;
   account?: string;
+  cache?: CacheService;
 };
 
 export async function createServiceIntegration({
   serviceId,
   vendorId,
   account,
+  cache,
 }: CreateServiceIntegrationProps): Promise<string> {
   let response: Response;
 
@@ -1487,7 +1651,7 @@ export async function createServiceIntegration({
 
   try {
     response = await fetchWithRetries(
-      `${baseUrl}/${serviceId}/integrations`,
+      `${baseUrl}/${encodeURIComponent(serviceId)}/integrations`,
       options,
     );
   } catch (error) {
@@ -1525,16 +1689,64 @@ export async function createServiceIntegration({
   try {
     result = (await response.json()) as PagerDutyIntegrationResponse;
 
+    // We just added an integration to this service, so any cached copy now has
+    // a stale `integrations` array. Evict the per-id entry and the full list
+    // (which embeds the same stale service) so the next read re-fetches and
+    // sees the new integration — otherwise a subsequent confirm/bulk mapping
+    // would create a duplicate Backstage integration within the cache TTL.
+    await deleteCache(cache, serviceCacheKey(serviceId, account));
+    await deleteCache(cache, ALL_SERVICES_CACHE_KEY);
+
     return result.integration.integration_key ?? '';
   } catch (error) {
     throw new Error(`Failed to parse service information: ${error}`);
   }
 }
 
+function getAllowedApiOrigins(): Set<string> {
+  const origins = new Set<string>();
+
+  const addOrigin = (apiBaseUrl?: string) => {
+    if (!apiBaseUrl) {
+      return;
+    }
+    try {
+      origins.add(new URL(apiBaseUrl).origin);
+    } catch {
+      // ignore malformed configured URLs
+    }
+  };
+
+  Object.values(EndpointConfig).forEach(cfg => addOrigin(cfg.apiBaseUrl));
+  addOrigin(fallbackEndpointConfig?.apiBaseUrl);
+
+  // Always allow the public PagerDuty API host (default for every config path,
+  // and used directly by isEventNoiseReductionEnabled).
+  origins.add('https://api.pagerduty.com');
+
+  return origins;
+}
+
 export async function fetchWithRetries(
   url: string,
   options: RequestInit,
 ): Promise<Response> {
+  // Guard against SSRF: only allow requests to configured PagerDuty API origins.
+  // The host is server-controlled, but path segments may be user-provided, so we
+  // validate the resolved origin against an allow-list before fetching.
+  let requestOrigin: string;
+  try {
+    requestOrigin = new URL(url).origin;
+  } catch {
+    throw new Error('Refusing to fetch invalid URL.');
+  }
+
+  if (!getAllowedApiOrigins().has(requestOrigin)) {
+    throw new Error(
+      `Refusing to fetch URL with disallowed origin: ${requestOrigin}`,
+    );
+  }
+
   let response: Response;
   let error: Error = new Error();
 
@@ -1559,4 +1771,357 @@ export async function fetchWithRetries(
   throw new Error(
     `Failed to fetch data after ${maxRetries} retries. Last error: ${error}`,
   );
+}
+
+export type CreateCustomFieldProps = {
+  request: PagerDutyCustomFieldCreateRequest;
+  account?: string;
+};
+
+export async function createCustomField({
+  request,
+  account,
+}: CreateCustomFieldProps): Promise<PagerDutyCustomFieldResponse> {
+  let response: Response;
+
+  const apiBaseUrl = getApiBaseUrl(account);
+  const baseUrl = `${apiBaseUrl}/services/custom_fields`;
+  const token = await getAuthToken(account);
+
+  const options: RequestInit = {
+    method: 'POST',
+    body: JSON.stringify(request),
+    headers: {
+      Authorization: token,
+      Accept: 'application/vnd.pagerduty+json;version=2',
+      'Content-Type': 'application/json',
+    },
+  };
+
+  try {
+    response = await fetchWithRetries(baseUrl, options);
+  } catch (error) {
+    throw new Error(`Failed to create custom field: ${error}`);
+  }
+
+  if (response.status >= 500) {
+    throw new HttpError(
+      `Failed to create custom field. PagerDuty API returned a server error.`,
+      response.status,
+    );
+  }
+
+  switch (response.status) {
+    case 400: {
+      const errorData = await response.json().catch(() => ({}));
+      throw new HttpError(
+        `Failed to create custom field. Invalid arguments: ${JSON.stringify(errorData)}`,
+        400,
+      );
+    }
+    case 401:
+      throw new HttpError(
+        `Failed to create custom field. Invalid credentials provided.`,
+        401,
+      );
+    case 403:
+      throw new HttpError(
+        `Failed to create custom field. Not authorized to perform this action.`,
+        403,
+      );
+    case 409: {
+      const errorData = await response.json().catch(() => ({}));
+      throw new HttpError(
+        `Custom field with this name already exists: ${JSON.stringify(errorData)}`,
+        409,
+      );
+    }
+    case 429:
+      throw new HttpError(`Rate limit exceeded.`, 429);
+    default: // 201
+      break;
+  }
+
+  try {
+    const result = (await response.json()) as PagerDutyCustomFieldResponse;
+    return result;
+  } catch (error) {
+    throw new Error(`Failed to parse custom field response: ${error}`);
+  }
+}
+
+export type UpdateCustomFieldProps = {
+  fieldId: string;
+  request: PagerDutyCustomFieldUpdateRequest;
+  account?: string;
+};
+
+export async function updateCustomField({
+  fieldId,
+  request,
+  account,
+}: UpdateCustomFieldProps): Promise<PagerDutyCustomFieldResponse> {
+  const apiBaseUrl = getApiBaseUrl(account);
+  const baseUrl = `${apiBaseUrl}/services/custom_fields/${encodeURIComponent(fieldId)}`;
+  const token = await getAuthToken(account);
+
+  const options: RequestInit = {
+    method: 'PUT',
+    body: JSON.stringify(request),
+    headers: {
+      Authorization: token,
+      Accept: 'application/vnd.pagerduty+json;version=2',
+      'Content-Type': 'application/json',
+    },
+  };
+
+  let response: Response;
+  try {
+    response = await fetchWithRetries(baseUrl, options);
+  } catch (error) {
+    throw new Error(`Failed to update custom field: ${error}`);
+  }
+
+  if (response.status >= 500) {
+    throw new HttpError(
+      `Failed to update custom field. PagerDuty API returned a server error.`,
+      response.status,
+    );
+  }
+
+  switch (response.status) {
+    case 400: {
+      const errorData = await response.json().catch(() => ({}));
+      throw new HttpError(
+        `Failed to update custom field. Invalid arguments: ${JSON.stringify(errorData)}`,
+        400,
+      );
+    }
+    case 401:
+      throw new HttpError(
+        `Failed to update custom field. Invalid credentials provided.`,
+        401,
+      );
+    case 403:
+      throw new HttpError(
+        `Failed to update custom field. Not authorized to perform this action.`,
+        403,
+      );
+    case 404:
+      throw new HttpError(
+        `Failed to update custom field. Custom field not found.`,
+        404,
+      );
+    case 409: {
+      const errorData = await response.json().catch(() => ({}));
+      throw new HttpError(
+        `Custom field with this name already exists: ${JSON.stringify(errorData)}`,
+        409,
+      );
+    }
+    case 429:
+      throw new HttpError(`Rate limit exceeded.`, 429);
+    default: // 200
+      break;
+  }
+
+  try {
+    const result = (await response.json()) as PagerDutyCustomFieldResponse;
+    return result;
+  } catch (error) {
+    throw new Error(`Failed to parse custom field response: ${error}`);
+  }
+}
+
+export type GetCustomFieldsProps = {
+  account?: string;
+};
+
+export async function getCustomFields({
+  account,
+}: GetCustomFieldsProps = {}): Promise<PagerDutyCustomFieldsResponse> {
+  let response: Response;
+
+  const apiBaseUrl = getApiBaseUrl(account);
+  const baseUrl = `${apiBaseUrl}/services/custom_fields`;
+  const token = await getAuthToken(account);
+
+  const options: RequestInit = {
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      Accept: 'application/vnd.pagerduty+json;version=2',
+    },
+  };
+
+  try {
+    response = await fetchWithRetries(baseUrl, options);
+  } catch (error) {
+    throw new Error(`Failed to get custom fields: ${error}`);
+  }
+
+  if (response.status >= 500) {
+    throw new HttpError(
+      `Failed to get custom fields. PagerDuty API returned a server error.`,
+      response.status,
+    );
+  }
+
+  switch (response.status) {
+    case 401:
+      throw new HttpError(
+        `Failed to get custom fields. Invalid credentials provided.`,
+        401,
+      );
+    case 403:
+      throw new HttpError(
+        `Failed to get custom fields. Not authorized to perform this action.`,
+        403,
+      );
+    case 429:
+      throw new HttpError(`Rate limit exceeded.`, 429);
+    default: // 200
+      break;
+  }
+
+  try {
+    const result = (await response.json()) as PagerDutyCustomFieldsResponse;
+    return result;
+  } catch (error) {
+    throw new Error(`Failed to parse custom fields response: ${error}`);
+  }
+}
+
+export type DeleteCustomFieldProps = {
+  fieldId: string;
+  account?: string;
+};
+
+export async function deleteCustomField({
+  fieldId,
+  account,
+}: DeleteCustomFieldProps): Promise<void> {
+  const apiBaseUrl = getApiBaseUrl(account);
+  const baseUrl = `${apiBaseUrl}/services/custom_fields/${encodeURIComponent(fieldId)}`;
+  const token = await getAuthToken(account);
+
+  const options: RequestInit = {
+    method: 'DELETE',
+    headers: {
+      Authorization: token,
+      Accept: 'application/vnd.pagerduty+json;version=2',
+    },
+  };
+
+  let response: Response;
+  try {
+    response = await fetchWithRetries(baseUrl, options);
+  } catch (error) {
+    throw new Error(`Failed to delete custom field: ${error}`);
+  }
+
+  if (response.status >= 500) {
+    throw new HttpError(
+      `Failed to delete custom field. PagerDuty API returned a server error.`,
+      response.status,
+    );
+  }
+
+  switch (response.status) {
+    case 401:
+      throw new HttpError(
+        `Failed to delete custom field. Invalid credentials provided.`,
+        401,
+      );
+    case 403:
+      throw new HttpError(
+        `Failed to delete custom field. Caller is not authorized to delete this custom field.`,
+        403,
+      );
+    case 404:
+      throw new HttpError(`Custom field not found.`, 404);
+    case 429:
+      throw new HttpError(`Rate limit exceeded.`, 429);
+    default: // 204
+      break;
+  }
+}
+
+export type SetServiceCustomFieldValuesProps = {
+  serviceId: string;
+  request: PagerDutyServiceCustomFieldValuesRequest;
+  account?: string;
+};
+
+export async function setServiceCustomFieldValues({
+  serviceId,
+  request,
+  account,
+}: SetServiceCustomFieldValuesProps): Promise<PagerDutyServiceCustomFieldValuesResponse> {
+  const apiBaseUrl = getApiBaseUrl(account);
+  const baseUrl = `${apiBaseUrl}/services/${encodeURIComponent(serviceId)}/custom_fields/values`;
+  const token = await getAuthToken(account);
+
+  const options: RequestInit = {
+    method: 'PUT',
+    body: JSON.stringify(request),
+    headers: {
+      Authorization: token,
+      Accept: 'application/vnd.pagerduty+json;version=2',
+      'Content-Type': 'application/json',
+    },
+  };
+
+  let response: Response;
+  try {
+    response = await fetchWithRetries(baseUrl, options);
+  } catch (error) {
+    throw new Error(`Failed to set service custom field values: ${error}`);
+  }
+
+  if (response.status >= 500) {
+    throw new HttpError(
+      `Failed to set service custom field values. PagerDuty API returned a server error.`,
+      response.status,
+    );
+  }
+
+  switch (response.status) {
+    case 400: {
+      const errorData = await response.json().catch(() => ({}));
+      throw new HttpError(
+        `Failed to set service custom field values. Invalid arguments: ${JSON.stringify(errorData)}`,
+        400,
+      );
+    }
+    case 401:
+      throw new HttpError(
+        `Failed to set service custom field values. Invalid credentials provided.`,
+        401,
+      );
+    case 403:
+      throw new HttpError(
+        `Failed to set service custom field values. Not authorized to perform this action.`,
+        403,
+      );
+    case 404:
+      throw new HttpError(
+        `Failed to set service custom field values. Service or custom field not found.`,
+        404,
+      );
+    case 429:
+      throw new HttpError(`Rate limit exceeded.`, 429);
+    default: // 200
+      break;
+  }
+
+  try {
+    const result =
+      (await response.json()) as PagerDutyServiceCustomFieldValuesResponse;
+    return result;
+  } catch (error) {
+    throw new Error(
+      `Failed to parse set service custom field values response: ${error}`,
+    );
+  }
 }

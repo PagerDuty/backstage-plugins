@@ -4,6 +4,7 @@ import {
   normalizeBackstageComponent,
   type NormalizedService,
 } from '../utils/normalization';
+import type { CacheService } from '@backstage/backend-plugin-api';
 import type { CatalogApi } from '@backstage/catalog-client';
 import type { PagerDutyService } from '@pagerduty/backstage-plugin-common';
 import type { Entity } from '@backstage/catalog-model';
@@ -18,6 +19,7 @@ export class ServiceLoadError extends Error {
 export interface DataLoaderContext {
   catalogApi: CatalogApi;
   teamFilter?: string;
+  cache?: CacheService;
 }
 
 export interface LoadedSources {
@@ -25,9 +27,11 @@ export interface LoadedSources {
   bsComponents: NormalizedService[];
 }
 
-export async function loadPagerDutyServices(): Promise<NormalizedService[]> {
+export async function loadPagerDutyServices(
+  cache?: CacheService,
+): Promise<NormalizedService[]> {
   try {
-    const services: PagerDutyService[] = await getAllServices();
+    const services: PagerDutyService[] = await getAllServices(cache);
 
     const normalizedServices: NormalizedService[] = services.map(service => {
       const teamName = service.teams?.[0]?.summary ?? '';
@@ -101,7 +105,7 @@ export async function loadBothSources(
   context: DataLoaderContext,
 ): Promise<LoadedSources> {
   const [pdServices, bsComponents] = await Promise.all([
-    loadPagerDutyServices(),
+    loadPagerDutyServices(context.cache),
     loadBackstageComponents(context),
   ]);
 

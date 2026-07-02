@@ -15,10 +15,12 @@
  */
 import { MockFetchApi } from '@backstage/test-utils';
 import { DiscoveryApi } from '@backstage/core-plugin-api';
-import { PagerDutyClient, UnauthorizedError } from './client';
+import { PagerDutyClient, UnauthorizedError, ForbiddenError } from './client';
 import {
   PagerDutyService,
   PagerDutySetting,
+  BackstageCustomField,
+  BackstageCustomFieldsResponse,
 } from '@pagerduty/backstage-plugin-common';
 import { NotFoundError } from '@backstage/errors';
 import { Entity } from '@backstage/catalog-model';
@@ -444,4 +446,360 @@ describe('getSetting', () => {
       );
     });
   });
+describe('createCustomField', () => {
+  const customFieldRequest = {
+    name: 'custom-field-1',
+    entityPath: 'metadata.annotations["custom-field-1"]',
+    description: 'Test custom field',
+  };
+
+  const customFieldResponse: BackstageCustomField = {
+    id: 1,
+    pagerdutyCustomFieldId: 'FIELD1D',
+    pagerdutyCustomFieldDisplayName: 'Custom Field 1',
+    pagerdutyCustomFieldEnabled: true,
+    backstageEntityMappingPath: 'metadata.annotations["custom-field-1"]',
+    pagerdutySubdomain: 'test-subdomain',
+    description: 'Test custom field',
+    createdAt: new Date('2026-03-04T00:00:00.000Z'),
+    updatedAt: new Date('2026-03-04T00:00:00.000Z'),
+  };
+
+  beforeEach(() => {
+    mockFetch.mockReset();
+    client = new PagerDutyClient({
+      eventsBaseUrl: 'https://events.pagerduty.com/v2',
+      discoveryApi: mockDiscoveryApi,
+      fetchApi: mockFetchApi,
+    });
+  });
+
+  it('should send a POST request with the custom field data', async () => {
+    mockFetch.mockResolvedValueOnce({
+      status: 200,
+      ok: true,
+      json: () => Promise.resolve({ customField: customFieldResponse }),
+    });
+
+    const result = await client.createCustomField(customFieldRequest);
+
+    expect(result.status).toEqual('ok');
+    expect(result.data).toEqual(customFieldResponse);
+    expect(result.error).toBeNull();
+    expect(mockFetch).toHaveBeenCalledWith(
+      'http://localhost:7007/pagerduty/custom-fields',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json; charset=UTF-8',
+          Accept: 'application/json, text/plain, */*',
+        },
+        body: JSON.stringify(customFieldRequest),
+      },
+    );
+  });
+
+  describe('on 401 response code', () => {
+    beforeEach(() => {
+      mockFetch.mockResolvedValueOnce({
+        status: 401,
+        ok: false,
+        json: () => Promise.resolve({}),
+      });
+    });
+
+    it('returns error result with unauthorized message', async () => {
+      const result = await client.createCustomField(customFieldRequest);
+
+      expect(result.status).toEqual('error');
+      expect(result.data).toBeNull();
+      expect(result.error).toContain("Unauthorized");
+    });
+  });
+
+  describe('on 403 response code', () => {
+    beforeEach(() => {
+      mockFetch.mockResolvedValueOnce({
+        status: 403,
+        ok: false,
+        json: () => Promise.resolve({}),
+      });
+    });
+
+    it('returns error result with forbidden message', async () => {
+      const result = await client.createCustomField(customFieldRequest);
+
+      expect(result.status).toEqual('error');
+      expect(result.data).toBeNull();
+      expect(result.error).toContain("Forbidden");
+    });
+  });
+
+  describe('on 404 response code', () => {
+    beforeEach(() => {
+      mockFetch.mockResolvedValueOnce({
+        status: 404,
+        ok: false,
+        json: () => Promise.resolve({}),
+      });
+    });
+
+    it('returns error result with not found message', async () => {
+      const result = await client.createCustomField(customFieldRequest);
+
+      expect(result.status).toEqual('error');
+      expect(result.data).toBeNull();
+      expect(result.error).toContain("Not Found");
+    });
+  });
+
+  describe('on other non-ok response', () => {
+    beforeEach(() => {
+      mockFetch.mockResolvedValueOnce({
+        status: 500,
+        ok: false,
+        json: () =>
+          Promise.resolve({
+            errors: ['Internal server error'],
+          }),
+      });
+    });
+
+    it('returns error result with error message', async () => {
+      const result = await client.createCustomField(customFieldRequest);
+
+      expect(result.status).toEqual('error');
+      expect(result.data).toBeNull();
+      expect(result.error).toContain('Internal server error');
+    });
+  });
+});
+
+describe('getCustomFields', () => {
+  const customFieldsResponse: BackstageCustomFieldsResponse = {
+    customFields: [
+      {
+        id: 1,
+        pagerdutyCustomFieldId: 'FIELD1D',
+        pagerdutyCustomFieldDisplayName: 'Custom Field 1',
+        pagerdutyCustomFieldEnabled: true,
+        backstageEntityMappingPath: 'metadata.annotations["custom-field-1"]',
+        pagerdutySubdomain: 'test-subdomain',
+        description: 'Test custom field 1',
+        createdAt: new Date('2026-03-04T00:00:00.000Z'),
+        updatedAt: new Date('2026-03-04T00:00:00.000Z'),
+      },
+      {
+        id: 2,
+        pagerdutyCustomFieldId: 'FIELD2D',
+        pagerdutyCustomFieldDisplayName: 'Custom Field 2',
+        pagerdutyCustomFieldEnabled: true,
+        backstageEntityMappingPath: 'metadata.annotations["custom-field-2"]',
+        pagerdutySubdomain: 'test-subdomain',
+        description: 'Test custom field 2',
+        createdAt: new Date('2026-03-04T00:00:00.000Z'),
+        updatedAt: new Date('2026-03-04T00:00:00.000Z'),
+      },
+    ],
+  };
+
+  beforeEach(() => {
+    mockFetch.mockReset();
+    client = new PagerDutyClient({
+      eventsBaseUrl: 'https://events.pagerduty.com/v2',
+      discoveryApi: mockDiscoveryApi,
+      fetchApi: mockFetchApi,
+    });
+  });
+
+  it('should fetch custom fields from the correct URL', async () => {
+    mockFetch.mockResolvedValueOnce({
+      status: 200,
+      ok: true,
+      json: () => Promise.resolve(customFieldsResponse),
+    });
+
+    const result = await client.getCustomFields();
+
+    expect(result).toEqual(customFieldsResponse);
+    expect(mockFetch).toHaveBeenCalledWith(
+      'http://localhost:7007/pagerduty/custom-fields',
+      requestHeaders,
+    );
+  });
+
+  describe('on 401 response code', () => {
+    beforeEach(() => {
+      mockFetch.mockResolvedValueOnce({
+        status: 401,
+        ok: false,
+        json: () => Promise.resolve({}),
+      });
+    });
+
+    it('throws UnauthorizedError', async () => {
+      await expect(client.getCustomFields()).rejects.toThrow(
+        UnauthorizedError,
+      );
+    });
+  });
+
+  describe('on 403 response code', () => {
+    beforeEach(() => {
+      mockFetch.mockResolvedValueOnce({
+        status: 403,
+        ok: false,
+        json: () => Promise.resolve({}),
+      });
+    });
+
+    it('throws ForbiddenError', async () => {
+      await expect(client.getCustomFields()).rejects.toThrow(ForbiddenError);
+    });
+  });
+
+  describe('on 404 response code', () => {
+    beforeEach(() => {
+      mockFetch.mockResolvedValueOnce({
+        status: 404,
+        ok: false,
+        json: () => Promise.resolve({}),
+      });
+    });
+
+    it('throws NotFoundError', async () => {
+      await expect(client.getCustomFields()).rejects.toThrow(NotFoundError);
+    });
+  });
+
+  describe('on other non-ok response', () => {
+    beforeEach(() => {
+      mockFetch.mockResolvedValueOnce({
+        status: 500,
+        ok: false,
+        json: () =>
+          Promise.resolve({
+            errors: ['Internal server error'],
+          }),
+      });
+    });
+
+    it('throws error with status and message', async () => {
+      await expect(client.getCustomFields()).rejects.toThrow(
+        'Request failed with 500, Internal server error',
+      );
+    });
+  });
+
+  describe('when response is empty', () => {
+    beforeEach(() => {
+      mockFetch.mockResolvedValueOnce({
+        status: 200,
+        ok: true,
+        json: () => Promise.resolve({
+          customFields: []
+        }),
+      });
+    });
+
+    it('returns response with empty customFields array', async () => {
+      const result = await client.getCustomFields();
+
+      expect(result).toEqual({
+        customFields: []
+      });
+    });
+  });
+});
+
+describe('updateCustomField', () => {
+  const mockField: BackstageCustomField = {
+    id: 1,
+    pagerdutyCustomFieldId: 'PD123',
+    pagerdutyCustomFieldDisplayName: 'New Name',
+    pagerdutyCustomFieldEnabled: true,
+    backstageEntityMappingPath: 'metadata.new',
+    pagerdutySubdomain: 'default',
+    description: 'desc',
+    createdAt: new Date('2026-03-04T00:00:00.000Z'),
+    updatedAt: new Date('2026-03-04T00:00:00.000Z'),
+  };
+
+  beforeEach(() => {
+    mockFetch.mockReset();
+    client = new PagerDutyClient({
+      eventsBaseUrl: 'https://events.pagerduty.com/v2',
+      discoveryApi: mockDiscoveryApi,
+      fetchApi: mockFetchApi,
+    });
+  });
+
+  it('returns ok result with updated custom field on success', async () => {
+    mockFetch.mockResolvedValueOnce({
+      status: 200,
+      ok: true,
+      json: () => Promise.resolve({ customField: mockField }),
+    });
+
+    const result = await client.updateCustomField(1, {
+      name: 'New Name',
+      entityPath: 'metadata.new',
+      description: 'desc',
+    });
+
+    expect(result.status).toEqual('ok');
+    expect(result.data?.pagerdutyCustomFieldDisplayName).toEqual('New Name');
+    expect(mockFetch).toHaveBeenCalledWith(
+      'http://localhost:7007/pagerduty/custom-fields/1',
+      expect.objectContaining({
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json; charset=UTF-8',
+          Accept: 'application/json, text/plain, */*',
+        },
+        body: JSON.stringify({
+          name: 'New Name',
+          entityPath: 'metadata.new',
+          description: 'desc',
+        }),
+      }),
+    );
+  });
+
+  it('returns error result when field not found (404)', async () => {
+    mockFetch.mockResolvedValueOnce({
+      status: 404,
+      ok: false,
+      json: () => Promise.resolve({}),
+    });
+
+    const result = await client.updateCustomField(999, {
+      name: 'X',
+      entityPath: 'metadata.x',
+    });
+
+    expect(result.status).toEqual('error');
+  });
+
+  it('returns error result on name conflict (409)', async () => {
+    mockFetch.mockResolvedValueOnce({
+      status: 409,
+      ok: false,
+      json: () =>
+        Promise.resolve({
+          errors: [
+            'A custom field with this name already exists in PagerDuty',
+          ],
+        }),
+    });
+
+    const result = await client.updateCustomField(1, {
+      name: 'Taken',
+      entityPath: 'metadata.taken',
+    });
+
+    expect(result.status).toEqual('error');
+    expect(result.error).toContain('already exists');
+  });
+});
 });
