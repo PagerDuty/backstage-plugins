@@ -17,8 +17,14 @@ import {
   getServiceByIntegrationKey,
   getServiceMetrics,
   getServiceStandards,
+  getServicesByIds,
+  getSerivcesByIdsAndAccount,
   insertAccountConfig,
+  isValidServiceId,
+  removeAccountConfig,
   setFallbackAccountConfig,
+  updateCustomField,
+  fetchWithRetries,
 } from './pagerduty';
 
 import { mocked } from 'jest-mock';
@@ -1001,6 +1007,130 @@ describe('PagerDuty API', () => {
       );
     });
 
+    describe('isValidServiceId', () => {
+      it.each([
+        ['PXXXXXX', true],
+        ['P1A2B3C', true],
+        ['ABCDEFG', true],
+        ['S3RV1CE1D', true],
+        ['  PXXXXXX  ', true],
+        ['', false],
+        ['   ', false],
+        ['pxxxxxx', false],
+        ['https://acme.pagerduty.com/service-directory/PXXXXXX', false],
+        ['PXX', false],
+        ['PXX XXXX', false],
+      ])('returns expected validity for %p', (input, expected) => {
+        expect(isValidServiceId(input as string)).toBe(expected);
+      });
+
+      it('returns false for undefined and null', () => {
+        expect(isValidServiceId(undefined)).toBe(false);
+        expect(isValidServiceId(null)).toBe(false);
+      });
+    });
+
+    describe('getServicesByIds (batch)', () => {
+      const buildService = (id: string): PagerDutyService =>
+        ({
+          id,
+          name: `Service ${id}`,
+          html_url: `https://testaccount.pagerduty.com/services/${id}`,
+          escalation_policy: {
+            id: 'P0L1CY1D',
+            name: 'Test Escalation Policy',
+            html_url:
+              'https://testaccount.pagerduty.com/escalation_policies/P0L1CY1D',
+            type: 'escalation_policy_reference',
+          },
+          status: 'active',
+        } as PagerDutyService);
+
+      it('filters out malformed ids and still returns the valid services', async () => {
+        mocked(fetch).mockReturnValue(
+          mockedResponse(200, {
+            services: [buildService('PVALID1'), buildService('PVALID2')],
+          }),
+        );
+
+        const result = await getSerivcesByIdsAndAccount(
+          ['PVALID1', 'not a url/PBAD', '  PVALID2  '],
+          'testaccount',
+        );
+
+        expect(result.map(s => s.id).sort()).toEqual(['PVALID1', 'PVALID2']);
+        expect(fetch).toHaveBeenCalledTimes(1);
+
+        const calledUrl = String(mocked(fetch).mock.calls[0][0]);
+        expect(calledUrl).toContain('id%5B%5D=PVALID1');
+        expect(calledUrl).toContain('id%5B%5D=PVALID2');
+        expect(calledUrl).not.toContain('PBAD');
+        expect(calledUrl).not.toContain('%20');
+      });
+
+      it('makes no API call when every id is malformed', async () => {
+        const result = await getSerivcesByIdsAndAccount(
+          ['bad/url', '   ', 'pxx'],
+          'testaccount',
+        );
+
+        expect(result).toEqual([]);
+        expect(fetch).not.toHaveBeenCalled();
+      });
+
+      it('treats a 400 from the list endpoint as no matching services', async () => {
+        mocked(fetch).mockReturnValue(mockedResponse(400, {}));
+
+        await expect(
+          getSerivcesByIdsAndAccount(['PXXXXXX'], 'testaccount'),
+        ).resolves.toEqual([]);
+      });
+
+      it('splits ids into batches of 50', async () => {
+        mocked(fetch).mockReturnValue(mockedResponse(200, { services: [] }));
+
+        const ids = Array.from(
+          { length: 51 },
+          (_, i) => `P${String(i).padStart(6, '0')}`,
+        );
+
+        await getSerivcesByIdsAndAccount(ids, 'testaccount');
+
+        expect(fetch).toHaveBeenCalledTimes(2);
+      });
+
+      describe('multi-account', () => {
+        beforeAll(() => {
+          insertAccountConfig({
+            id: 'secondaccount',
+            apiBaseUrl: 'https://mock2.api.pagerduty.com',
+            eventsBaseUrl: 'https://mock2.events.pagerduty.com',
+            oauth: {
+              clientId: 'mock-client-id-2',
+              clientSecret: 'mock-client-secret-2',
+              subDomain: 'secondaccount',
+            },
+          });
+        });
+
+        afterAll(() => {
+          removeAccountConfig('secondaccount');
+        });
+
+        it('accumulates services from all accounts', async () => {
+          (fetch as unknown as jest.Mock).mockImplementation((url: unknown) =>
+            String(url).includes('mock2')
+              ? mockedResponse(200, { services: [buildService('PFROM2ND')] })
+              : mockedResponse(200, { services: [buildService('PFROM1ST')] }),
+          );
+
+          const result = await getServicesByIds(['PXXXXXX']);
+
+          expect(result.map(s => s.id).sort()).toEqual(['PFROM1ST', 'PFROM2ND']);
+        });
+      });
+    });
+
     describe('getChangeEvents', () => {
       it.each(testInputs)('should return change events list', async () => {
         const serviceId = 'SERV1C31D';
@@ -1567,6 +1697,52 @@ describe('PagerDuty API', () => {
         );
       },
     );
+  });
+
+  describe('updateCustomField', () => {
+    it.each(testInputs)(
+      'calls PUT /services/custom_fields/:id and returns the updated field',
+      async () => {
+        const mockField = {
+          id: 'PD123',
+          display_name: 'Runbook Link',
+          name: 'runbook_link',
+          data_type: 'string',
+          field_type: 'single_value',
+          enabled: true,
+          description: 'Updated description',
+        };
+
+        mocked(fetch).mockReturnValue(
+          mockedResponse(200, { field: mockField }),
+        );
+
+        const result = await updateCustomField({
+          fieldId: 'PD123',
+          request: {
+            field: {
+              display_name: 'Runbook Link',
+              description: 'Updated description',
+            },
+          },
+        });
+
+        expect(fetch).toHaveBeenCalledTimes(1);
+        expect(fetch).toHaveBeenCalledWith(
+          expect.stringContaining('/custom_fields/PD123'),
+          expect.objectContaining({
+            method: 'PUT',
+            body: JSON.stringify({
+              field: {
+                display_name: 'Runbook Link',
+                description: 'Updated description',
+              },
+            }),
+          }),
+        );
+        expect(result.field).toEqual(mockField);
+      },
+    );
 
     it.each(testInputs)(
       'should include X-PagerDuty-Client header in oncall requests',
@@ -1603,5 +1779,117 @@ describe('PagerDuty API', () => {
         );
       },
     );
+  });
+
+  describe('updateCustomField error handling', () => {
+    it.each(testInputs)(
+      'throws HttpError with status 404 when field not found',
+      async () => {
+        mocked(fetch).mockReturnValue(mockedResponse(404, {}));
+
+        await expect(
+          updateCustomField({
+            fieldId: 'MISSING',
+            request: { field: { display_name: 'X' } },
+          }),
+        ).rejects.toMatchObject({ status: 404 });
+
+        expect(fetch).toHaveBeenCalledTimes(1);
+        expect(fetch).toHaveBeenCalledWith(
+          expect.stringContaining('/custom_fields/MISSING'),
+          expect.objectContaining({
+            method: 'PUT',
+          }),
+        );
+      },
+    );
+  });
+
+  describe('fetchWithRetries SSRF guard', () => {
+    it('refuses to fetch a URL whose origin is not in the configured allow-list', async () => {
+      await expect(
+        fetchWithRetries('https://internal.example.com/data', {}),
+      ).rejects.toThrow(
+        'Refusing to fetch URL with disallowed origin: https://internal.example.com',
+      );
+
+      expect(fetch).not.toHaveBeenCalled();
+    });
+
+    it('refuses to fetch an invalid URL', async () => {
+      await expect(fetchWithRetries('not-a-url', {})).rejects.toThrow(
+        'Refusing to fetch invalid URL.',
+      );
+
+      expect(fetch).not.toHaveBeenCalled();
+    });
+
+    it('proceeds for a configured allowed origin', async () => {
+      mocked(fetch).mockReturnValue(mockedResponse(200, { ok: true }));
+
+      const response = await fetchWithRetries(
+        'https://mock.api.pagerduty.com/services/custom_fields',
+        {},
+      );
+
+      expect(response.status).toEqual(200);
+      expect(fetch).toHaveBeenCalledTimes(1);
+    });
+
+    it('proceeds for the public PagerDuty API origin', async () => {
+      mocked(fetch).mockReturnValue(mockedResponse(200, { ok: true }));
+
+      const response = await fetchWithRetries(
+        'https://api.pagerduty.com/abilities',
+        {},
+      );
+
+      expect(response.status).toEqual(200);
+      expect(fetch).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('path segment encoding', () => {
+    it('percent-encodes a user-controlled service id in getServiceById', async () => {
+      mocked(fetch).mockReturnValue(
+        mockedResponse(200, {
+          service: {
+            id: 'S3RV1CE1D',
+            name: 'Test Service',
+            description: 'Test Service Description',
+            status: 'active',
+            html_url: 'https://testaccount.pagerduty.com/services/S3RV1CE1D',
+            escalation_policy: {
+              id: 'P0L1CY1D',
+              name: 'Test Escalation Policy',
+              type: 'escalation_policy_reference',
+              html_url:
+                'https://testaccount.pagerduty.com/escalation_policies/P0L1CY1D',
+            },
+          },
+        }),
+      );
+
+      await getServiceById('../../abilities');
+
+      const calledUrl = mocked(fetch).mock.calls[0][0] as string;
+      expect(calledUrl).toContain('..%2F..%2Fabilities');
+      expect(calledUrl).not.toContain('../../abilities');
+    });
+
+    it('percent-encodes a user-controlled field id in updateCustomField', async () => {
+      mocked(fetch).mockReturnValue(
+        mockedResponse(200, { field: { id: 'PD123' } }),
+      );
+
+      await updateCustomField({
+        fieldId: '../evil',
+        request: { field: { display_name: 'X' } },
+      });
+
+      const calledUrl = mocked(fetch).mock.calls[0][0] as string;
+      expect(calledUrl).toContain('/custom_fields/..%2Fevil');
+      expect(calledUrl).not.toContain('/custom_fields/../evil');
+    });
   });
 });

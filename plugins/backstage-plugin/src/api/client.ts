@@ -20,6 +20,7 @@ import {
   PagerDutyClientApiDependencies,
   PagerDutyClientApiConfig,
   RequestOptions,
+  Result,
 } from './types';
 import {
   PagerDutyChangeEventsResponse,
@@ -35,6 +36,12 @@ import {
   AutoMatchStartResponse,
   AutoMatchStatusResponse,
   PagerDutyTeam,
+  BackstageCustomFieldCreateRequest,
+  BackstageCustomFieldUpdateRequest,
+  BackstageCustomField,
+  BackstageCustomFieldsResponse,
+  CustomFieldSyncLogsResponse,
+  CustomFieldSyncLogFilters,
 } from '@pagerduty/backstage-plugin-common';
 import { createApiRef, ConfigApi } from '@backstage/core-plugin-api';
 import { NotFoundError } from '@backstage/errors';
@@ -52,6 +59,26 @@ export class ForbiddenError extends Error {}
 export const pagerDutyApiRef = createApiRef<PagerDutyApi>({
   id: 'plugin.pagerduty.api',
 });
+
+function parseCustomFieldError(
+  error: unknown,
+  fallbackMessage: string,
+): Result<BackstageCustomField> {
+  if (error instanceof Error) {
+    const msg = error.message;
+    if (msg.includes('already been taken')) {
+      return { status: 'error', data: null, error: 'A custom field with this name already exists' };
+    }
+    if (msg.toLowerCase().includes('entity path already exists')) {
+      return { status: 'error', data: null, error: 'A custom field with this entity path already exists' };
+    }
+    if (msg.toLowerCase().includes('limit reached')) {
+      return { status: 'error', data: null, error: 'Custom field limit reached. Maximum number of custom fields has been exceeded.' };
+    }
+    return { status: 'error', data: null, error: msg };
+  }
+  return { status: 'error', data: null, error: fallbackMessage };
+}
 
 /** @public */
 export class PagerDutyClient implements PagerDutyApi {
@@ -496,6 +523,167 @@ export class PagerDutyClient implements PagerDutyApi {
       accounts: Array<{ id: string; isDefault: boolean }>;
     }>(url);
     return response.accounts;
+  }
+
+  async createCustomField(
+    request: BackstageCustomFieldCreateRequest,
+    account?: string,
+  ): Promise<Result<BackstageCustomField>> {
+    const body = JSON.stringify(request);
+
+    const options = {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json; charset=UTF-8',
+        Accept: 'application/json, text/plain, */*',
+      },
+      body,
+    };
+
+    let url = `${await this.config.discoveryApi.getBaseUrl(
+      'pagerduty',
+    )}/custom-fields`;
+
+    if (account) {
+      url = url.concat(`?account=${account}`);
+    }
+
+    try {
+      const response = await this.request(url, options);
+      const result = await response.json();
+      return { status: 'ok', data: result.customField, error: null };
+    } catch (error) {
+      return parseCustomFieldError(error, 'Failed to create custom field');
+    }
+  }
+
+  async getCustomFields(account?: string): Promise<BackstageCustomFieldsResponse> {
+    let url = `${await this.config.discoveryApi.getBaseUrl(
+      'pagerduty',
+    )}/custom-fields`;
+
+    if (account) {
+      url = url.concat(`?account=${account}`);
+    }
+
+    return await this.findByUrl<BackstageCustomFieldsResponse>(url);
+  }
+
+  async getSyncLogs(
+    account?: string,
+    options?: { limit?: number; offset?: number } & CustomFieldSyncLogFilters,
+  ): Promise<CustomFieldSyncLogsResponse> {
+    const params = new URLSearchParams();
+    if (account) params.set('account', account);
+    if (options?.limit) params.set('limit', String(options.limit));
+    if (options?.offset !== undefined) params.set('offset', String(options.offset));
+    if (options?.search) params.set('search', options.search);
+    if (options?.severity) params.set('severity', options.severity);
+    if (options?.customFieldName) params.set('customFieldName', options.customFieldName);
+    if (options?.entityPath) params.set('entityPath', options.entityPath);
+    if (options?.serviceName) params.set('serviceName', options.serviceName);
+
+    const query = params.toString() ? `?${params.toString()}` : '';
+    const url = `${await this.config.discoveryApi.getBaseUrl(
+      'pagerduty',
+    )}/custom-fields/sync-logs${query}`;
+
+    return await this.findByUrl<CustomFieldSyncLogsResponse>(url);
+  }
+
+  async updateCustomField(
+    id: number,
+    request: BackstageCustomFieldUpdateRequest,
+    account?: string,
+  ): Promise<Result<BackstageCustomField>> {
+    const body = JSON.stringify(request);
+
+    const options = {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json; charset=UTF-8',
+        Accept: 'application/json, text/plain, */*',
+      },
+      body,
+    };
+
+    let url = `${await this.config.discoveryApi.getBaseUrl(
+      'pagerduty',
+    )}/custom-fields/${id}`;
+
+    if (account) {
+      url = url.concat(`?account=${account}`);
+    }
+
+    try {
+      const response = await this.request(url, options);
+      const result = await response.json();
+      return { status: 'ok', data: result.customField, error: null };
+    } catch (error) {
+      return parseCustomFieldError(error, 'Failed to update custom field');
+    }
+  }
+
+  async setCustomFieldEnabled(
+    id: number,
+    enabled: boolean,
+    account?: string,
+  ): Promise<Result<BackstageCustomField>> {
+    const options = {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json; charset=UTF-8',
+        Accept: 'application/json, text/plain, */*',
+      },
+      body: JSON.stringify({ enabled }),
+    };
+
+    let url = `${await this.config.discoveryApi.getBaseUrl(
+      'pagerduty',
+    )}/custom-fields/${id}/enabled`;
+
+    if (account) {
+      url = url.concat(`?account=${account}`);
+    }
+
+    try {
+      const response = await this.request(url, options);
+      const result = await response.json();
+      return { status: 'ok', data: result.customField, error: null };
+    } catch (error) {
+      return parseCustomFieldError(
+        error,
+        `Failed to ${enabled ? 'enable' : 'disable'} custom field`,
+      );
+    }
+  }
+
+  async deleteCustomField(
+    id: number,
+    account?: string,
+  ): Promise<Result<void>> {
+    const options = {
+      method: 'DELETE',
+      headers: {
+        Accept: 'application/json, text/plain, */*',
+      },
+    };
+
+    let url = `${await this.config.discoveryApi.getBaseUrl(
+      'pagerduty',
+    )}/custom-fields/${id}`;
+
+    if (account) {
+      url = url.concat(`?account=${account}`);
+    }
+
+    try {
+      await this.request(url, options);
+      return { status: 'ok', data: undefined, error: null };
+    } catch (error) {
+      const result = parseCustomFieldError(error, 'Failed to delete custom field');
+      return { status: 'error', data: null, error: result.error! };
+    }
   }
 
   private async findByUrl<T>(url: string): Promise<T> {

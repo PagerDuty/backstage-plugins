@@ -3,11 +3,15 @@ import type { RequestInit, Response } from 'node-fetch';
 import type { EntityMapping } from '../types';
 import { AuthService, DiscoveryService, LoggerService } from '@backstage/backend-plugin-api';
 import {
+  BackstageCustomField,
+  BackstageCustomFieldsResponse,
+  CustomFieldSyncLogCreateRequest,
   PagerDutyEntityMapping,
   PagerDutyEntityMappingResponse,
   PagerDutyServiceResponse,
   PagerDutyServiceDependency,
   PagerDutyServiceDependencyResponse,
+  PagerDutyServiceCustomFieldValue,
   PagerDutySetting,
   PagerDutyEntityMappingsResponse,
 } from '@pagerduty/backstage-plugin-common';
@@ -622,6 +626,187 @@ export class PagerDutyClient {
     } catch (error) {
       this.logger.error(`Error getting value for setting: ${error}`);
       throw new Error(`Error getting value for setting: ${error}`);
+    }
+  }
+
+  async isDataSyncEnabled(): Promise<boolean> {
+    const DATA_SYNC_SETTING_ID = 'settings::data-sync';
+
+    let response: Response;
+
+    if (this.baseUrl === '') {
+      this.baseUrl = await this.discovery.getBaseUrl('pagerduty');
+    }
+
+    const options: RequestInit = {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json; charset=UTF-8',
+        Accept: 'application/json, text/plain, */*',
+        Authorization: await this.generatePluginToPluginToken(),
+      },
+    };
+
+    const url = `${await this.discovery.getBaseUrl(
+      'pagerduty',
+    )}/settings/${DATA_SYNC_SETTING_ID}`;
+
+    try {
+      response = await fetchWithRetries(url, options);
+
+      if (response.status >= 500) {
+        throw new Error(
+          `Failed to get data sync setting. API returned a server error. Retrying with the same arguments will not work.`,
+        );
+      }
+
+      switch (response.status) {
+        case 400:
+          throw new Error(await response.text());
+        case 404:
+          return false; // if setting does not exist, default to disabled (opt-in)
+        default: {
+          // 200 — the data-sync setting stores its own 'enabled'/'disabled'
+          // value, distinct from the dependency-strategy PagerDutySetting union.
+          const setting: { id: string; value: string } = await response.json();
+          return setting.value === 'enabled';
+        }
+      }
+    } catch (error) {
+      this.logger.error(`Error getting value for setting: ${error}`);
+      throw new Error(`Error getting value for setting: ${error}`);
+    }
+  }
+
+  async getEnabledCustomFields(account?: string): Promise<BackstageCustomField[]> {
+    let response: Response;
+
+    if (this.baseUrl === '') {
+      this.baseUrl = await this.discovery.getBaseUrl('pagerduty');
+    }
+
+    const options: RequestInit = {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json; charset=UTF-8',
+        Accept: 'application/json, text/plain, */*',
+        Authorization: await this.generatePluginToPluginToken(),
+      },
+    };
+
+    const params = new URLSearchParams({ enabled: 'true' });
+    if (account) params.set('account', account);
+
+    const url = `${await this.discovery.getBaseUrl(
+      'pagerduty',
+    )}/custom-fields?${params.toString()}`;
+
+    try {
+      response = await fetchWithRetries(url, options);
+
+      if (response.status >= 500) {
+        throw new Error(
+          `Failed to get enabled custom fields. API returned a server error.`,
+        );
+      }
+
+      switch (response.status) {
+        case 400:
+          throw new Error(await response.text());
+        case 404:
+          throw new Error(`Custom fields endpoint not found. Ensure the PagerDuty backend plugin is running.`);
+        default: {
+          const body: BackstageCustomFieldsResponse = await response.json();
+          return body.customFields ?? [];
+        }
+      }
+    } catch (error) {
+      this.logger.error(`Failed to retrieve enabled custom fields: ${error}`);
+      return [];
+    }
+  }
+
+  async pushCustomFieldValues(
+    serviceId: string,
+    values: PagerDutyServiceCustomFieldValue[],
+    account?: string,
+  ): Promise<void> {
+    if (values.length === 0) return;
+
+    if (this.baseUrl === '') {
+      this.baseUrl = await this.discovery.getBaseUrl('pagerduty');
+    }
+
+    const params = new URLSearchParams();
+    if (account) params.set('account', account);
+    const query = params.toString() ? `?${params}` : '';
+
+    const options: RequestInit = {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json; charset=UTF-8',
+        Accept: 'application/json, text/plain, */*',
+        Authorization: await this.generatePluginToPluginToken(),
+      },
+      body: JSON.stringify({ serviceId, values }),
+    };
+
+    const url = `${await this.discovery.getBaseUrl(
+      'pagerduty',
+    )}/custom-fields/sync${query}`;
+
+    const response = await fetchWithRetries(url, options);
+
+    if (response.status >= 500) {
+      const body = await response.text().catch(() => '');
+      throw new Error(
+        `Failed to push custom field values for service ${serviceId}. API returned ${response.status}: ${body}`,
+      );
+    }
+
+    if (!response.ok && response.status !== 204) {
+      const body = await response.text();
+      throw new Error(`status=${response.status}: ${body}`);
+    }
+  }
+
+  async createSyncLog(
+    log: CustomFieldSyncLogCreateRequest,
+    account?: string,
+  ): Promise<void> {
+    if (this.baseUrl === '') {
+      this.baseUrl = await this.discovery.getBaseUrl('pagerduty');
+    }
+
+    const params = new URLSearchParams();
+    if (account) params.set('account', account);
+    const query = params.toString() ? `?${params}` : '';
+
+    const options: RequestInit = {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json; charset=UTF-8',
+        Accept: 'application/json, text/plain, */*',
+        Authorization: await this.generatePluginToPluginToken(),
+      },
+      body: JSON.stringify(log),
+    };
+
+    const url = `${await this.discovery.getBaseUrl(
+      'pagerduty',
+    )}/custom-fields/sync-logs${query}`;
+
+    try {
+      const response = await fetchWithRetries(url, options);
+
+      if (!response.ok) {
+        const text = await response.text().catch(() => '');
+        this.logger.warn(
+          `Failed to write custom field sync log (status ${response.status}): ${text}`,
+        );
+      }
+    } catch (error) {
+      this.logger.warn(`Failed to write custom field sync log: ${error}`);
     }
   }
 

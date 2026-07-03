@@ -45,6 +45,7 @@ import {
   PagerDutyBackendStore,
   RawDbEntityResultRow,
 } from '../db/PagerDutyBackendDatabase';
+import { CustomFieldsController } from './customFieldsController';
 import * as express from 'express';
 import Router from 'express-promise-router';
 import type { CatalogApi, GetEntitiesResponse } from '@backstage/catalog-client';
@@ -52,6 +53,12 @@ import type { CatalogApi, GetEntitiesResponse } from '@backstage/catalog-client'
 import * as MappingsController from '../controllers/mappings-controller';
 import * as CatalogEntityUtils from '../utils/catalog-entity';
 import { MiddlewareFactory } from '@backstage/backend-defaults/rootHttpRouter';
+
+/**
+ * Setting key for the org-wide custom field data sync toggle.
+ * Stored in the `pagerduty_settings` table with value 'enabled' or 'disabled'.
+ */
+const DATA_SYNC_SETTING_ID = 'settings::data-sync';
 
 export interface RouterOptions {
   logger: LoggerService;
@@ -262,8 +269,14 @@ export async function createRouter(
   const router = Router();
   router.use(express.json());
 
-  const runAutoMatch = createAutoMatchRunner(catalogApi);
+  const runAutoMatch = createAutoMatchRunner(catalogApi, cache);
   const autoMatchJobs = new AutoMatchJobRegistry(cache, runAutoMatch);
+
+  // Initialize controllers
+  const customFieldsController = new CustomFieldsController({
+    logger,
+    store,
+  });
 
   // DELETE /dependencies/service/:serviceId
   router.delete(
@@ -465,12 +478,10 @@ export async function createRouter(
             return;
           }
 
-          if (!isValidSetting(setting.value)) {
+          if (!isValidSettingValue(setting.id, setting.value)) {
             response
               .status(400)
-              .json(
-                "Bad Request: 'value' is invalid. Valid options are 'backstage', 'pagerduty', 'both' or 'disabled'",
-              );
+              .json(`Bad Request: '${setting.value}' is not a valid value for setting '${setting.id}'`);
             return;
           }
 
@@ -515,18 +526,58 @@ export async function createRouter(
     }
   });
 
-  function isValidSetting(value: string): boolean {
-    if (
+  function isValidSettingValue(id: string, value: string): boolean {
+    if (id === DATA_SYNC_SETTING_ID) {
+      return value === 'enabled' || value === 'disabled';
+    }
+
+    return (
       value === 'backstage' ||
       value === 'pagerduty' ||
       value === 'both' ||
       value === 'disabled'
-    ) {
-      return true;
-    }
-
-    return false;
+    );
   }
+
+  // POST /custom-fields
+  router.post('/custom-fields', async (request, response) => {
+    await customFieldsController.createCustomField(request, response);
+  });
+
+  // GET /custom-fields
+  router.get('/custom-fields', async (request, response) => {
+    await customFieldsController.getCustomFields(request, response);
+  });
+
+  // PUT /custom-fields/:id
+  router.put('/custom-fields/:id', async (request, response) => {
+    await customFieldsController.updateCustomField(request, response);
+  });
+
+  // PATCH /custom-fields/:id/enabled
+  router.patch('/custom-fields/:id/enabled', async (request, response) => {
+    await customFieldsController.toggleCustomFieldEnabled(request, response);
+  });
+
+  // DELETE /custom-fields/:id
+  router.delete('/custom-fields/:id', async (request, response) => {
+    await customFieldsController.deleteCustomField(request, response);
+  });
+
+  // POST /custom-fields/sync
+  router.post('/custom-fields/sync', async (request, response) => {
+    await customFieldsController.syncCustomFieldValues(request, response);
+  });
+
+  // POST /custom-fields/sync-logs
+  router.post('/custom-fields/sync-logs', async (request, response) => {
+    await customFieldsController.createSyncLog(request, response);
+  });
+
+  // GET /custom-fields/sync-logs
+  router.get('/custom-fields/sync-logs', async (request, response) => {
+    await customFieldsController.getSyncLogs(request, response);
+  });
 
   // POST /mapping/entity
   router.post('/mapping/entity', async (request, response) => {
@@ -557,7 +608,11 @@ export async function createRouter(
       ) {
         const backstageVendorId = 'PRO19CT';
         // check for existing integration key on service
-        const service = await getServiceById(entity.serviceId, entity.account);
+        const service = await getServiceById(
+          entity.serviceId,
+          entity.account,
+          cache,
+        );
         const backstageIntegration = service.integrations?.find(
           integration => integration.vendor?.id === backstageVendorId,
         );
@@ -569,6 +624,7 @@ export async function createRouter(
             serviceId: entity.serviceId,
             vendorId: backstageVendorId,
             account: entity.account,
+            cache,
           });
 
           entity.integrationKey = integrationKey;
@@ -661,6 +717,7 @@ export async function createRouter(
             const service = await getServiceById(
               entity.serviceId,
               entity.account,
+              cache,
             );
             const backstageIntegration = service.integrations?.find(
               integration => integration.vendor?.id === backstageVendorId,
@@ -671,6 +728,7 @@ export async function createRouter(
                 serviceId: entity.serviceId,
                 vendorId: backstageVendorId,
                 account: entity.account,
+                cache,
               });
 
               entity.integrationKey = integrationKey;
@@ -773,7 +831,7 @@ export async function createRouter(
       > = await CatalogEntityUtils.createComponentEntitiesReferenceDict(componentEntities);
 
       // Get all services from PagerDuty
-      const pagerDutyServices = await getAllServices();
+      const pagerDutyServices = await getAllServices(cache);
 
       // Build the response object
       const result: PagerDutyEntityMappingsResponse =
@@ -794,7 +852,7 @@ export async function createRouter(
     }
   });
 
-  router.post('/mapping/entities', MappingsController.getMappingEntities(store, catalogApi));
+  router.post('/mapping/entities', MappingsController.getMappingEntities(store, catalogApi, logger));
 
   // GET /mapping/entity
   router.get(
@@ -1010,7 +1068,7 @@ export async function createRouter(
         return;
       }
 
-      const service = await getServiceById(serviceId, account);
+      const service = await getServiceById(serviceId, account, cache);
       const serviceResponse: PagerDutyServiceResponse = {
         service: service,
       };
@@ -1083,7 +1141,7 @@ export async function createRouter(
       }
 
       // Case 3: Fetch all services (default)
-      const services = await getAllServices();
+      const services = await getAllServices(cache);
       const servicesResponse: PagerDutyServicesResponse = {
         services: services,
       };
@@ -1126,6 +1184,7 @@ export async function createRouter(
           serviceId,
           vendorId,
           account,
+          cache,
         });
 
         response.json(integrationKey);

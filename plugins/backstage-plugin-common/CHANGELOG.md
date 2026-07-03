@@ -1,5 +1,11 @@
 # @pagerduty/backstage-plugin-common
 
+## 0.5.0
+
+### Minor Changes
+
+- bee64f1: Release the service mappings feature
+
 ## 0.4.0
 
 ### Minor Changes

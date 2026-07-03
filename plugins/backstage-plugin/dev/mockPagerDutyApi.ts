@@ -24,6 +24,8 @@ import {
   PagerDutyUser,
   FormattedBackstageEntity,
   PagerDutyEnhancedEntityMappingsResponse,
+  BackstageCustomFieldCreateRequest,
+  BackstageCustomFieldUpdateRequest,
 } from '@pagerduty/backstage-plugin-common';
 import { Entity } from '@backstage/catalog-model';
 import { v4 as uuidv4 } from 'uuid';
@@ -501,5 +503,79 @@ export const mockPagerDutyApi: PagerDutyApi = {
 
   async removeServiceMapping(_entityRef: string) {
     return true;
-  }
+  },
+
+  async getCustomFields() {
+    return {
+      customFields: [],
+    };
+  },
+
+  async createCustomField(request: BackstageCustomFieldCreateRequest) {
+    const now = new Date();
+    return {
+      status: 'ok' as const,
+      data: {
+        id: Math.floor(Math.random() * 10000),
+        pagerdutyCustomFieldId: `cf_${uuidv4()}`,
+        pagerdutyCustomFieldDisplayName: request.name || 'Custom Field',
+        pagerdutyCustomFieldEnabled: true,
+        backstageEntityMappingPath: request.entityPath || '',
+        pagerdutySubdomain: 'test-subdomain',
+        description: request.description,
+        createdAt: now,
+        updatedAt: now,
+      },
+      error: null,
+    };
+  },
+
+  updateCustomField: async (
+    _id: number,
+    request: BackstageCustomFieldUpdateRequest,
+  ) => ({
+    status: 'ok' as const,
+    data: {
+      id: 1,
+      pagerdutyCustomFieldId: 'PD123',
+      pagerdutyCustomFieldDisplayName: request.name,
+      pagerdutyCustomFieldEnabled: true,
+      backstageEntityMappingPath: request.entityPath,
+      pagerdutySubdomain: 'default',
+      description: request.description ?? '',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+    error: null,
+  }),
+
+  setCustomFieldEnabled: async (id: number, enabled: boolean) => ({
+    status: 'ok' as const,
+    data: {
+      id,
+      pagerdutyCustomFieldId: 'PD123',
+      pagerdutyCustomFieldDisplayName: 'Custom Field',
+      pagerdutyCustomFieldEnabled: enabled,
+      backstageEntityMappingPath: '',
+      pagerdutySubdomain: 'default',
+      description: '',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+    error: null,
+  }),
+
+  deleteCustomField: async (_id: number) => ({
+    status: 'ok' as const,
+    data: undefined,
+    error: null,
+  }),
+
+  getSyncLogs: async () => ({
+    logs: [],
+    total: 0,
+    customFieldNames: [],
+    entityPaths: [],
+    serviceNames: [],
+  }),
 };

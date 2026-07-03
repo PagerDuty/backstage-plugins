@@ -1,3 +1,4 @@
+import type { CacheService } from '@backstage/backend-plugin-api';
 import type { CatalogApi } from '@backstage/catalog-client';
 import { AutoMatchEntityMappingsResponse } from '@pagerduty/backstage-plugin-common';
 import { loadBothSources } from './dataLoader';
@@ -17,7 +18,10 @@ const getConfidenceLevel = (
   return 'low';
 };
 
-export function createAutoMatchRunner(catalogApi: CatalogApi) {
+export function createAutoMatchRunner(
+  catalogApi: CatalogApi,
+  cache?: CacheService,
+) {
   return async function runAutoMatch(
     params: AutoMatchJobParams,
   ): Promise<AutoMatchEntityMappingsResponse> {
@@ -27,6 +31,7 @@ export function createAutoMatchRunner(catalogApi: CatalogApi) {
     const { pdServices, bsComponents } = await loadBothSources({
       catalogApi,
       teamFilter: team,
+      cache,
     });
 
     const filteredPdServices = account

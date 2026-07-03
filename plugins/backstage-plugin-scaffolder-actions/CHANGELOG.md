@@ -1,5 +1,12 @@
 # @pagerduty/backstage-plugin-scaffolder-actions
 
+## 0.3.1
+
+### Patch Changes
+
+- Updated dependencies [bee64f1]
+  - @pagerduty/backstage-plugin-common@0.5.0
+
 ## 0.3.0
 
 ### Minor Changes

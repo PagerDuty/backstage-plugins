@@ -2,8 +2,8 @@ import {
   coreServices,
   createBackendModule,
 } from '@backstage/backend-plugin-api';
-import { catalogProcessingExtensionPoint } from '@backstage/plugin-catalog-node/alpha';
-import { PagerDutyEntityProcessor } from './processor';
+import { catalogProcessingExtensionPoint } from '@backstage/plugin-catalog-node';
+import { PagerDutyEntityProcessor, PagerDutyCustomFieldsProcessor } from './processor';
 
 /** @public */
 export const pagerDutyEntityProcessor = createBackendModule({
@@ -20,6 +20,9 @@ export const pagerDutyEntityProcessor = createBackendModule({
       async init({ auth, logger, discovery, catalog }) {
         catalog.addProcessor(
           new PagerDutyEntityProcessor({ auth, logger, discovery }),
+        );
+        catalog.addProcessor(
+          new PagerDutyCustomFieldsProcessor({ auth, logger, discovery }),
         );
       },
     });
