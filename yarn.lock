@@ -10346,6 +10346,7 @@ __metadata:
     react-use: "npm:^17.2.4"
     uuid: "npm:^10.0.0"
     validate-color: "npm:^2.2.4"
+    zod: "npm:^4.0.0"
   peerDependencies:
     react: ^18.0.0 || ^20.0.0
     react-dom: ^18.0.0 || ^20.0.0
