@@ -2,4 +2,4 @@
 '@pagerduty/backstage-plugin': patch
 ---
 
-Migrate alpha entity card configuration to Backstage's Standard Schema-based `configSchema` API.
+Fix the alpha entity cards failing to load on Backstage 1.54. Use `configSchema` instead of the removed `config.schema` option.

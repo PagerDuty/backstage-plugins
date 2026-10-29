@@ -9,6 +9,22 @@ function getConfigSchema(extension: unknown) {
 }
 
 describe('PagerDuty entity card configuration', () => {
+  it('declares both cards without the config.schema deprecation warning', async () => {
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+    try {
+      await jest.isolateModulesAsync(async () => {
+        await import('./entity-cards');
+      });
+
+      expect(warn).not.toHaveBeenCalledWith(
+        expect.stringContaining('The `config.schema` option'),
+      );
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
   it('supports configuration for the full entity card', () => {
     const configSchema = getConfigSchema(pagerDutyEntityCard);
 
