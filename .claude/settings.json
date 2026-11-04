@@ -6,5 +6,8 @@
         "repo": "PagerDuty/ai-factory-marketplace"
       }
     }
+  },
+  "enabledPlugins": {
+    "organization-guidance@ai-factory-marketplace": true
   }
 }
