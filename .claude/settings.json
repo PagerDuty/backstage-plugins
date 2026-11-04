@@ -1,7 +1,8 @@
 {
   "enabledPlugins": {
     "organization-guidance@ai-factory-marketplace": true,
-    "organization-capabilities@ai-factory-marketplace": true
+    "organization-capabilities@ai-factory-marketplace": true,
+    "organization-workflows@ai-factory-marketplace": true
   },
   "extraKnownMarketplaces": {
     "ai-factory-marketplace": {
