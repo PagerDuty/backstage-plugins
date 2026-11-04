@@ -65,6 +65,8 @@ db
 
 # Claude code
 .claude/*
+.claude/settings.local.json
+.claude/CLAUDE.local.md
 # Needed for AI Factory onboarding
 !.claude/settings.json
 !.claude/CLAUDE.md
