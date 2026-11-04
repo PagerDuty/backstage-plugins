@@ -41,3 +41,5 @@ Check [Publishing](./docs/publishing.md) for information about how to publish ne
 ## Documentation
 
 Check [Setting Up](./docs/setting-up.md), [Contributing](./docs/contributing.md), and [Publishing](./docs/publishing.md) for more information about working with this project.
+
+For more detailed documentation about the project, refer to the [docs folder](docs/index.md).
