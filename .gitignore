@@ -64,5 +64,10 @@ packages/backend/db/*
 db
 
 # Claude code
-.claude
+.claude/*
+# Needed for AI Factory onboarding
+!.claude/settings.json
+!.claude/CLAUDE.md
 CLAUDE.md
+# Needed for AI Factory onboarding
+!/.claude/CLAUDE.md
