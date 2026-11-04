@@ -1,4 +1,8 @@
 {
+  "enabledPlugins": {
+    "organization-guidance@ai-factory-marketplace": true,
+    "organization-capabilities@ai-factory-marketplace": true
+  },
   "extraKnownMarketplaces": {
     "ai-factory-marketplace": {
       "source": {
@@ -6,8 +10,5 @@
         "repo": "PagerDuty/ai-factory-marketplace"
       }
     }
-  },
-  "enabledPlugins": {
-    "organization-guidance@ai-factory-marketplace": true
   }
 }
