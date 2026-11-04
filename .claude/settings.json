@@ -1,0 +1,10 @@
+{
+  "extraKnownMarketplaces": {
+    "ai-factory-marketplace": {
+      "source": {
+        "source": "github",
+        "repo": "PagerDuty/ai-factory-marketplace"
+      }
+    }
+  }
+}
