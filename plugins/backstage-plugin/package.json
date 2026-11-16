@@ -1,7 +1,7 @@
 {
   "name": "@pagerduty/backstage-plugin",
   "description": "A Backstage plugin that integrates towards PagerDuty",
-  "version": "0.21.0",
+  "version": "0.21.1",
   "main": "dist/index.esm.js",
   "types": "dist/index.d.ts",
   "license": "Apache-2.0",
@@ -64,7 +64,8 @@
     "luxon": "^3.4.1",
     "material-react-table": "^2.13.0",
     "react-use": "^17.2.4",
-    "validate-color": "^2.2.4"
+    "validate-color": "^2.2.4",
+    "zod": "^4.2.0"
   },
   "peerDependencies": {
     "react": "^18.0.0 || ^20.0.0",

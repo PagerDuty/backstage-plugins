@@ -1,16 +1,15 @@
 import { compatWrapper } from '@backstage/core-compat-api';
 import { EntityCardBlueprint } from '@backstage/plugin-catalog-react/alpha';
+import { z } from 'zod';
 import { PAGERDUTY_INTEGRATION_KEY, PAGERDUTY_SERVICE_ID } from '../components/constants';
 
 /** @alpha */
 export const pagerDutyEntityCard = EntityCardBlueprint.makeWithOverrides({
   name: 'EntityPagerDutyCard',
-  config: {
-    schema: {
-      readOnly: z => z.boolean().optional(),
-      disableChangeEvents: z => z.boolean().optional(),
-      disableOnCall: z => z.boolean().optional(),
-    }
+  configSchema: {
+    readOnly: z.boolean().optional(),
+    disableChangeEvents: z.boolean().optional(),
+    disableOnCall: z.boolean().optional(),
   },
   factory(originalFactory, { config }) {
     return originalFactory({
@@ -37,12 +36,10 @@ export const pagerDutyEntityCard = EntityCardBlueprint.makeWithOverrides({
 export const pagerDutyEntitySmallCard = EntityCardBlueprint.makeWithOverrides({
   name: 'EntityPagerDutySmallCard',
   disabled: true,
-  config: {
-    schema: {
-      readOnly: z => z.boolean().optional(),
-      disableOnCall: z => z.boolean().optional(),
-      disableInsights: z => z.boolean().optional(),
-    },
+  configSchema: {
+    readOnly: z.boolean().optional(),
+    disableOnCall: z.boolean().optional(),
+    disableInsights: z.boolean().optional(),
   },
   factory(originalFactory, { config }) {
     return originalFactory({

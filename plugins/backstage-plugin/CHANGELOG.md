@@ -1,5 +1,11 @@
 # @backstage/plugin-pagerduty
 
+## 0.21.1
+
+### Patch Changes
+
+- 3ffbcbe: Fix the alpha entity cards failing to load on Backstage 1.54. Use `configSchema` instead of the removed `config.schema` option.
+
 ## 0.21.0
 
 ### Minor Changes
