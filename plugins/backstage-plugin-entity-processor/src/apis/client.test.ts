@@ -59,6 +59,16 @@ describe('PagerDutyClient.getServiceIdAnnotationFromCatalog', () => {
     ).resolves.toBe('PABC123');
   });
 
+  it.each([401, 403, 429])(
+    'rejects on a %i with an empty body',
+    async status => {
+      respond(status, '');
+      await expect(
+        client.getServiceIdAnnotationFromCatalog(entityRef),
+      ).rejects.toThrow(new RegExp(`Status ${status}`));
+    },
+  );
+
   it('rejects on a 400', async () => {
     respond(400, 'Bad Request');
     await expect(
