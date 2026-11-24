@@ -440,10 +440,11 @@ export async function createRouter(
 
           if (foundEntity) {
             response.json(
-              foundEntity.metadata.annotations?.['pagerduty.com/service-id'],
+              foundEntity.metadata.annotations?.['pagerduty.com/service-id'] ??
+                '',
             );
           } else {
-            response.status(404);
+            response.status(404).json('Entity not found');
           }
         } else {
           response
