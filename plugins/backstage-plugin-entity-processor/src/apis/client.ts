@@ -442,15 +442,16 @@ export class PagerDutyClient {
         );
       }
 
-      const foundServiceId: string = await response.json();
-
       switch (response.status) {
         case 400:
           throw new Error(await response.text());
         case 404:
           return '';
-        default: // 200
-          return foundServiceId;
+        default: {
+          // An entity without the annotation can come back as a 200 with no body.
+          const body = await response.text();
+          return body.trim() === '' ? '' : (JSON.parse(body) as string);
+        }
       }
     } catch (error) {
       this.logger.error(
